@@ -1,0 +1,182 @@
+{% extends 'base_admin.html.twig' %}
+{% block title %}Détail note #{{ note.id }}{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('dist/css/style.css') }}">
+
+  <style>
+    :root{
+      --theme-color-principal: {{ themeColorPrimaire|default(entite.couleurPrincipal|default('#233342')) }};
+      --theme-color-secondaire: {{ themeColorSecondaire|default(entite.couleurSecondaire|default('#ffc107')) }};
+      --theme-color-tertiaire: {{ themeColorTertiaire|default(entite.couleurTertiaire|default('#F0F0F0')) }};
+      --theme-color-quaternaire: {{ couleurQuaternaire|default(entite.couleurQuaternaire|default('#000000')) }};
+      --stroke: rgba(15, 23, 42, .10);
+    }
+
+    .hero{ border-radius:22px; position:relative; overflow:hidden; color:#fff; box-shadow:0 18px 50px rgba(0,0,0,.14);
+      background:
+        radial-gradient(1200px 420px at 12% -10%, color-mix(in srgb, var(--theme-color-tertiaire) 35%, transparent), transparent 58%),
+        radial-gradient(900px 380px at 92% 0%, color-mix(in srgb, var(--theme-color-secondaire) 32%, transparent), transparent 60%),
+        radial-gradient(700px 260px at 55% 115%, color-mix(in srgb, var(--theme-color-quaternaire) 18%, transparent), transparent 62%),
+        linear-gradient(135deg,
+          color-mix(in srgb, var(--theme-color-principal) 92%, #000 8%),
+          color-mix(in srgb, var(--theme-color-principal) 70%, #fff 30%)
+        );
+    }
+    .hero .accent{width:12px; border-radius:999px; background:var(--theme-color-secondaire); box-shadow:0 0 0 6px color-mix(in srgb, var(--theme-color-secondaire) 18%, transparent);}
+    .chip{
+      display:inline-flex; align-items:center; gap:.45rem;
+      padding:.28rem .65rem; border-radius:999px; font-size:.82rem;
+      background: rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.14);
+      color: rgba(255,255,255,.92);
+      white-space: nowrap;
+    }
+
+    .cardx{
+      background:#fff;
+      border:1px solid var(--stroke);
+      border-radius:18px;
+      box-shadow:0 10px 28px rgba(15,23,42,.08);
+      overflow:hidden;
+    }
+    .cardx-h{
+      padding: .95rem 1.05rem;
+      border-bottom:1px solid var(--stroke);
+      background:linear-gradient(180deg, rgba(0,0,0,.015), transparent);
+    }
+    .kv{
+      display:grid;
+      grid-template-columns: 220px 1fr;
+      gap: .75rem 1rem;
+      padding: 1rem 1.15rem;
+    }
+    .kv .k{
+      font-weight:800;
+      color:#334155;
+    }
+    .kv .v{
+      color:#0f172a;
+      word-break: break-word;
+    }
+    @media (max-width: 768px){
+      .kv{ grid-template-columns: 1fr; }
+    }
+  </style>
+{% endblock %}
+
+{% block body %}
+  <div class="hero p-3 mb-4 d-flex gap-3">
+    <div class="accent"></div>
+    <div class="flex-grow-1">
+      <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+        <div>
+          <h2 class="m-0 fw-bold">
+            <i class="bi bi-journal-text me-2" style="color:var(--theme-color-secondaire)"></i>
+            Détail de la note #{{ note.id }}
+          </h2>
+          <div class="opacity-75 mt-1">{{ note.libelle ?: 'Sans libellé' }}</div>
+          <div class="d-flex gap-2 flex-wrap mt-3">
+            <span class="chip"><i class="bi bi-building"></i> {{ entite.nom }}</span>
+            <span class="chip"><i class="bi bi-calendar-event"></i> {{ note.dateTransaction ? note.dateTransaction|date('d/m/Y') : '—' }}</span>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <a href="{{ path('app_administrateur_note_index', { entite: entite.id }) }}" class="btn btn-outline-light btn-sm fw-semibold">
+            <i class="bi bi-arrow-left me-1"></i> Retour
+          </a>
+          <a href="{{ path('app_administrateur_note_edit', { entite: entite.id, id: note.id }) }}" class="btn btn-light btn-sm fw-semibold">
+            <i class="bi bi-pencil-square me-1"></i> Modifier
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% include 'flagMessage.html.twig' %}
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="cardx">
+        <div class="cardx-h">
+          <h5 class="mb-0 fw-bold">Informations générales</h5>
+        </div>
+        <div class="kv">
+          <div class="k">ID</div>
+          <div class="v">#{{ note.id }}</div>
+
+          <div class="k">Date</div>
+          <div class="v">{{ note.dateTransaction ? note.dateTransaction|date('d/m/Y') : '—' }}</div>
+
+          <div class="k">Libellé</div>
+          <div class="v">{{ note.libelle ?: '—' }}</div>
+
+          <div class="k">Commentaire</div>
+          <div class="v">{{ note.commentaire ?: '—' }}</div>
+
+          <div class="k">Quantité</div>
+          <div class="v">{{ note.quantite ?? '—' }}</div>
+
+          <div class="k">Prix unitaire</div>
+          <div class="v">{{ note.prixUnitaireEur is not null ? note.prixUnitaireEur|number_format(4, ',', ' ') ~ ' €' : '—' }}</div>
+
+          <div class="k">TVA</div>
+          <div class="v">{{ note.tauxTvaPercent is not null ? note.tauxTvaPercent|number_format(2, ',', ' ') ~ ' %' : '—' }}</div>
+
+          <div class="k">Remise</div>
+          <div class="v">{{ note.montantRemiseEur is not null ? note.montantRemiseEur|number_format(2, ',', ' ') ~ ' €' : '—' }}</div>
+
+          <div class="k">Montant HT</div>
+          <div class="v">{{ note.montantHtEur is not null ? note.montantHtEur|number_format(2, ',', ' ') ~ ' €' : '—' }}</div>
+
+          <div class="k">Montant TVA</div>
+          <div class="v">{{ note.montantTvaEur is not null ? note.montantTvaEur|number_format(2, ',', ' ') ~ ' €' : '—' }}</div>
+
+          <div class="k">Montant TTC</div>
+          <div class="v">{{ note.montantTtcEur is not null ? note.montantTtcEur|number_format(2, ',', ' ') ~ ' €' : '—' }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="cardx mb-4">
+        <div class="cardx-h">
+          <h5 class="mb-0 fw-bold">Liaisons</h5>
+        </div>
+        <div class="kv">
+          <div class="k">Engin</div>
+          <div class="v">
+            {% if note.engin %}
+              {{ note.engin.nom ?: ('Engin #' ~ note.engin.id) }}
+              {% if note.engin.type %} — {{ note.engin.type.label() }}{% endif %}
+              {% if note.engin.immatriculation %} — {{ note.engin.immatriculation }}{% endif %}
+            {% else %}
+              —
+            {% endif %}
+          </div>
+
+          <div class="k">Employé</div>
+          <div class="v">
+            {% if note.utilisateur %}
+              {{ note.utilisateur.prenom }} {{ note.utilisateur.nom }}
+            {% else %}
+              —
+            {% endif %}
+          </div>
+
+          <div class="k">Produit</div>
+          <div class="v">
+            {% if note.produit %}
+              {{ note.produit.categorieProduit.label() }} — {{ note.produit.sousCategorieProduit.label() }}
+              <span class="text-muted">(#{{ note.produit.id }})</span>
+            {% else %}
+              —
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

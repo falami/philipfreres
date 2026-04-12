@@ -1,0 +1,123 @@
+{# templates/administrateur/carburant/_calendar_common.html.twig #}
+
+{# ===== HERO + NAV ===== #}
+<div class="hero p-3 mb-3 d-flex gap-3">
+  <div class="accent"></div>
+  <div class="flex-grow-1">
+    <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+      <div>
+        <h2 class="m-0 fw-bold">
+          <i class="bi bi-calendar-week me-2" style="color:var(--theme-color-secondaire)"></i>
+          {{ pageTitle }}
+        </h2>
+        <div class="opacity-75 mt-1">{{ pageSubtitle }}</div>
+
+        <div class="d-flex flex-wrap gap-2 mt-3">
+          <span class="chip"><i class="bi bi-cash-coin"></i> Dépenses</span>
+          <span class="chip"><i class="bi bi-building"></i> {{ entite.nom }}</span>
+
+          {# ✅ Badges SUM (maj via JS) #}
+          <span class="chip chip--pill"><i class="bi bi-cash-stack"></i> <span id="sumAmount">-</span></span>
+          <span class="chip chip--pill"><i class="bi bi-receipt"></i> <span id="sumCnt">-</span></span>
+          <span class="chip chip--pill"><i class="bi bi-droplet"></i> <span id="sumQty">-</span></span>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2 flex-wrap">
+        <a class="btn btn-light btn-sm fw-semibold {{ activeTab == 'global' ? 'active' : '' }}"
+           href="{{ path('app_administrateur_fuel_calendar_global', {entite: entite.id}) }}">
+          <i class="bi bi-globe2 me-1"></i> Global
+        </a>
+        <a class="btn btn-light btn-sm fw-semibold {{ activeTab == 'engin' ? 'active' : '' }}"
+           href="{{ path('app_administrateur_fuel_calendar_engin', {entite: entite.id}) }}">
+          <i class="bi bi-truck-front me-1"></i> Par engin
+        </a>
+        <a class="btn btn-light btn-sm fw-semibold {{ activeTab == 'employe' ? 'active' : '' }}"
+           href="{{ path('app_administrateur_fuel_calendar_employe', {entite: entite.id}) }}">
+          <i class="bi bi-people me-1"></i> Par employé
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{# ===== TOOLBAR FILTRES (visible seulement engin/employe) ===== #}
+{% if activeTab in ['engin','employe'] %}
+  <div class="toolbar mb-3 filters-sticky" id="fuelToolbar">
+    <div class="filters-mobile-toggle d-none d-sm-none" id="btnFiltersMobile" role="button" tabindex="0">
+      <div class="left">
+        <i class="bi bi-sliders"></i>
+        <span>Filtres</span>
+      </div>
+      <div class="right">
+        <span class="badge-soft" id="filtersMobileCount">-</span>
+        <i class="bi bi-chevron-down chev"></i>
+      </div>
+    </div>
+
+    <div class="filters-mobile-body">
+      <div class="d-flex flex-wrap gap-2 align-items-center">
+        <div class="me-auto d-flex flex-wrap gap-2 align-items-center">
+
+          <span class="chip chip-scope">
+            <i class="bi {{ activeTab == 'engin' ? 'bi-truck-front' : 'bi-person' }}"></i>
+
+            <span class="chip-scope-text">
+              {{ activeTab == 'engin' ? 'Scope engin' : 'Scope employé' }}
+            </span>
+
+            <select id="scopeSelect"
+                    class="form-select form-select-sm ms-2 js-tomselect-scope"
+                    data-placeholder="- Choisir -">
+              <option value=""></option>
+              {% if activeTab == 'engin' %}
+                {% for e in engins %}
+                  <option value="{{ e.id }}">{{ e.nom }}</option>
+                {% endfor %}
+              {% else %}
+                {% for u in employes %}
+                  <option value="{{ u.id }}">{{ u.prenom }} {{ u.nom }}</option>
+                {% endfor %}
+              {% endif %}
+            </select>
+          </span>
+
+        </div>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+{# ✅ Toujours présent (sinon ton JS casse en global) #}
+<input type="hidden" id="fStart" value="{{ start }}">
+<input type="hidden" id="fEnd" value="{{ end }}">
+<input type="text" class="d-none" id="fRange" />
+
+{# ===== CALENDAR CARD ===== #}
+<div class="calendar-card p-3">
+  <div id="calendar"></div>
+</div>
+
+{# ===== MODAL (click event) ===== #}
+<div class="modal fade" id="fuelDayModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content" style="border-radius:18px; overflow:hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, var(--theme-color-principal), var(--theme-color-secondaire)); color:#fff;">
+        <div>
+          <h5 class="modal-title mb-0 fw-bold">Détails dépenses</h5>
+          <div class="small opacity-75" id="fuelDayModalSub">-</div>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+
+      <div class="modal-body">
+        <div id="fuelDayModalBody">
+          <div class="text-muted small">Chargement…</div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fermer</button>
+      </div>
+    </div>
+  </div>
+</div>

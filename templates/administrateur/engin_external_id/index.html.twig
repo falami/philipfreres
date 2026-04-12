@@ -1,0 +1,363 @@
+{# templates/administrateur/engin_external_id/_aindexctions.html.twig #}
+{% extends 'base_admin.html.twig' %}
+{% block title %}Identifiants externes - {{ engin.nom }}{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('dist/css/style.css') }}">
+  <style>
+    :root{
+      --theme-color-principal: {{ themeColorPrimaire|default(entite.couleurPrincipal|default('#233342')) }};
+      --theme-color-secondaire: {{ themeColorSecondaire|default(entite.couleurSecondaire|default('#ffc107')) }};
+      --theme-color-tertiaire: {{ themeColorTertiaire|default(entite.couleurTertiaire|default('#F0F0F0')) }};
+      --theme-color-quaternaire: {{ couleurQuaternaire|default(entite.couleurQuaternaire|default('#000000')) }};
+
+      --bg:#f5f7fb; --panel:#fff; --ink:#0f172a; --muted:#64748b;
+      --stroke: rgba(15, 23, 42, .10);
+      --shadow: 0 18px 55px rgba(15, 23, 42, .10);
+      --radius: 18px;
+    }
+    body{ background: var(--bg); }
+
+    .hero{
+      border-radius:22px; position:relative; overflow:hidden; color:#fff;
+      box-shadow:0 18px 50px rgba(0,0,0,.14);
+      background:
+        radial-gradient(1200px 420px at 12% -10%,
+          color-mix(in srgb, var(--theme-color-tertiaire) 35%, transparent),
+          transparent 58%
+        ),
+        radial-gradient(900px 380px at 92% 0%,
+          color-mix(in srgb, var(--theme-color-secondaire) 32%, transparent),
+          transparent 60%
+        ),
+        radial-gradient(700px 260px at 55% 115%,
+          color-mix(in srgb, var(--theme-color-quaternaire) 18%, transparent),
+          transparent 62%
+        ),
+        linear-gradient(135deg,
+          color-mix(in srgb, var(--theme-color-principal) 92%, #000 8%),
+          color-mix(in srgb, var(--theme-color-principal) 70%, #fff 30%)
+        );
+    }
+    .hero::after{ content:""; position:absolute; inset:0; pointer-events:none;
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,0) 55%); opacity:.85;
+    }
+    .hero .accent{
+      width: 12px; border-radius:999px; background: var(--theme-color-secondaire);
+      box-shadow: 0 0 0 6px color-mix(in srgb, var(--theme-color-secondaire) 18%, transparent);
+      flex: 0 0 auto;
+    }
+    .chip{
+      display:inline-flex; align-items:center; gap:.45rem;
+      padding:.28rem .65rem; border-radius:999px; font-size:.82rem;
+      background: rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.14);
+      color: rgba(255,255,255,.92);
+      white-space: nowrap;
+    }
+    .chip i{ color: var(--theme-color-secondaire); }
+
+    .cardx{
+      background:var(--panel); border:1px solid var(--stroke); border-radius:var(--radius);
+      box-shadow:0 10px 28px rgba(15,23,42,.08); overflow:hidden;
+    }
+    .cardx-h{
+      padding:.95rem 1.05rem;
+      display:flex; align-items:center; justify-content:space-between; gap:1rem;
+      background: linear-gradient(180deg, rgba(0,0,0,.015), transparent);
+      border-bottom:1px solid var(--stroke);
+    }
+    .cardx-title{ margin:0; font-weight:800; letter-spacing:-.01em; color:var(--ink);
+      display:flex; align-items:center; gap:.6rem; }
+    .pill{
+      display:inline-flex; align-items:center; gap:.35rem;
+      padding:.30rem .60rem; border-radius:999px; font-weight:800; font-size:.78rem;
+      border:1px solid rgba(0,0,0,.08);
+      background: rgba(0,0,0,.03);
+    }
+    .pill.ok{ background: rgba(25,135,84,.12); border-color: rgba(25,135,84,.18); color:#0a4b2e; }
+    .pill.ko{ background: rgba(220,53,69,.10); border-color: rgba(220,53,69,.18); color:#7a1420; }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+    /* actions */
+    .user-actions .btn{ padding: .32rem .55rem; }
+    .user-actions .user-main{
+      background: rgba(255,255,255,.85);
+      border-color: rgba(0,0,0,.12);
+      box-shadow: 0 10px 22px rgba(0,0,0,.06);
+    }
+    .user-actions .user-split{
+      padding-left:.55rem; padding-right:.55rem;
+      border-color: rgba(0,0,0,.12);
+      background: rgba(255,255,255,.85);
+    }
+    .user-actions .user-menu{
+      border-radius: 16px;
+      border: 1px solid rgba(0,0,0,.10);
+      box-shadow: 0 18px 46px rgba(0,0,0,.18);
+      padding: .55rem;
+      background: radial-gradient(900px 220px at 10% 0%, rgba(255,193,7,.10), transparent 55%), #fff;
+      overflow: hidden;
+    }
+    .user-actions .user-menu .dropdown-item{
+      border-radius: 12px; padding:.50rem .60rem; margin:.10rem 0;
+      border: 1px solid transparent;
+    }
+    .user-actions .user-menu .dropdown-item:hover{
+      background: rgba(255,193,7,.10);
+      border-color: rgba(255,193,7,.22);
+    }
+    .user-actions.btn-group .user-main{
+      border-top-right-radius:0!important; border-bottom-right-radius:0!important;
+    }
+    .user-actions.btn-group .user-split{
+      border-top-left-radius:0!important; border-bottom-left-radius:0!important;
+      margin-left:-1px; position:relative;
+    }
+    .user-actions.btn-group .user-split:before{
+      content:""; position:absolute; left:0; top:20%; bottom:20%; width:1px; background: rgba(0,0,0,.10);
+    }
+
+    .table thead th{
+      background:#f7f8fa!important;
+      border-bottom:1px solid rgba(0,0,0,.08)!important;
+      font-size:.78rem;
+      text-transform:uppercase;
+      letter-spacing:.05em;
+      color: rgba(0,0,0,.55);
+      vertical-align: middle;
+    }
+    .table tbody td{ vertical-align: middle; }
+
+  .dropdown-menu.dropdown-menu-floating{
+    z-index: 2000 !important;
+  }
+  </style>
+{% endblock %}
+
+{% block body %}
+  <div class="hero p-3 mb-4 d-flex gap-3">
+    <div class="accent"></div>
+
+    <div class="flex-grow-1">
+      <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+        <div>
+          <h2 class="m-0 fw-bold">
+            <i class="bi bi-link-45deg me-2" style="color:var(--theme-color-secondaire)"></i>
+            Identifiants externes - {{ engin.nom }}
+          </h2>
+          <div class="opacity-75 mt-1">Mapping fournisseur (ALX / Edenred / …) pour ce engin.</div>
+
+          <div class="d-flex gap-2 flex-wrap mt-3">
+            <span class="chip"><i class="bi bi-building"></i> {{ entite.nom }}</span>
+            <span class="chip"><i class="bi bi-truck-front"></i> Engin #{{ engin.id }}</span>
+            <span class="chip"><i class="bi bi-collection"></i> {{ items|length }} item{{ items|length>1?'s':'' }}</span>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <a class="btn btn-outline-light btn-sm fw-semibold"
+             href="{{ path('app_administrateur_engin_show', { entite: entite.id, id: engin.id }) }}">
+            <i class="bi bi-arrow-left me-1"></i> Retour engin
+          </a>
+
+          <a class="btn btn-light btn-sm fw-semibold"
+             href="{{ path('app_administrateur_engin_external_id_new', { entite: entite.id, engin: engin.id }) }}">
+            <i class="bi bi-plus-lg me-1"></i> Ajouter
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% include 'flagMessage.html.twig' %}
+
+  <div class="cardx mb-4">
+    <div class="cardx-h">
+      <h5 class="cardx-title"><i class="bi bi-diagram-3 text-warning"></i> Liste</h5>
+      <div class="text-muted small">Actifs en premier • historique conservé</div>
+    </div>
+
+    <div class="p-3 p-md-4">
+      {% if items|length == 0 %}
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-inboxes fs-1 d-block mb-2"></i>
+          <div class="fw-semibold">Aucun identifiant externe</div>
+          <div class="small">Ajoute un mapping pour relier ce engin à un fournisseur.</div>
+        </div>
+      {% else %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Fournisseur</th>
+                <th>Valeur</th>
+                <th>Statut</th>
+                <th>Créé</th>
+                <th>Note</th>
+                <th class="text-end" style="width:1%;white-space:nowrap;"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for it in items %}
+                <tr>
+                  <td class="fw-semibold">{{ it.provider.name }}</td>
+                  <td class="mono">{{ it.value }}</td>
+                  <td>
+                    {% if it.active %}
+                      <span class="pill ok"><i class="bi bi-check-circle"></i> Actif</span>
+                    {% else %}
+                      <span class="pill ko"><i class="bi bi-slash-circle"></i> Inactif</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-muted small">{{ it.createdAt|date('d/m/Y H:i') }}</td>
+                  <td class="text-muted small">{{ it.note ?? '-' }}</td>
+                  <td class="text-end">
+                    {% include 'administrateur/engin_external_id/_actions.html.twig' with { entite: entite, engin: engin, item: it } %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# Modal disable (1 seule, remplie en JS) #}
+  <div class="modal fade" id="disableModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="border-radius:18px;">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-slash-circle me-2"></i> Désactiver l’identifiant</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+        </div>
+        <div class="modal-body">
+          <div class="small text-muted mb-2">Tu vas désactiver :</div>
+          <div class="fw-semibold" id="disableLabel">-</div>
+
+          <div class="mt-3">
+            <label class="form-label small fw-bold">Note (optionnel)</label>
+            <textarea class="form-control" rows="3" id="disableNote" placeholder="Raison / contexte..."></textarea>
+          </div>
+
+          <form id="disableForm" method="post" class="d-none">
+            <input type="hidden" name="_token" id="disableToken">
+            <input type="hidden" name="note" id="disableNoteHidden">
+          </form>
+
+          <div class="form-check mt-3">
+            <input class="form-check-input" type="checkbox" id="disableConfirmCheck">
+            <label class="form-check-label small" for="disableConfirmCheck">
+              Je confirme la désactivation (l’historique est conservé).
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+          <button class="btn btn-danger fw-semibold" id="disableConfirmBtn" disabled>
+            <i class="bi bi-slash-circle me-1"></i> Désactiver
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.js-open-disable');
+    if(!btn) return;
+
+    const label = btn.getAttribute('data-label') || '-';
+    const url   = btn.getAttribute('data-url') || '#';
+    const token = btn.getAttribute('data-token') || '';
+
+    document.getElementById('disableLabel').textContent = label;
+    document.getElementById('disableForm').setAttribute('action', url);
+    document.getElementById('disableToken').value = token;
+
+    document.getElementById('disableNote').value = '';
+    document.getElementById('disableNoteHidden').value = '';
+
+    const chk = document.getElementById('disableConfirmCheck');
+    const cta = document.getElementById('disableConfirmBtn');
+    chk.checked = false;
+    cta.disabled = true;
+  });
+
+  document.getElementById('disableConfirmCheck')?.addEventListener('change', (e) => {
+    document.getElementById('disableConfirmBtn').disabled = !e.target.checked;
+  });
+
+  document.getElementById('disableConfirmBtn')?.addEventListener('click', () => {
+    const note = document.getElementById('disableNote').value || '';
+    document.getElementById('disableNoteHidden').value = note;
+    document.getElementById('disableForm').submit();
+  });
+  </script>
+
+
+  <script>
+(function(){
+  function findMenuForToggle(toggle){
+    // Le menu est juste après le bouton dans le .btn-group
+    const group = toggle.closest('.btn-group, .dropdown');
+    return group ? group.querySelector('.dropdown-menu') : null;
+  }
+
+  document.addEventListener('show.bs.dropdown', function(ev){
+    const toggle = ev.target; // bouton dropdown
+    const menu = findMenuForToggle(toggle);
+    if(!menu) return;
+
+    // si déjà floating, ne rien faire
+    if(menu.classList.contains('dropdown-menu-floating')) return;
+
+    // garde le parent d'origine
+    menu._originalParent = menu.parentElement;
+
+    // move to body => plus de clipping par overflow
+    document.body.appendChild(menu);
+    menu.classList.add('dropdown-menu-floating');
+
+    // positionne avec Popper (Bootstrap bundle)
+    if (window.Popper) {
+      menu._popperInstance = Popper.createPopper(toggle, menu, {
+        placement: 'bottom-end',
+        strategy: 'fixed',
+        modifiers: [
+          { name: 'offset', options: { offset: [0, 6] } },
+          { name: 'preventOverflow', options: { boundary: 'viewport', padding: 8 } },
+        ],
+      });
+    }
+  });
+
+  document.addEventListener('hidden.bs.dropdown', function(ev){
+    const toggle = ev.target;
+    const menu = document.querySelector('.dropdown-menu.dropdown-menu-floating');
+
+    // on récupère le menu associé au toggle
+    const m = (function(){
+      const group = toggle.closest('.btn-group, .dropdown');
+      return group ? group.querySelector('.dropdown-menu.dropdown-menu-floating') : null;
+    })();
+
+    if(!m) return;
+
+    if (m._popperInstance) {
+      m._popperInstance.destroy();
+      m._popperInstance = null;
+    }
+
+    if (m._originalParent) {
+      m._originalParent.appendChild(m);
+    }
+
+    m.classList.remove('dropdown-menu-floating');
+    m._originalParent = null;
+  });
+})();
+</script>
+{% endblock %}

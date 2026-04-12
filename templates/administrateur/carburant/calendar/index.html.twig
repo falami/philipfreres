@@ -1,0 +1,238 @@
+{# templates/administrateur/carburant/calendar/index.html.twig #}
+{% extends 'base_admin.html.twig' %}
+{% block title %}Calendrier carburant{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('dist/css/style.css') }}">
+  <link rel="stylesheet" href="{{ asset('dist/css/formulaire.css') }}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+  <style>
+    {# ✅ Garde ton CSS du dashboard (hero, toolbar, mobile collapse, etc.) #}
+    {# -> copie-colle ton <style> actuel du dashboard ici si tu veux 100% identique #}
+
+    .calendar-card{
+      background: #fff;
+      border: 1px solid rgba(15, 23, 42, .10);
+      border-radius: 20px;
+      box-shadow: 0 18px 55px rgba(15,23,42,.10);
+      overflow: hidden;
+    }
+    #calendar{ padding: 0 !important; }
+
+    .fc{
+      --fc-border-color: rgba(15, 23, 42, .10);
+      --fc-page-bg-color: transparent;
+      --fc-today-bg-color: rgba(255,193,7,.10);
+    }
+    .fc .fc-header-toolbar{
+      margin: 0 !important;
+      padding: 1rem 1rem .75rem;
+      background:
+        radial-gradient(900px 260px at 10% -40%, rgba(255,193,7,.18), transparent 60%),
+        linear-gradient(135deg, var(--theme-color-principal), color-mix(in srgb, var(--theme-color-principal) 65%, var(--theme-color-secondaire) 35%));
+      border-bottom: 1px solid rgba(255,255,255,.14);
+    }
+    .fc .fc-toolbar-title{
+      color:#fff; font-weight: 950; letter-spacing: -.02em;
+      text-shadow: 0 10px 26px rgba(0,0,0,.18);
+    }
+    .fc .fc-button{
+      border: 1px solid rgba(255,255,255,.18) !important;
+      background: rgba(255,255,255,.10) !important;
+      color:#fff !important;
+      border-radius: .75rem !important;
+      font-weight: 900 !important;
+      padding: .45rem .7rem !important;
+      box-shadow: none !important;
+    }
+    .fc .fc-button:hover{ background: rgba(255,255,255,.16) !important; }
+    .fc .fc-button.fc-button-active{
+      background: rgba(255,193,7,.85) !important;
+      border-color: rgba(255,193,7,.85) !important;
+      color: rgba(15,23,42,.92) !important;
+    }
+
+    .fc .fc-event{
+      border: 0 !important;
+      border-radius: 14px !important;
+      box-shadow: 0 10px 22px rgba(0,0,0,.10);
+      overflow: hidden;
+    }
+    .fc .fc-event .fc-event-main{ padding:.35rem .5rem; }
+    .fc .fc-event-title{ font-weight: 950; }
+
+    @media (max-width:576px){
+      .fc .fc-header-toolbar{ flex-wrap: wrap; gap:.6rem; padding:.8rem .8rem .65rem; }
+      .fc .fc-toolbar-title{ font-size: 1.05rem !important; }
+      .fc .fc-button{ padding:.34rem .55rem !important; font-size:.88rem !important; }
+    }
+  </style>
+{% endblock %}
+
+{% block javascripts %}
+  {{ parent() }}
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://npmcdn.com/flatpickr/dist/l10n/fr.js"></script>
+
+  {# FullCalendar (standard) #}
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar/index.global.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.20/locales/fr.global.min.js"></script>
+{% endblock %}
+
+{% block body %}
+
+  <div class="hero p-3 mb-4 d-flex gap-3">
+    <div class="accent"></div>
+    <div class="flex-grow-1">
+      <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+        <div>
+          <h2 class="m-0 fw-bold">
+            <i class="bi bi-calendar-week me-2" style="color:var(--theme-color-secondaire)"></i>
+            Calendrier carburant — général
+          </h2>
+          <div class="opacity-75 mt-1">Vue calendrier des dépenses (agrégées par jour), filtres identiques au dashboard.</div>
+
+          <div class="d-flex flex-wrap gap-2 mt-3">
+            <span class="chip"><i class="bi bi-fuel-pump"></i> Carburant</span>
+            <span class="chip"><i class="bi bi-building"></i> {{ entite.nom }}</span>
+            <a class="chip" href="{{ path('app_administrateur_fuel_calendar_engins', {entite: entite.id}) }}"><i class="bi bi-truck-front"></i> Par engin</a>
+            <a class="chip" href="{{ path('app_administrateur_fuel_calendar_employes', {entite: entite.id}) }}"><i class="bi bi-people"></i> Par employé</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ✅ 1) COLLE ICI TON TOOLBAR EXACT DU DASHBOARD #}
+  {#    (le bloc <div class="toolbar ..."> ... </div>) #}
+  {#    Tu peux le garder tel quel : IDs identiques => JS identique #}
+
+  {# ---- TOOLBAR (copie-colle depuis ton dashboard) ---- #}
+  {{ include('administrateur/carburant/calendar/_toolbar_filtres.html.twig') }}
+
+  <div class="calendar-card">
+    <div id="calendar"></div>
+  </div>
+
+<script>
+(function(){
+  if (window.flatpickr && window.flatpickr.l10ns?.fr) flatpickr.localize(flatpickr.l10ns.fr);
+
+  // ==========================
+  // Récup filtres (on réutilise tes IDs)
+  // ==========================
+  const $start = document.getElementById('fStart');
+  const $end   = document.getElementById('fEnd');
+
+  function getChecked(selector){
+    return Array.from(document.querySelectorAll(selector + ':checked'))
+      .map(i => i.value)
+      .filter(v => String(v).trim() !== '');
+  }
+
+  function getFilters(){
+    const provAll = document.querySelectorAll('.fuel-filter-prov').length;
+    const engAll  = document.querySelectorAll('.fuel-filter-engin').length;
+    const empAll  = document.querySelectorAll('.fuel-filter-emp').length;
+
+    const prov = getChecked('.fuel-filter-prov');
+    const eng  = getChecked('.fuel-filter-engin').map(v => parseInt(v,10)).filter(Number.isFinite);
+    const emp  = getChecked('.fuel-filter-emp').map(v => parseInt(v,10)).filter(Number.isFinite);
+
+    const label = (document.getElementById('fLabel')?.value || '').trim();
+
+    return {
+      dateStart: $start.value,
+      dateEnd: $end.value,
+      providers: (prov.length === provAll) ? [] : prov,
+      enginIds:  (eng.length  === engAll)  ? [] : eng,
+      employeIds:(emp.length  === empAll)  ? [] : emp,
+      label: label
+    };
+  }
+
+  function toParams(filters){
+    const p = new URLSearchParams();
+    p.set('dateStart', filters.dateStart);
+    p.set('dateEnd', filters.dateEnd);
+
+    (filters.providers||[]).forEach(v => p.append('providers[]', v));
+    (filters.enginIds||[]).forEach(id => p.append('enginIds[]', String(id)));
+    (filters.employeIds||[]).forEach(id => p.append('employeIds[]', String(id)));
+
+    if (filters.label) p.set('label', filters.label);
+    return p;
+  }
+
+  // ==========================
+  // FullCalendar
+  // ==========================
+  const calendarEl = document.getElementById('calendar');
+
+  const calendar = new FullCalendar.Calendar(calendarEl, {
+    locale: 'fr',
+    initialView: window.matchMedia('(max-width:576px)').matches ? 'listWeek' : 'dayGridMonth',
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth,timeGridWeek,listWeek'
+    },
+    height: 'auto',
+    nowIndicator: true,
+    dayMaxEvents: true,
+
+    events: async function(fetchInfo, success, failure){
+      try{
+        const base = "{{ path('app_administrateur_fuel_api_calendar_events', {entite: entite.id}) }}";
+        const f = getFilters();
+
+        // FullCalendar donne start/end ISO => le controller les utilise
+        const p = toParams(f);
+        p.set('start', fetchInfo.startStr);
+        p.set('end', fetchInfo.endStr);
+
+        const url = base + '?' + p.toString();
+        const r = await fetch(url, { headers: {'Accept':'application/json'} });
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        const events = await r.json();
+        success(events);
+      }catch(e){
+        console.error(e);
+        failure(e);
+      }
+    },
+  });
+
+  calendar.render();
+
+  // ==========================
+  // Hook auto-refresh sur tes filtres
+  // ==========================
+  function refreshCalendar(){
+    calendar.refetchEvents();
+  }
+
+  // si tu utilises déjà scheduleRefresh() dans ton toolbar, tu peux juste appeler refreshCalendar()
+  // ici on met un simple debounce “safe”
+  let t=null;
+  function debounce(ms=250){
+    clearTimeout(t);
+    t = setTimeout(refreshCalendar, ms);
+  }
+
+  $(document).on('change', '.fuel-filter-prov, .fuel-filter-engin, .fuel-filter-emp', () => debounce(200));
+  $(document).on('input', '#fLabel', () => debounce(350));
+  document.getElementById('btnReset')?.addEventListener('click', () => debounce(80));
+  document.getElementById('btnApply')?.addEventListener('click', () => debounce(50));
+
+  // période (tes select année/mois/trimestre + flatpickr range)
+  document.getElementById('periodType')?.addEventListener('change', () => debounce(120));
+  document.getElementById('periodYear')?.addEventListener('change', () => debounce(120));
+  document.getElementById('periodQuarter')?.addEventListener('change', () => debounce(120));
+  document.getElementById('periodMonth')?.addEventListener('change', () => debounce(120));
+})();
+</script>
+{% endblock %}

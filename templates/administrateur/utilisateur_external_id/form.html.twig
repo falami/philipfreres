@@ -1,0 +1,205 @@
+{# templates/administrateur/utilisateur_external_id/form.html.twig #}
+{% extends 'base_admin.html.twig' %}
+{% set is_edit = modeEdition ?? false %}
+{% block title %}{{ is_edit ? 'Modifier' : 'Ajouter' }} - ID externe - {{ utilisateur.prenom }} {{ utilisateur.nom|upper }}{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+
+  <link rel="stylesheet" href="{{ asset('dist/css/style.css') }}">
+  <link rel="stylesheet" href="{{ asset('dist/css/style-table.css') }}">
+
+  <link rel="stylesheet" href="{{ asset('dist/css/formulaire.css') }}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css">
+  
+  <link rel="stylesheet" href="https://cdn.datatables.net/v/bs5/dt-2.2.2/b-3.0.2/b-html5-3.0.2/b-print-3.0.2/datatables.min.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css">
+
+  <style>
+    :root{
+      --theme-color-principal: {{ themeColorPrimaire|default(entite.couleurPrincipal|default('#233342')) }};
+      --theme-color-secondaire: {{ themeColorSecondaire|default(entite.couleurSecondaire|default('#ffc107')) }};
+      --theme-color-tertiaire: {{ themeColorTertiaire|default(entite.couleurTertiaire|default('#F0F0F0')) }};
+      --theme-color-quaternaire: {{ couleurQuaternaire|default(entite.couleurQuaternaire|default('#000000')) }};
+
+      --bg:#f5f7fb; --panel:#fff; --ink:#0f172a; --muted:#64748b;
+      --stroke: rgba(15, 23, 42, .10);
+      --shadow: 0 18px 55px rgba(15, 23, 42, .10);
+      --radius: 18px;
+    }
+    body{ background: var(--bg); }
+
+    .hero{
+      border-radius:22px; position:relative; overflow:hidden; color:#fff;
+      box-shadow:0 18px 50px rgba(0,0,0,.14);
+      background:
+        radial-gradient(1200px 420px at 12% -10%,
+          color-mix(in srgb, var(--theme-color-tertiaire) 35%, transparent),
+          transparent 58%
+        ),
+        radial-gradient(900px 380px at 92% 0%,
+          color-mix(in srgb, var(--theme-color-secondaire) 32%, transparent),
+          transparent 60%
+        ),
+        radial-gradient(700px 260px at 55% 115%,
+          color-mix(in srgb, var(--theme-color-quaternaire) 18%, transparent),
+          transparent 62%
+        ),
+        linear-gradient(135deg,
+          color-mix(in srgb, var(--theme-color-principal) 92%, #000 8%),
+          color-mix(in srgb, var(--theme-color-principal) 70%, #fff 30%)
+        );
+    }
+    .hero::after{ content:""; position:absolute; inset:0; pointer-events:none;
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,0) 55%); opacity:.85;
+    }
+    .hero .accent{
+      width: 12px; border-radius:999px; background: var(--theme-color-secondaire);
+      box-shadow: 0 0 0 6px color-mix(in srgb, var(--theme-color-secondaire) 18%, transparent);
+      flex: 0 0 auto;
+    }
+    .chip{
+      display:inline-flex; align-items:center; gap:.45rem;
+      padding:.28rem .65rem; border-radius:999px; font-size:.82rem;
+      background: rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.14);
+      color: rgba(255,255,255,.92);
+      white-space: nowrap;
+    }
+    .chip i{ color: var(--theme-color-secondaire); }
+
+    .cardx{
+      background: var(--panel);
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      box-shadow: 0 10px 28px rgba(15,23,42,.08);
+      overflow:hidden;
+    }
+    .cardx-h{
+      padding: .95rem 1.05rem;
+      display:flex; align-items:center; justify-content:space-between; gap:1rem;
+      background: linear-gradient(180deg, rgba(0,0,0,.015), transparent);
+      border-bottom: 1px solid var(--stroke);
+    }
+    .cardx-title{
+      margin:0; font-weight:800; letter-spacing:-.01em; color: var(--ink);
+      display:flex; align-items:center; gap:.6rem;
+    }
+    label.form-label{ font-weight: 700; color: var(--ink); }
+    .form-text, .text-muted, .small{ color: var(--muted) !important; }
+    .form-control, .form-select{
+      border-radius: 14px;
+      border: 1px solid var(--stroke);
+      padding: .65rem .85rem;
+      min-height: 44px;
+    }
+    .form-control:focus, .form-select:focus{
+      border-color: color-mix(in srgb, var(--theme-color-principal) 55%, var(--stroke));
+      box-shadow: 0 0 0 .2rem color-mix(in srgb, var(--theme-color-principal) 18%, transparent);
+    }
+    .ts-dropdown{ z-index: 9999 !important; }
+</style>
+{% endblock %}
+
+{% block javascripts %}
+  {{ parent() }}
+  <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+{% endblock %}
+
+{% block body %}
+  <div class="hero p-3 mb-4 d-flex gap-3">
+    <div class="accent"></div>
+
+    <div class="flex-grow-1">
+      <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+        <div>
+          <h2 class="m-0 fw-bold">
+            <i class="bi bi-link-45deg me-2" style="color:var(--theme-color-secondaire)"></i>
+            {{ is_edit ? 'Modifier' : 'Ajouter' }} un identifiant externe
+          </h2>
+          <div class="opacity-75 mt-1">Utilisateur : <b>{{ utilisateur.prenom }} {{ utilisateur.nom|upper }}</b></div>
+
+          <div class="d-flex gap-2 flex-wrap mt-3">
+            <span class="chip"><i class="bi bi-person"></i> {{ utilisateur.prenom }} {{ utilisateur.nom|upper }}</span>
+            <span class="chip"><i class="bi bi-building"></i> {{ entite.nom }}</span>
+            <span class="chip"><i class="bi bi-shield-check"></i> Administrateur</span>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <a href="{{ path('app_administrateur_utilisateur_external_id_index', { entite: entite.id, utilisateur: utilisateur.id }) }}"
+             class="btn btn-outline-light btn-sm fw-semibold">
+            <i class="bi bi-arrow-left me-1"></i> Retour
+          </a>
+          <button type="submit" form="extIdForm" class="btn btn-light btn-sm fw-semibold">
+            <i class="bi bi-check me-1"></i> Enregistrer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% include 'flagMessage.html.twig' %}
+
+  {{ form_start(form, { attr:{ id:'extIdForm', novalidate:'novalidate' } }) }}
+  {{ form_errors(form) }}
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="cardx mb-4">
+        <div class="cardx-h">
+          <h5 class="cardx-title"><i class="bi bi-sliders2 text-warning"></i> Paramètres</h5>
+          <span class="chip">{{ is_edit ? 'Mode édition' : 'Mode création' }}</span>
+        </div>
+        <div class="p-3 p-md-4">
+          <div class="row g-3">
+            <div class="col-12 col-md-5">{{ form_row(form.provider) }}</div>
+            <div class="col-12 col-md-7">{{ form_row(form.value) }}</div>
+            <div class="col-12">{{ form_row(form.note) }}</div>
+          </div>
+          <div class="form-text mt-2">
+            Astuce : désactive au lieu de supprimer pour conserver l’historique.
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-end gap-2">
+        <a href="{{ path('app_administrateur_utilisateur_external_id_index', { entite: entite.id, utilisateur: utilisateur.id }) }}"
+           class="btn btn-secondary">
+          <i class="bi bi-arrow-left"></i> Retour
+        </a>
+        <button type="submit" class="btn btn-gradient">
+          <i class="bi bi-check"></i> {{ is_edit ? 'Modifier & Terminer' : 'Créer & Terminer' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="cardx mb-4">
+        <div class="cardx-h">
+          <h5 class="cardx-title"><i class="bi bi-info-circle text-warning"></i> Aide</h5>
+        </div>
+        <div class="p-3 p-md-4">
+          <div class="small text-muted">
+            <ul class="mb-0 ps-3">
+              <li><b>Fournisseur</b> = système externe.</li>
+              <li><b>Valeur</b> = ID exact/normalisé (FuelKey::norm).</li>
+              <li><b>Note</b> = contexte (optionnel).</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {{ form_end(form) }}
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const sel = document.querySelector('.js-ts-provider');
+      if (sel && !sel.tomselect) {
+        new TomSelect(sel, { create:false, allowEmptyOption:true, plugins:{ clear_button:{ title:'Effacer' } } });
+      }
+    });
+  </script>
+{% endblock %}

@@ -1,0 +1,313 @@
+{% extends 'base_admin.html.twig' %}
+{% block title %}Notes manuelles{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('dist/css/style.css') }}">
+  <link rel="stylesheet" href="{{ asset('dist/css/style-table.css') }}">
+  <link rel="stylesheet" href="https://cdn.datatables.net/v/bs5/dt-2.2.2/b-3.0.2/b-html5-3.0.2/b-print-3.0.2/datatables.min.css"/>
+
+  <style>
+    :root{
+      --theme-color-principal: {{ themeColorPrimaire|default(entite.couleurPrincipal|default('#233342')) }};
+      --theme-color-secondaire: {{ themeColorSecondaire|default(entite.couleurSecondaire|default('#ffc107')) }};
+      --theme-color-tertiaire: {{ themeColorTertiaire|default(entite.couleurTertiaire|default('#F0F0F0')) }};
+      --theme-color-quaternaire: {{ couleurQuaternaire|default(entite.couleurQuaternaire|default('#000000')) }};
+    }
+
+    .hero{ border-radius:22px; position:relative; overflow:hidden; color:#fff; box-shadow:0 18px 50px rgba(0,0,0,.14);
+      background:
+        radial-gradient(1200px 420px at 12% -10%, color-mix(in srgb, var(--theme-color-tertiaire) 35%, transparent), transparent 58%),
+        radial-gradient(900px 380px at 92% 0%, color-mix(in srgb, var(--theme-color-secondaire) 32%, transparent), transparent 60%),
+        radial-gradient(700px 260px at 55% 115%, color-mix(in srgb, var(--theme-color-quaternaire) 18%, transparent), transparent 62%),
+        linear-gradient(135deg,
+          color-mix(in srgb, var(--theme-color-principal) 92%, #000 8%),
+          color-mix(in srgb, var(--theme-color-principal) 70%, #fff 30%)
+        );
+    }
+    .hero::after{content:""; position:absolute; inset:0; pointer-events:none;
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,0) 55%); opacity:.85;}
+    .hero .accent{width:12px; border-radius:999px; background:var(--theme-color-secondaire);
+      box-shadow:0 0 0 6px color-mix(in srgb, var(--theme-color-secondaire) 18%, transparent);}
+    .hero .chip{display:inline-flex; align-items:center; gap:.5rem; padding:.32rem .7rem; border-radius:999px;
+      background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.14); font-size:.82rem; color:rgba(255,255,255,.92);
+      backdrop-filter: blur(6px); white-space:nowrap;}
+    .hero .chip i{color:var(--theme-color-secondaire);}
+    .hero .chip--pill{background: color-mix(in srgb, var(--theme-color-secondaire) 18%, transparent);
+      border-color: color-mix(in srgb, var(--theme-color-secondaire) 28%, rgba(255,255,255,.14)); color:#fff;}
+
+    .filterbar{background:#fff; border-radius:18px; border:1px solid rgba(0,0,0,.06); box-shadow:0 10px 24px rgba(0,0,0,.05); overflow-x:clip;}
+    .filterbar__top{padding:.9rem 1rem; border-bottom:1px solid rgba(0,0,0,.06);
+      background: linear-gradient(180deg, rgba(0,0,0,.015), transparent); display:flex; align-items:center; gap:.75rem;}
+    .filter-icon{width:38px; height:38px; border-radius:14px; display:grid; place-items:center;
+      background: color-mix(in srgb, var(--theme-color-principal) 10%, transparent);
+      border: 1px solid color-mix(in srgb, var(--theme-color-principal) 18%, transparent);}
+
+    .table-card{background:#fff; border-radius:18px; border:1px solid rgba(0,0,0,.06); box-shadow:0 12px 30px rgba(0,0,0,.06); overflow:hidden;}
+    table.dataTable thead th{background:#f7f8fa!important; border-bottom:1px solid rgba(0,0,0,.08)!important;
+      font-size:.78rem; text-transform:uppercase; letter-spacing:.05em; color: rgba(0,0,0,.55); white-space:nowrap;}
+    .dt-top{padding:.75rem .85rem; border-bottom:1px solid rgba(0,0,0,.06); background:#fff;}
+    .dt-bottom-internal{padding:1rem .85rem!important; border-top:1px solid rgba(0,0,0,.06); background:#fff; margin-top:.75rem!important;}
+
+    .user-actions .btn{ padding: .32rem .55rem; }
+    .user-actions .user-main{
+      background: rgba(255,255,255,.85);
+      border-color: rgba(0,0,0,.12);
+      box-shadow: 0 10px 22px rgba(0,0,0,.06);
+    }
+    .user-actions .user-split{
+      padding-left:.55rem; padding-right:.55rem;
+      border-color: rgba(0,0,0,.12);
+      background: rgba(255,255,255,.85);
+    }
+    .user-actions .user-menu{
+      border-radius: 16px;
+      border: 1px solid rgba(0,0,0,.10);
+      box-shadow: 0 18px 46px rgba(0,0,0,.18);
+      padding: .55rem;
+      background: radial-gradient(900px 220px at 10% 0%, rgba(255,193,7,.10), transparent 55%), #fff;
+      overflow: hidden;
+    }
+    .user-actions .user-menu .dropdown-item{
+      border-radius: 12px; padding:.50rem .60rem; margin:.10rem 0;
+      border: 1px solid transparent;
+    }
+    .user-actions .user-menu .dropdown-item:hover{
+      background: rgba(255,193,7,.10);
+      border-color: rgba(255,193,7,.22);
+    }
+    .user-actions.btn-group .user-main{
+      border-top-right-radius:0!important; border-bottom-right-radius:0!important;
+    }
+    .user-actions.btn-group .user-split{
+      border-top-left-radius:0!important; border-bottom-left-radius:0!important;
+      margin-left:-1px; position:relative;
+    }
+    .user-actions.btn-group .user-split:before{
+      content:""; position:absolute; left:0; top:20%; bottom:20%; width:1px; background: rgba(0,0,0,.10);
+    }
+
+    .dropdown-menu.dropdown-menu-floating{
+      z-index: 2000 !important;
+    }
+  </style>
+{% endblock %}
+
+{% block javascripts %}
+  {{ parent() }}
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+  <script src="https://cdn.datatables.net/v/bs5/dt-2.2.2/b-3.0.2/b-html5-3.0.2/b-print-3.0.2/datatables.min.js"></script>
+{% endblock %}
+
+{% block body %}
+  <div class="hero p-3 mb-4 d-flex gap-3">
+    <div class="accent"></div>
+    <div class="flex-grow-1">
+      <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+        <div>
+          <h2 class="m-0 fw-bold">
+            <i class="bi bi-journal-text me-2" style="color:var(--theme-color-secondaire)"></i>
+            Notes manuelles
+          </h2>
+
+          <div class="opacity-75 mt-1">Ajouts manuels hors imports TOTAL / EDENRED / ALX.</div>
+          <div class="d-flex flex-wrap gap-2 mt-3">
+            <span class="chip"><i class="bi bi-pencil-square"></i> Saisie manuelle</span>
+            <span class="chip"><i class="bi bi-building"></i> {{ entite.nom }}</span>
+            <span class="chip chip--pill"><i class="bi bi-clock-history"></i> <span id="hero-last-refresh">-</span></span>
+          </div>
+        </div>
+        <div class="d-flex gap-2">
+          <a href="{{ path('app_administrateur_note_new', { entite: entite.id }) }}" class="btn btn-light btn-sm fw-semibold">
+            <i class="bi bi-plus-lg me-1"></i> Nouvelle note
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% include 'flagMessage.html.twig' %}
+
+  <div class="filterbar mb-3">
+    <div class="filterbar__top">
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <div class="filter-icon"><i class="bi bi-sliders"></i></div>
+        <div>
+          <div class="fw-bold">Outils</div>
+          <div class="text-muted small">Recherche + export</div>
+        </div>
+      </div>
+
+      <div class="ms-auto d-flex gap-2 align-items-center">
+        <div class="dropdown">
+          <button class="btn btn-warning btn-sm fw-semibold dropdown-toggle" data-bs-toggle="dropdown">
+            <i class="bi bi-download"></i> Export
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end" id="exportMenu"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-card mb-4 p-3">
+    <table id="tableauNotes" class="table table-hover align-middle mb-0 w-100">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Date</th>
+          <th>Libellé</th>
+          <th>Quantité</th>
+          <th class="text-end">TTC (€)</th>
+          <th>Engin</th>
+          <th>Employé</th>
+          <th>Produit</th>
+          <th class="text-end"></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Confirmer la suppression</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+        </div>
+        <div class="modal-body">Cette suppression est définitive. Continuer ?</div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+          <form id="deleteForm" method="post" action="">
+            <input type="hidden" name="_token" id="deleteToken" value="">
+            <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> Supprimer</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  $(function(){
+    function nowLabel(){
+      const d = new Date();
+      return d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+    }
+
+    const table = $('#tableauNotes').DataTable({
+      serverSide:true,
+      processing:true,
+      autoWidth:false,
+      scrollX:true,
+      scrollCollapse:true,
+      responsive:false,
+      ajax:{
+        url:"{{ path('app_administrateur_note_ajax', { entite: entite.id }) }}",
+        type:"POST",
+      },
+      dom:
+        '<"dt-top d-flex flex-wrap gap-2 align-items-center justify-content-between"'
+          + '<"dt-actions d-flex gap-2 align-items-center"B>'
+          + '<"dt-search"f>'
+        + '>'
+        + 'rt'
+        + '<"dt-bottom-internal d-flex flex-wrap gap-2 align-items-center justify-content-between"lip>',
+      buttons:['copy','csv','excel','pdf','print'],
+      lengthMenu:[[10,25,50,200],[10,25,50,200]],
+      order:[[0,'desc']],
+      language:{ url:'https://cdn.datatables.net/plug-ins/2.2.2/i18n/fr-FR.json' },
+      pageLength: 25,
+      columns:[
+        {data:'id'},
+        {data:'date'},
+        {data:'libelle'},
+        {data:'quantite'},
+        {data:'ttc'},
+        {data:'engin'},
+        {data:'utilisateur'},
+        {data:'produit'},
+        {data:'actions'}
+      ],
+      columnDefs:[
+        {targets:4, className:'text-end', orderable:true},
+        {targets:8, className:'action-column text-end', orderable:false, searchable:false},
+        {type:'num', targets:0}
+      ],
+      initComplete:function(){
+        const api = this.api();
+        const $btns = $(api.buttons().container()).find('button');
+        $('#exportMenu').empty();
+        $btns.each(function(){
+          const $b=$(this);
+          $('<li><a class="dropdown-item" href="#">'+$b.text()+'</a></li>')
+            .on('click', e => { e.preventDefault(); $b.click(); })
+            .appendTo('#exportMenu');
+        });
+        $(api.buttons().container()).hide();
+        api.columns.adjust();
+      }
+    });
+
+    table.on('draw.dt', function(){
+      $('#hero-last-refresh').text('Maj : ' + nowLabel());
+      table.columns.adjust();
+    });
+
+    $(document).on('click', '.delete-btn', function(){
+      $('#deleteForm').attr('action', $(this).data('url'));
+      $('#deleteToken').val($(this).data('token') || '');
+    });
+  });
+  </script>
+
+  <script>
+  (function(){
+    function getMenuFromToggle(toggle){
+      return toggle?.parentElement?.querySelector('.dropdown-menu');
+    }
+
+    document.addEventListener('show.bs.dropdown', function(e){
+      const toggle = e.target;
+      const menu = getMenuFromToggle(toggle);
+      if(!menu) return;
+      if(menu.classList.contains('dropdown-menu-floating')) return;
+
+      menu._originalParent = menu.parentElement;
+      document.body.appendChild(menu);
+      menu.classList.add('dropdown-menu-floating');
+
+      if (window.Popper) {
+        menu._popperInstance = Popper.createPopper(toggle, menu, {
+          placement: 'bottom-end',
+          strategy: 'fixed',
+          modifiers: [
+            { name: 'offset', options: { offset: [0, 6] } },
+            { name: 'preventOverflow', options: { boundary: 'viewport', padding: 8 } },
+          ],
+        });
+      }
+    });
+
+    document.addEventListener('hidden.bs.dropdown', function(e){
+      const toggle = e.target;
+      const menu = getMenuFromToggle(toggle);
+      if(!menu || !menu.classList.contains('dropdown-menu-floating')) return;
+
+      if (menu._popperInstance) {
+        menu._popperInstance.destroy();
+        menu._popperInstance = null;
+      }
+
+      if (menu._originalParent) {
+        menu._originalParent.appendChild(menu);
+      }
+
+      menu.classList.remove('dropdown-menu-floating');
+      menu._originalParent = null;
+    });
+  })();
+  </script>
+{% endblock %}

@@ -1,0 +1,107 @@
+{% extends 'base_admin.html.twig' %}
+{% block title %}Calendrier carburant — {{ engin.nom }}{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('dist/css/style.css') }}">
+  <link rel="stylesheet" href="{{ asset('dist/css/formulaire.css') }}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <style>
+    {# idem page générale: tu peux réutiliser le même CSS FullCalendar + ton CSS dashboard #}
+    .calendar-card{ background:#fff;border:1px solid rgba(15,23,42,.10);border-radius:20px;box-shadow:0 18px 55px rgba(15,23,42,.10);overflow:hidden; }
+  </style>
+{% endblock %}
+
+{% block javascripts %}
+  {{ parent() }}
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://npmcdn.com/flatpickr/dist/l10n/fr.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar/index.global.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.20/locales/fr.global.min.js"></script>
+{% endblock %}
+
+{% block body %}
+  <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap mb-3">
+    <div>
+      <h2 class="m-0 fw-bold"><i class="bi bi-truck-front me-2"></i> {{ engin.nom }}</h2>
+      <div class="text-muted">Calendrier des dépenses pour cet engin</div>
+    </div>
+    <a class="btn btn-outline-secondary" href="{{ path('app_administrateur_fuel_calendar_engins', {entite: entite.id}) }}">
+      <i class="bi bi-arrow-left me-1"></i> Liste engins
+    </a>
+  </div>
+
+  {{ include('administrateur/carburant/calendar/_toolbar_filtres.html.twig') }}
+
+  <div class="calendar-card">
+    <div id="calendar"></div>
+  </div>
+
+<script>
+(function(){
+  const calendarEl = document.getElementById('calendar');
+
+  function getChecked(selector){
+    return Array.from(document.querySelectorAll(selector + ':checked'))
+      .map(i => i.value)
+      .filter(v => String(v).trim() !== '');
+  }
+
+  function getFilters(){
+    const provAll = document.querySelectorAll('.fuel-filter-prov').length;
+    const prov = getChecked('.fuel-filter-prov');
+    const label = (document.getElementById('fLabel')?.value || '').trim();
+
+    return {
+      dateStart: document.getElementById('fStart').value,
+      dateEnd: document.getElementById('fEnd').value,
+      providers: (prov.length === provAll) ? [] : prov,
+      label
+    };
+  }
+
+  function toParams(filters){
+    const p = new URLSearchParams();
+    p.set('dateStart', filters.dateStart);
+    p.set('dateEnd', filters.dateEnd);
+    (filters.providers||[]).forEach(v => p.append('providers[]', v));
+    if (filters.label) p.set('label', filters.label);
+    return p;
+  }
+
+  const calendar = new FullCalendar.Calendar(calendarEl, {
+    locale: 'fr',
+    initialView: window.matchMedia('(max-width:576px)').matches ? 'listWeek' : 'dayGridMonth',
+    headerToolbar: { left:'prev,next today', center:'title', right:'dayGridMonth,timeGridWeek,listWeek' },
+    height: 'auto',
+    nowIndicator: true,
+    dayMaxEvents: true,
+
+    events: async (fetchInfo, success, failure) => {
+      try{
+        const base = "{{ path('app_administrateur_fuel_api_calendar_engin_events', {entite: entite.id, engin: engin.id}) }}";
+        const f = getFilters();
+        const p = toParams(f);
+        p.set('start', fetchInfo.startStr);
+        p.set('end', fetchInfo.endStr);
+
+        const r = await fetch(base + '?' + p.toString(), { headers:{'Accept':'application/json'} });
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        success(await r.json());
+      }catch(e){ console.error(e); failure(e); }
+    }
+  });
+
+  calendar.render();
+
+  let t=null;
+  const debounce = (ms=250) => { clearTimeout(t); t=setTimeout(()=>calendar.refetchEvents(), ms); };
+
+  $(document).on('change', '.fuel-filter-prov', ()=>debounce(200));
+  $(document).on('input', '#fLabel', ()=>debounce(350));
+  document.getElementById('btnReset')?.addEventListener('click', ()=>debounce(80));
+  document.getElementById('btnApply')?.addEventListener('click', ()=>debounce(50));
+})();
+</script>
+{% endblock %}

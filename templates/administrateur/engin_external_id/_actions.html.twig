@@ -1,0 +1,48 @@
+{# templates/administrateur/engin_external_id/_actions.html.twig #}
+<div class="btn-group btn-group-sm user-actions" role="group">
+
+  <a class="btn btn-light user-main"
+     data-bs-toggle="tooltip" title="Modifier"
+     href="{{ path('app_administrateur_engin_external_id_edit', { entite: entite.id, engin: engin.id, id: item.id }) }}">
+    <i class="bi bi-pencil"></i>
+  </a>
+
+  <button type="button"
+          class="btn btn-light dropdown-toggle dropdown-toggle-split user-split"
+          data-bs-toggle="dropdown"
+          data-bs-auto-close="outside"
+          aria-expanded="false">
+    <span class="visually-hidden">Actions</span>
+  </button>
+
+  <ul class="dropdown-menu dropdown-menu-end user-menu">
+    <li>
+      <a class="dropdown-item d-flex align-items-center"
+         href="{{ path('app_administrateur_engin_external_id_edit', { entite: entite.id, engin: engin.id, id: item.id }) }}">
+        <i class="bi bi-pencil me-2"></i> Modifier
+      </a>
+    </li>
+
+    <li><hr class="dropdown-divider"></li>
+
+    {% if item.active %}
+      <li>
+        <button type="button"
+                class="dropdown-item d-flex align-items-center text-danger js-open-disable"
+                data-bs-toggle="modal"
+                data-bs-target="#disableModal"
+                data-label="{{ item.provider.name ~ ' • ' ~ item.value }}"
+                data-url="{{ path('app_administrateur_engin_external_id_disable', { entite: entite.id, engin: engin.id, id: item.id }) }}"
+                data-token="{{ csrf_token('disable_engin_ext_' ~ item.id) }}">
+          <i class="bi bi-slash-circle me-2"></i> Désactiver
+        </button>
+      </li>
+    {% else %}
+      <li>
+        <span class="dropdown-item d-flex align-items-center text-muted disabled">
+          <i class="bi bi-lock me-2"></i> Déjà inactif
+        </span>
+      </li>
+    {% endif %}
+  </ul>
+</div>

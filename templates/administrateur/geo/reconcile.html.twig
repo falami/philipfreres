@@ -1,0 +1,989 @@
+{% extends 'base_admin.html.twig' %}
+{% block title %}Réconciliation des adresses{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('dist/css/style.css') }}">
+
+  {# Leaflet CSS indispensable #}
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+  <style>
+    :root{
+      --theme-color-principal: {{ themeColorPrimaire|default(entite.couleurPrincipal|default('#233342')) }};
+      --theme-color-secondaire: {{ themeColorSecondaire|default(entite.couleurSecondaire|default('#ffc107')) }};
+      --theme-color-tertiaire: {{ themeColorTertiaire|default(entite.couleurTertiaire|default('#F0F0F0')) }};
+      --theme-color-quaternaire: {{ couleurQuaternaire|default(entite.couleurQuaternaire|default('#000000')) }};
+
+      --bg:#f5f7fb; --panel:#fff; --ink:#0f172a; --muted:#64748b;
+      --stroke: rgba(15, 23, 42, .10);
+      --shadow: 0 18px 55px rgba(15, 23, 42, .10);
+      --radius: 18px;
+    }
+    body{ background: var(--bg); }
+
+    /* ============= HERO ultra premium ============= */
+    .hero{
+      border-radius:22px; position:relative; overflow:hidden; color:#fff;
+      box-shadow:0 18px 50px rgba(0,0,0,.14);
+      background:
+        radial-gradient(1200px 420px at 12% -10%,
+          color-mix(in srgb, var(--theme-color-tertiaire) 35%, transparent),
+          transparent 58%
+        ),
+        radial-gradient(900px 380px at 92% 0%,
+          color-mix(in srgb, var(--theme-color-secondaire) 32%, transparent),
+          transparent 60%
+        ),
+        radial-gradient(700px 260px at 55% 115%,
+          color-mix(in srgb, var(--theme-color-quaternaire) 18%, transparent),
+          transparent 62%
+        ),
+        linear-gradient(135deg,
+          color-mix(in srgb, var(--theme-color-principal) 92%, #000 8%),
+          color-mix(in srgb, var(--theme-color-principal) 70%, #fff 30%)
+        );
+    }
+    .hero::after{ content:""; position:absolute; inset:0; pointer-events:none;
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,0) 55%); opacity:.85;
+    }
+    .hero .accent{
+      width: 12px; border-radius:999px; background: var(--theme-color-secondaire);
+      box-shadow: 0 0 0 6px color-mix(in srgb, var(--theme-color-secondaire) 18%, transparent);
+      flex: 0 0 auto;
+    }
+    .chip{
+      display:inline-flex; align-items:center; gap:.45rem;
+      padding:.28rem .65rem; border-radius:999px; font-size:.82rem;
+      background: rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.14);
+      color: rgba(255,255,255,.92);
+      white-space: nowrap;
+    }
+    .chip i{ color: var(--theme-color-secondaire); }
+
+    /* ============= Cards premium ============= */
+    .cardx{
+      background:var(--panel); border:1px solid var(--stroke); border-radius:var(--radius);
+      box-shadow:0 10px 28px rgba(15,23,42,.08); overflow:hidden;
+    }
+    .cardx-h{
+      padding:.95rem 1.05rem;
+      display:flex; align-items:center; justify-content:space-between; gap:1rem;
+      background: linear-gradient(180deg, rgba(0,0,0,.015), transparent);
+      border-bottom:1px solid var(--stroke);
+    }
+    .cardx-title{
+      margin:0; font-weight:900; letter-spacing:-.01em; color:var(--ink);
+      display:flex; align-items:center; gap:.6rem;
+    }
+    .subtle{
+      color: rgba(15,23,42,.55);
+      font-size:.88rem;
+    }
+
+    .pill{
+      display:inline-flex; align-items:center; gap:.35rem;
+      padding:.30rem .60rem; border-radius:999px; font-weight:900; font-size:.78rem;
+      border:1px solid rgba(0,0,0,.08);
+      background: rgba(0,0,0,.03);
+      white-space: nowrap;
+    }
+    .pill.ok{ background: rgba(25,135,84,.12); border-color: rgba(25,135,84,.18); color:#0a4b2e; }
+    .pill.ko{ background: rgba(220,53,69,.10); border-color: rgba(220,53,69,.18); color:#7a1420; }
+    .pill.warn{ background: rgba(255,193,7,.16); border-color: rgba(255,193,7,.22); color:#6b4b00; }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace; }
+
+    /* ============= Layout ============= */
+    .geo-shell{
+      display:grid;
+      grid-template-columns: 460px 1fr;
+      gap: 1rem;
+      align-items:start;
+    }
+    @media (max-width: 992px){ .geo-shell{ grid-template-columns: 1fr; } }
+
+    /* toolbar sticky */
+    .toolbar{
+      position: sticky; top: 12px; z-index: 10;
+      background: rgba(255,255,255,.82);
+      border: 1px solid var(--stroke);
+      border-radius: 16px;
+      box-shadow: 0 18px 46px rgba(15,23,42,.10);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .toolbar .inner{
+      padding:.75rem .85rem;
+      display:flex; gap:.6rem; align-items:center; justify-content:space-between; flex-wrap:wrap;
+    }
+    .toolbar .search{
+      min-width: 320px;
+      flex: 1 1 320px;
+    }
+    .toolbar .kpis{
+      display:flex; gap:.5rem; flex-wrap:wrap; align-items:center;
+    }
+
+    /* list items premium */
+    .geo-list{
+      max-height: calc(100vh - 340px);
+      overflow:auto;
+      padding: .85rem;
+      display:grid;
+      gap:.65rem;
+    }
+    .geo-item{
+      border:1px solid var(--stroke);
+      border-radius: 16px;
+      padding: .75rem .85rem;
+      background:
+        radial-gradient(700px 160px at 10% 0%, rgba(255,193,7,.09), transparent 55%),
+        rgba(255,255,255,.90);
+      cursor:pointer;
+      transition: .16s ease;
+      position: relative;
+    }
+    .geo-item:hover{
+      transform: translateY(-1px);
+      box-shadow: 0 14px 30px rgba(15,23,42,.10);
+      border-color: rgba(255,193,7,.30);
+    }
+    .geo-item.active{
+      outline: 2px solid rgba(13,110,253,.35);
+      box-shadow: 0 18px 40px rgba(13,110,253,.12);
+    }
+    .geo-item .addr{ font-weight: 900; letter-spacing:-.01em; color: var(--ink); }
+    .geo-item .hash{ color: rgba(15,23,42,.55); font-size:.82rem; }
+    .geo-item .meta{ display:flex; gap:.45rem; flex-wrap:wrap; margin-top:.45rem; }
+    .badge-soft{
+      display:inline-flex; align-items:center; gap:.35rem;
+      padding:.25rem .55rem; border-radius: 999px;
+      border:1px solid rgba(0,0,0,.10);
+      background: rgba(0,0,0,.03);
+      font-size:.78rem;
+      white-space: nowrap;
+    }
+
+    /* Right editor + map */
+    .form-label{ font-weight: 800; font-size:.85rem; color: rgba(15,23,42,.70); }
+    .help{ color: rgba(15,23,42,.55); font-size:.85rem; }
+    #geoMap{
+      height: calc(100vh - 330px);
+      min-height: 520px;
+      border-radius: 18px;
+      border: 1px solid var(--stroke);
+      box-shadow: 0 18px 55px rgba(15,23,42,.10);
+      overflow: hidden;
+    }
+    /* protège Leaflet des styles globaux Bootstrap */
+    .leaflet-container img{ max-width: none !important; }
+
+    /* Buttons premium */
+    .btn-premium{
+      border-radius: 14px;
+      font-weight: 900;
+      box-shadow: 0 10px 22px rgba(15,23,42,.10);
+    }
+    .btn-premium.btn-primary{
+      background: linear-gradient(135deg,
+        color-mix(in srgb, var(--theme-color-principal) 76%, #000 24%),
+        color-mix(in srgb, var(--theme-color-principal) 62%, #fff 38%)
+      );
+      border: 1px solid rgba(255,255,255,.18);
+    }
+    .btn-premium.btn-outline-secondary{
+      background: rgba(255,255,255,.85);
+      border-color: rgba(0,0,0,.12);
+    }
+    .btn-premium:disabled{ opacity: .55; box-shadow: none; }
+
+    /* small footer note */
+    .note{
+      padding:.55rem .65rem;
+      border-radius: 14px;
+      border: 1px dashed rgba(0,0,0,.14);
+      background: rgba(0,0,0,.02);
+      color: rgba(15,23,42,.62);
+      font-size: .86rem;
+    }
+
+
+
+
+    /* ===== LIST: ultra premium + textes longs ===== */
+
+.geo-top{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:.75rem;
+}
+
+.geo-main{ min-width: 0; flex: 1 1 auto; } /* CRUCIAL pour wrap en flex */
+
+.geo-side{
+  flex: 0 0 auto;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:.35rem;
+  padding-left:.25rem;
+}
+
+.idchip{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:.18rem .50rem;
+  border-radius:999px;
+  font-weight:900;
+  font-size:.76rem;
+  border:1px solid rgba(0,0,0,.08);
+  background: rgba(0,0,0,.03);
+  color: rgba(15,23,42,.70);
+}
+
+.addr{
+  font-weight: 950;
+  letter-spacing: -.012em;
+  color: var(--ink);
+  line-height: 1.15;
+
+  /* 2 lignes par défaut */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+
+  /* wrap intelligent */
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.display{
+  margin-top:.30rem;
+  color: rgba(15,23,42,.62);
+  font-size:.86rem;
+  line-height: 1.15;
+
+  /* 1 ligne par défaut (souvent long) */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  overflow: hidden;
+
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* Quand actif : on montre plus (adresse complète + display sur 2 lignes) */
+.geo-item.active .addr{
+  -webkit-line-clamp: 6; /* "quasi complet" sans exploser la carte */
+}
+.geo-item.active .display{
+  -webkit-line-clamp: 3;
+}
+
+.geo-bottom{
+  margin-top: .55rem;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:.6rem;
+}
+
+.hash{
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size:.82rem;
+  color: rgba(15,23,42,.55);
+
+  /* 1 ligne + ellipsis */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.copy-btn{
+  flex: 0 0 auto;
+  border: 1px solid rgba(0,0,0,.10);
+  background: rgba(255,255,255,.85);
+  border-radius: 12px;
+  width: 36px;
+  height: 32px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow: 0 10px 18px rgba(15,23,42,.06);
+  transition: .15s ease;
+}
+.copy-btn:hover{
+  transform: translateY(-1px);
+  border-color: rgba(255,193,7,.35);
+  background: rgba(255,193,7,.08);
+}
+
+/* meta plus lisible */
+.geo-item .meta{
+  margin-top: .55rem;
+  display:flex;
+  flex-wrap:wrap;
+  gap:.45rem;
+}
+
+/* confort: hit area + léger highlight */
+.geo-item{
+  padding: .85rem .95rem;
+}
+.geo-item::after{
+  content:"";
+  position:absolute; inset:0;
+  border-radius: 16px;
+  pointer-events:none;
+  opacity:0;
+  background: radial-gradient(600px 160px at 0% 0%, rgba(13,110,253,.10), transparent 55%);
+  transition:.16s ease;
+}
+.geo-item:hover::after{ opacity:1; }
+.geo-item.active::after{ opacity:1; }
+
+/* mobile : autorise 3 lignes */
+@media (max-width: 576px){
+  .addr{ -webkit-line-clamp: 3; }
+  .geo-item.active .addr{ -webkit-line-clamp: 10; }
+}
+
+/* ================================
+   PLEINE HAUTEUR (sans bloquer la page) - FIX BLANC
+   ================================ */
+
+/* La page peut scroller, mais la zone 2 colonnes a une hauteur mini */
+.geo-shell{
+  display:grid;
+  grid-template-columns: 460px 1fr;
+  gap: 1rem;
+  min-height: calc(100vh - 320px);
+  align-items: stretch;
+}
+
+@media (max-width: 992px){
+  .geo-shell{
+    grid-template-columns: 1fr;
+    min-height: 0;
+    align-items: start;
+  }
+}
+
+/* ✅ Les cards deviennent "containers" bornés */
+@media (min-width: 992px){
+  .geo-shell > .cardx{
+    max-height: calc(100vh - 320px); /* même valeur que min-height */
+    display:flex;
+    flex-direction:column;
+    min-height:0; /* CRUCIAL */
+  }
+
+  /* ✅ La liste prend TOUT le reste => plus de blanc */
+  .geo-list{
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-height: none !important; /* IMPORTANT : on retire le max-height */
+  }
+}
+
+/* Mobile : pas de sidebar scroll interne */
+@media (max-width: 992px){
+  .geo-list{
+    max-height: none !important;
+    overflow: visible;
+  }
+}
+
+/* panneau droit : évite de piéger le scroll */
+#rightPanel{
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+}
+#rightPanel .cardx-h{ flex:0 0 auto; }
+#rightPanel > .p-3{
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: visible;
+}
+
+
+
+/* ✅ LAISSE LA PAGE SCROLLER */
+.geo-shell{
+  min-height: 0;           /* on enlève l'effet "plein écran" qui enferme */
+  align-items: start;
+}
+
+/* ✅ On borne seulement la carte de gauche (sidebar) */
+@media (min-width: 992px){
+  .geo-shell > .cardx:first-child{
+    max-height: calc(100vh - 320px); /* ajuste selon ton hero+toolbar */
+    display:flex;
+    flex-direction:column;
+    min-height:0;
+  }
+
+  .geo-shell > .cardx:first-child .geo-list{
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    max-height: none !important; /* important */
+  }
+
+  /* ✅ La carte de droite : hauteur AUTO, pas bornée */
+  .geo-shell > .cardx#rightPanel{
+    max-height: none !important;
+  }
+}
+
+/* ✅ la map ne doit PAS dépendre du viewport (sinon elle écrase) */
+#geoMap{
+  height: 520px;      /* valeur stable */
+  min-height: 520px;
+}
+
+/* option : si tu veux qu’elle grandisse sur grands écrans */
+@media (min-width: 1400px){
+  #geoMap{ height: 640px; min-height: 640px; }
+}
+
+
+  </style>
+{% endblock %}
+
+{% block body %}
+
+  {# ========= HERO ========= #}
+  <div class="hero p-3 mb-4 d-flex gap-3">
+    <div class="accent"></div>
+
+    <div class="flex-grow-1 position-relative" style="z-index:2">
+      <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+        <div>
+          <h2 class="m-0 fw-bold">
+            <i class="bi bi-pin-map-fill me-2" style="color:var(--theme-color-secondaire)"></i>
+            Réconciliation des adresses
+          </h2>
+          <div class="opacity-75 mt-1">
+            Corrige les positions : recherche d’adresse, déplacement du marqueur, puis sauvegarde.
+          </div>
+
+          <div class="d-flex gap-2 flex-wrap mt-3">
+            <span class="chip"><i class="bi bi-building"></i> {{ entite.nom }}</span>
+            <span class="chip"><i class="bi bi-geo-alt"></i> {{ rows|length }} adresse{{ rows|length>1?'s':'' }}</span>
+            <span class="chip"><i class="bi bi-lightning-charge"></i> Correction manuelle</span>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2 align-items-center flex-wrap">
+          {# Toolbar inline (optionnel) #}
+          <a class="btn btn-outline-light btn-sm fw-semibold" href="{{ path('app_administrateur_fuel_dashboard', { entite: entite.id }) }}">
+            <i class="bi bi-arrow-left me-1"></i> Retour
+          </a>
+          <span class="chip"><i class="bi bi-info-circle"></i> Clique une ligne → corrige → sauvegarde</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% include 'flagMessage.html.twig' %}
+
+  {# ========= STICKY TOOLBAR ========= #}
+  <div class="toolbar mb-3">
+    <div class="inner">
+      <form id="filterForm" class="d-flex gap-2 align-items-center flex-wrap flex-grow-1" method="get" style="width:100%">
+        <div class="search input-group">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input id="qInput" class="form-control" name="q" value="{{ q }}" placeholder="Rechercher (adresse / display / hash)">
+          {# tu peux le garder en fallback, mais on va le cacher #}
+          <button id="btnFilter" class="btn btn-outline-secondary d-none" type="submit">
+            <i class="bi bi-funnel"></i> Filtrer
+          </button>
+        </div>
+
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+          <div class="form-check d-flex align-items-center gap-2 m-0">
+            <input class="form-check-input" type="checkbox" id="missing" name="missing" value="1" {{ onlyMissing ? 'checked' : '' }}>
+            <label class="form-check-label fw-semibold" for="missing">Sans lat/lng</label>
+          </div>
+
+          <div class="kpis">
+            <span class="pill"><i class="bi bi-collection"></i> {{ rows|length }}</span>
+
+            {# calc rapide en twig #}
+            {% set missingCount = 0 %}
+            {% set okCount = 0 %}
+            {% for r in rows %}
+              {% if r.lat is null or r.lng is null %}{% set missingCount = missingCount + 1 %}{% else %}{% set okCount = okCount + 1 %}{% endif %}
+            {% endfor %}
+
+            <span class="pill warn"><i class="bi bi-exclamation-triangle"></i> {{ missingCount }} manquant{{ missingCount>1?'s':'' }}</span>
+            <span class="pill ok"><i class="bi bi-check-circle"></i> {{ okCount }} OK</span>
+            <span class="pill"><i class="bi bi-crosshair"></i> <span id="selectedBadge">Aucune</span></span>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="geo-shell">
+
+    {# ========= LISTE ========= #}
+    <div class="cardx">
+      <div class="cardx-h">
+        <h5 class="cardx-title"><i class="bi bi-list-ul text-warning"></i> Adresses</h5>
+        <div class="subtle">Sélectionne une ligne pour éditer</div>
+      </div>
+
+      <div class="geo-list" id="geoList">
+        {% for r in rows %}
+          <div class="geo-item"
+            data-id="{{ r.id }}"
+            data-address="{{ r.address|e('html_attr') }}"
+            data-display="{{ (r.displayName ?? '')|e('html_attr') }}"
+            data-lat="{{ r.lat is not null ? r.lat : '' }}"
+            data-lng="{{ r.lng is not null ? r.lng : '' }}"
+            data-hash="{{ r.addrHash|e('html_attr') }}"
+            data-provider="{{ (r.provider ?? '')|e('html_attr') }}">
+
+          <div class="geo-top">
+            <div class="geo-main">
+              <div class="addr" title="{{ r.address|e('html_attr') }}">{{ r.address }}</div>
+
+              {% if r.displayName %}
+                <div class="display" title="{{ r.displayName|e('html_attr') }}">
+                  {{ r.displayName }}
+                </div>
+              {% endif %}
+            </div>
+
+            <div class="geo-side">
+              {% if r.lat is null or r.lng is null %}
+                <span class="pill warn"><i class="bi bi-exclamation-triangle"></i> Manquant</span>
+              {% else %}
+                <span class="pill ok"><i class="bi bi-check-circle"></i> OK</span>
+              {% endif %}
+              <span class="idchip">#{{ r.id }}</span>
+            </div>
+          </div>
+
+
+          <div class="meta">
+            <span class="badge-soft"><i class="bi bi-geo"></i> lat: <span class="mono">{{ r.lat ?? '-' }}</span></span>
+            <span class="badge-soft"><i class="bi bi-geo"></i> lng: <span class="mono">{{ r.lng ?? '-' }}</span></span>
+            {% if r.provider %}
+              <span class="badge-soft"><i class="bi bi-cpu"></i> <span class="mono">{{ r.provider }}</span></span>
+            {% endif %}
+          </div>
+
+        </div>
+        {% else %}
+          <div class="text-center py-5 text-muted">
+            <i class="bi bi-inboxes fs-1 d-block mb-2"></i>
+            <div class="fw-semibold">Aucune adresse</div>
+            <div class="small">Change le filtre ou la période.</div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    {# ========= EDIT + MAP ========= #}
+    <div class="cardx" id="rightPanel">
+      <div class="cardx-h">
+        <h5 class="cardx-title"><i class="bi bi-sliders text-warning"></i> Carte & correction</h5>
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-secondary btn-sm btn-premium" type="button" id="btnUseMapCenter" disabled>
+            <i class="bi bi-crosshair me-1"></i> Utiliser le centre
+          </button>
+          <button class="btn btn-primary btn-sm btn-premium" type="button" id="btnSave" disabled>
+            <i class="bi bi-check2-circle me-1"></i> Sauvegarder
+          </button>
+        </div>
+      </div>
+
+      <div class="p-3 p-md-4">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label mb-1">Recherche adresse (Nominatim)</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-search"></i></span>
+              <input type="text" class="form-control" id="searchAddress" placeholder="Tape une adresse puis Entrée…" disabled>
+              <button class="btn btn-outline-secondary btn-premium" type="button" id="btnSearch" disabled>
+                Rechercher
+              </button>
+              <button class="btn btn-outline-secondary btn-premium" type="button" id="btnReverse" disabled>
+                Reverse
+              </button>
+            </div>
+            <div class="help mt-1">Tu peux aussi cliquer la carte ou déplacer le marqueur : lat/lng se met à jour.</div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label mb-1">Adresse (stockée)</label>
+            <input class="form-control" id="fieldAddress" placeholder="Adresse…" disabled>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label mb-1">Display name (optionnel)</label>
+            <input class="form-control" id="fieldDisplay" placeholder="Display…" disabled>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label mb-1">Latitude</label>
+            <input class="form-control mono" id="fieldLat" placeholder="lat" disabled>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label mb-1">Longitude</label>
+            <input class="form-control mono" id="fieldLng" placeholder="lng" disabled>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label mb-1">Infos</label>
+            <input class="form-control mono" id="fieldMeta" placeholder="id / hash / provider" disabled>
+          </div>
+
+          <div class="col-12">
+            <div id="geoMap"></div>
+            <div class="note mt-3">
+              <i class="bi bi-lightbulb me-1"></i>
+              Astuce : clique sur la carte pour poser un point, puis <b>Reverse</b> pour proposer une adresse.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+{% endblock %}
+
+{% block javascripts %}
+  {{ parent() }}
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const mapEl = document.getElementById('geoMap');
+    if (!mapEl) return;
+
+    const csrf = "{{ csrf_token('geo_reconcile') }}";
+    const updateUrlTpl = "{{ path('app_administrateur_geo_cache_update', { entite: entite.id, id: 'ID' }) }}";
+
+    const elList = document.getElementById('geoList');
+    const elBadge = document.getElementById('selectedBadge');
+
+    const btnSave = document.getElementById('btnSave');
+    const btnSearch = document.getElementById('btnSearch');
+    const btnReverse = document.getElementById('btnReverse');
+    const btnUseMapCenter = document.getElementById('btnUseMapCenter');
+
+    const fieldAddress = document.getElementById('fieldAddress');
+    const fieldDisplay = document.getElementById('fieldDisplay');
+    const fieldLat = document.getElementById('fieldLat');
+    const fieldLng = document.getElementById('fieldLng');
+    const fieldMeta = document.getElementById('fieldMeta');
+    const searchAddress = document.getElementById('searchAddress');
+    const rightPanel = document.getElementById('rightPanel');
+
+    let selected = null;
+    let marker = null;
+
+
+
+    document.addEventListener('click', async (e) => {
+      const btn = e.target.closest('.copy-btn');
+      if (!btn) return;
+
+      const text = btn.getAttribute('data-copy') || '';
+      if (!text) return;
+
+      try{
+        await navigator.clipboard.writeText(text);
+        btn.classList.add('is-copied');
+        setTimeout(() => btn.classList.remove('is-copied'), 700);
+      } catch {
+        // fallback
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+      }
+    });
+
+    const map = L.map(mapEl, { zoomControl: true }).setView([46.6, 2.4], 6);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+
+
+
+    // ============================
+    // Auto-filter (no click needed)
+    // ============================
+    const filterForm = document.getElementById('filterForm');
+    const qInput = document.getElementById('qInput');
+    const missingCb = document.getElementById('missing');
+
+    function submitFilters(){
+      if (!filterForm) return;
+
+      // évite les submits multiples (double frappe / double event)
+      if (filterForm.dataset.submitting === '1') return;
+      filterForm.dataset.submitting = '1';
+
+      filterForm.requestSubmit(); // mieux que form.submit()
+    }
+
+    function debounce(fn, delay){
+      let t = null;
+      return (...args) => {
+        clearTimeout(t);
+        t = setTimeout(() => fn(...args), delay);
+      };
+    }
+
+    // 1) Tape -> submit après 450ms sans frappe
+    if (qInput){
+      const debounced = debounce(() => submitFilters(), 450);
+
+      qInput.addEventListener('input', () => {
+        debounced();
+      });
+
+      // 2) Enter -> submit immédiat
+      qInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter'){
+          e.preventDefault();
+          submitFilters();
+        }
+      });
+    }
+
+    // 3) Checkbox -> submit immédiat
+    if (missingCb){
+      missingCb.addEventListener('change', () => submitFilters());
+    }
+
+    function invalidateSoon(){
+      // utile si sidebar/scroll/layout bouge
+      setTimeout(() => map.invalidateSize(), 80);
+    }
+    invalidateSoon();
+
+    // ResizeObserver => map toujours clean
+    if (window.ResizeObserver && rightPanel) {
+      const ro = new ResizeObserver(() => invalidateSoon());
+      ro.observe(rightPanel);
+    }
+
+    function setEnabled(enabled){
+      btnSave.disabled = !enabled;
+      btnReverse.disabled = !enabled;
+      btnUseMapCenter.disabled = !enabled;
+      fieldAddress.disabled = !enabled;
+      fieldDisplay.disabled = !enabled;
+      fieldLat.disabled = !enabled;
+      fieldLng.disabled = !enabled;
+      searchAddress.disabled = !enabled;
+      btnSearch.disabled = !enabled;
+    }
+    setEnabled(false);
+
+    function updateLatLng(lat, lng){
+      if (!selected) return;
+      selected.lat = lat;
+      selected.lng = lng;
+      fieldLat.value = Number(lat).toFixed(6);
+      fieldLng.value = Number(lng).toFixed(6);
+    }
+
+    function setMarker(lat, lng, fly=true){
+      const p = [lat, lng];
+      if (!marker){
+        marker = L.marker(p, { draggable: true }).addTo(map);
+        marker.on('dragend', () => {
+          const ll = marker.getLatLng();
+          updateLatLng(ll.lat, ll.lng);
+        });
+      } else {
+        marker.setLatLng(p);
+      }
+      if (fly) map.flyTo(p, Math.max(map.getZoom(), 14), { duration: 0.6 });
+    }
+
+    function selectItem(div){
+      document.querySelectorAll('.geo-item.active').forEach(x => x.classList.remove('active'));
+      div.classList.add('active');
+
+      selected = {
+        id: div.dataset.id,
+        address: div.dataset.address || '',
+        display: div.dataset.display || '',
+        lat: div.dataset.lat ? parseFloat(div.dataset.lat) : null,
+        lng: div.dataset.lng ? parseFloat(div.dataset.lng) : null,
+        hash: div.dataset.hash || '',
+        provider: div.dataset.provider || ''
+      };
+
+      elBadge.textContent = `#${selected.id}`;
+      fieldAddress.value = selected.address;
+      fieldDisplay.value = selected.display;
+      fieldMeta.value = `hash=${selected.hash} | provider=${selected.provider || '-'}`;
+
+      if (selected.lat !== null && selected.lng !== null){
+        fieldLat.value = selected.lat.toFixed(6);
+        fieldLng.value = selected.lng.toFixed(6);
+        setMarker(selected.lat, selected.lng, true);
+      } else {
+        fieldLat.value = '';
+        fieldLng.value = '';
+        map.flyTo([46.6, 2.4], 6, { duration: 0.4 });
+        if (marker) { map.removeLayer(marker); marker = null; }
+      }
+
+      setEnabled(true);
+      invalidateSoon();
+    }
+
+    elList?.addEventListener('click', (e) => {
+      const div = e.target.closest('.geo-item');
+      if (div) selectItem(div);
+    });
+
+    // Auto-select 1ère ligne (ultra confort)
+    const first = document.querySelector('.geo-item');
+    if (first) selectItem(first);
+
+    map.on('click', (e) => {
+      if (!selected) return;
+      setMarker(e.latlng.lat, e.latlng.lng, false);
+      updateLatLng(e.latlng.lat, e.latlng.lng);
+    });
+
+    btnUseMapCenter.addEventListener('click', () => {
+      if (!selected) return;
+      const c = map.getCenter();
+      setMarker(c.lat, c.lng, false);
+      updateLatLng(c.lat, c.lng);
+    });
+
+    async function nominatimSearch(q){
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`;
+      const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      if (!res.ok) throw new Error('Nominatim search failed');
+      const arr = await res.json();
+      return arr?.[0] || null;
+    }
+
+    async function nominatimReverse(lat, lng){
+      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}`;
+      const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      if (!res.ok) throw new Error('Nominatim reverse failed');
+      return await res.json();
+    }
+
+    async function runSearch(){
+      if (!selected) return;
+      const q = (searchAddress.value || '').trim();
+      if (!q) return;
+
+      btnSearch.disabled = true;
+      try{
+        const hit = await nominatimSearch(q);
+        if (!hit){ alert('Aucun résultat.'); return; }
+
+        const lat = parseFloat(hit.lat);
+        const lng = parseFloat(hit.lon);
+
+        setMarker(lat, lng, true);
+        updateLatLng(lat, lng);
+        fieldDisplay.value = hit.display_name || fieldDisplay.value || '';
+      } catch (e){
+        console.error(e);
+        alert("Erreur recherche Nominatim.");
+      } finally{
+        btnSearch.disabled = false;
+      }
+    }
+
+    btnSearch.addEventListener('click', runSearch);
+    searchAddress.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter'){ e.preventDefault(); runSearch(); }
+    });
+
+    btnReverse.addEventListener('click', async () => {
+      if (!selected || selected.lat === null || selected.lng === null) return;
+      btnReverse.disabled = true;
+      try{
+        const r = await nominatimReverse(selected.lat, selected.lng);
+        if (r?.display_name) fieldDisplay.value = r.display_name;
+      } catch (e){
+        console.error(e);
+        alert("Erreur reverse Nominatim.");
+      } finally{
+        btnReverse.disabled = false;
+      }
+    });
+
+    btnSave.addEventListener('click', async () => {
+      if (!selected) return;
+
+      const payload = {
+        lat: selected.lat,
+        lng: selected.lng,
+        address: fieldAddress.value.trim(),
+        displayName: fieldDisplay.value.trim() || null
+      };
+
+      btnSave.disabled = true;
+      try{
+        const url = updateUrlTpl.replace('ID', selected.id);
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+          body: JSON.stringify(payload)
+        });
+
+        const json = await res.json();
+        if (!res.ok || !json.ok){
+          alert(json.error || 'Erreur sauvegarde.');
+          return;
+        }
+
+        const div = document.querySelector(`.geo-item[data-id="${selected.id}"]`);
+        if (div){
+          div.dataset.lat = (json.lat ?? '');
+          div.dataset.lng = (json.lng ?? '');
+          div.dataset.address = (json.address ?? '');
+          div.dataset.display = (json.displayName ?? '');
+          div.dataset.provider = (json.provider ?? '');
+
+          div.querySelector('.addr').textContent = json.address ?? div.dataset.address;
+
+          // remplace statut en OK
+          const pill = div.querySelector('.pill');
+          if (pill){
+            pill.className = 'pill ok';
+            pill.innerHTML = '<i class="bi bi-check-circle"></i> OK';
+          }
+        }
+
+        selected.provider = json.provider || 'manual';
+        fieldMeta.value = `hash=${selected.hash} | provider=${selected.provider}`;
+      } catch (e){
+        console.error(e);
+        alert("Erreur réseau.");
+      } finally{
+        btnSave.disabled = false;
+      }
+    });
+  });
+  </script>
+{% endblock %}

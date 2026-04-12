@@ -1,0 +1,344 @@
+{# templates/administrateur/transaction/carte/edenred/form.html.twig #}
+{% extends 'base_admin.html.twig' %}
+{% set is_edit = modeEdition ?? false %}
+{% block title %}{{ is_edit ? 'Modifier' : 'Ajouter' }} - Transaction EDENRED{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('dist/css/style.css') }}">
+  <link rel="stylesheet" href="{{ asset('dist/css/formulaire.css') }}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css">
+
+  <style>
+    :root{
+      --theme-color-principal: {{ themeColorPrimaire|default(entite.couleurPrincipal|default('#233342')) }};
+      --theme-color-secondaire: {{ themeColorSecondaire|default(entite.couleurSecondaire|default('#ffc107')) }};
+      --theme-color-tertiaire: {{ themeColorTertiaire|default(entite.couleurTertiaire|default('#F0F0F0')) }};
+      --theme-color-quaternaire: {{ couleurQuaternaire|default(entite.couleurQuaternaire|default('#000000')) }};
+
+      --bg:#f5f7fb; --panel:#fff; --ink:#0f172a; --muted:#64748b;
+      --stroke: rgba(15, 23, 42, .10);
+      --shadow: 0 18px 55px rgba(15, 23, 42, .10);
+      --radius: 18px;
+    }
+    body{ background: var(--bg); }
+    .hero{
+      border-radius:22px; position:relative; overflow:hidden; color:#fff;
+      box-shadow:0 18px 50px rgba(0,0,0,.14);
+      background:
+        radial-gradient(1200px 420px at 12% -10%,
+          color-mix(in srgb, var(--theme-color-tertiaire) 35%, transparent),
+          transparent 58%
+        ),
+        radial-gradient(900px 380px at 92% 0%,
+          color-mix(in srgb, var(--theme-color-secondaire) 32%, transparent),
+          transparent 60%
+        ),
+        radial-gradient(700px 260px at 55% 115%,
+          color-mix(in srgb, var(--theme-color-quaternaire) 18%, transparent),
+          transparent 62%
+        ),
+        linear-gradient(135deg,
+          color-mix(in srgb, var(--theme-color-principal) 92%, #000 8%),
+          color-mix(in srgb, var(--theme-color-principal) 70%, #fff 30%)
+        );
+    }
+    .hero::after{ content:""; position:absolute; inset:0; pointer-events:none;
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,0) 55%); opacity:.85;
+    }
+    .accent{
+      width: 12px; border-radius:999px; background: var(--theme-color-secondaire);
+      box-shadow: 0 0 0 6px color-mix(in srgb, var(--theme-color-secondaire) 18%, transparent);
+      flex: 0 0 auto;
+    }
+    .chip{
+      display:inline-flex; align-items:center; gap:.45rem;
+      padding:.28rem .65rem; border-radius:999px; font-size:.82rem;
+      background: rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.14);
+      color: rgba(255,255,255,.92);
+      white-space: nowrap;
+    }
+    .chip i{ color: var(--theme-color-secondaire); }
+
+    .cardx{
+      background: var(--panel);
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      box-shadow: 0 10px 28px rgba(15,23,42,.08);
+      overflow:hidden;
+    }
+    .cardx-h{
+      padding: .95rem 1.05rem;
+      display:flex; align-items:center; justify-content:space-between; gap:1rem;
+      background: linear-gradient(180deg, rgba(0,0,0,.015), transparent);
+      border-bottom: 1px solid var(--stroke);
+    }
+    .cardx-title{
+      margin:0; font-weight:800; letter-spacing:-.01em; color: var(--ink);
+      display:flex; align-items:center; gap:.6rem;
+    }
+    label.form-label{ font-weight: 800; color: var(--ink); }
+    .form-text, .text-muted, .small{ color: var(--muted) !important; }
+    .form-control, .form-select, textarea{
+      border-radius: 14px;
+      border: 1px solid var(--stroke);
+      padding: .65rem .85rem;
+      min-height: 44px;
+    }
+    .form-control:focus, .form-select:focus, textarea:focus{
+      border-color: color-mix(in srgb, var(--theme-color-principal) 55%, var(--stroke));
+      box-shadow: 0 0 0 .2rem color-mix(in srgb, var(--theme-color-principal) 18%, transparent);
+    }
+    .ts-dropdown{ z-index: 9999 !important; }
+    .btn-gradient{
+      border:0; color:#0b1220; font-weight:900;
+      background: linear-gradient(135deg,
+        color-mix(in srgb, var(--theme-color-secondaire) 92%, #fff 8%),
+        color-mix(in srgb, var(--theme-color-secondaire) 70%, var(--theme-color-tertiaire) 30%)
+      );
+      box-shadow: 0 16px 34px rgba(0,0,0,.16);
+      border-radius: 14px;
+      padding: .6rem .95rem;
+    }
+  </style>
+{% endblock %}
+
+{% block javascripts %}
+  {{ parent() }}
+  <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+{% endblock %}
+
+{% block body %}
+  <div class="hero p-3 mb-4 d-flex gap-3">
+    <div class="accent"></div>
+    <div class="flex-grow-1">
+      <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+        <div>
+          <h2 class="m-0 fw-bold">
+            <i class="bi bi-credit-card-2-front-fill me-2" style="color:var(--theme-color-secondaire)"></i>
+            {{ is_edit ? 'Modifier' : 'Ajouter' }} une transaction EDENRED
+          </h2>
+          <div class="opacity-75 mt-1">
+            Entité : <b>{{ entite.nom }}</b>
+            {% if is_edit %} - ID : <b>#{{ t.id }}</b>{% endif %}
+          </div>
+
+          <div class="d-flex gap-2 flex-wrap mt-3">
+            <span class="chip"><i class="bi bi-building"></i> {{ entite.nom }}</span>
+            <span class="chip"><i class="bi bi-shield-check"></i> Administrateur</span>
+            <span class="chip"><i class="bi bi-clock"></i> {{ "now"|date("d/m/Y H:i") }}</span>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <a href="{{ path('app_administrateur_tce_index', { entite: entite.id }) }}"
+             class="btn btn-outline-light btn-sm fw-semibold">
+            <i class="bi bi-arrow-left me-1"></i> Retour
+          </a>
+          <button type="submit" form="tceForm" class="btn btn-light btn-sm fw-semibold">
+            <i class="bi bi-check me-1"></i> Enregistrer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% include 'flagMessage.html.twig' %}
+
+  {{ form_start(form, { attr:{ id:'tceForm', novalidate:'novalidate' } }) }}
+  {{ form_errors(form) }}
+
+  <div class="row g-4">
+    <div class="col-xl-8">
+
+      <div class="cardx mb-4">
+        <div class="cardx-h">
+          <h5 class="cardx-title"><i class="bi bi-sliders2 text-warning"></i> Station / Site</h5>
+          <span class="chip">{{ is_edit ? 'Mode édition' : 'Mode création' }}</span>
+        </div>
+        <div class="p-3 p-md-4">
+          <div class="row g-3">
+            <div class="col-12 col-md-4">{{ form_row(form.enseigne) }}</div>
+            <div class="col-12 col-md-4">{{ form_row(form.siteCodeSite) }}</div>
+            <div class="col-12 col-md-4">{{ form_row(form.siteNumeroTerminal) }}</div>
+            <div class="col-12 col-md-6">{{ form_row(form.siteLibelle) }}</div>
+            <div class="col-12 col-md-6">{{ form_row(form.siteLibelleCourt) }}</div>
+            <div class="col-12 col-md-6">{{ form_row(form.siteType) }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cardx mb-4">
+        <div class="cardx-h">
+          <h5 class="cardx-title"><i class="bi bi-person-vcard text-warning"></i> Client</h5>
+        </div>
+        <div class="p-3 p-md-4">
+          <div class="row g-3">
+            <div class="col-12 col-md-4">{{ form_row(form.clientReference) }}</div>
+            <div class="col-12 col-md-8">{{ form_row(form.clientNom) }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cardx mb-4">
+        <div class="cardx-h">
+          <h5 class="cardx-title"><i class="bi bi-credit-card text-warning"></i> Carte</h5>
+        </div>
+        <div class="p-3 p-md-4">
+          <div class="row g-3">
+            <div class="col-12 col-md-4">{{ form_row(form.carteType) }}</div>
+            <div class="col-12 col-md-4">{{ form_row(form.carteNumero) }}</div>
+            <div class="col-12 col-md-4">{{ form_row(form.carteValidite) }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cardx mb-4">
+        <div class="cardx-h">
+          <h5 class="cardx-title"><i class="bi bi-receipt text-warning"></i> Télécollecte & Transaction</h5>
+        </div>
+        <div class="p-3 p-md-4">
+          <div class="row g-3">
+            <div class="col-12 col-md-4">{{ form_row(form.numeroTlc) }}</div>
+            <div class="col-12 col-md-4">{{ form_row(form.dateTelecollecte) }}</div>
+            <div class="col-12 col-md-4">{{ form_row(form.typeTransaction) }}</div>
+
+            <div class="col-12 col-md-4">{{ form_row(form.numeroTransaction) }}</div>
+            <div class="col-12 col-md-4">{{ form_row(form.dateTransaction) }}</div>
+            <div class="col-12 col-md-4">{{ form_row(form.referenceTransaction) }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cardx mb-4">
+        <div class="cardx-h">
+          <h5 class="cardx-title"><i class="bi bi-basket2 text-warning"></i> Produit & Montants</h5>
+        </div>
+        <div class="p-3 p-md-4">
+          <div class="row g-3">
+            <div class="col-12 col-md-3">{{ form_row(form.codeDevise) }}</div>
+            <div class="col-12 col-md-3">{{ form_row(form.codeProduit) }}</div>
+            <div class="col-12 col-md-6">{{ form_row(form.produit) }}</div>
+
+            <div class="col-12 col-md-3">{{ form_row(form.prixUnitaire) }}</div>
+            <div class="col-12 col-md-3">{{ form_row(form.quantite) }}</div>
+            <div class="col-12 col-md-3">{{ form_row(form.montantHt) }}</div>
+            <div class="col-12 col-md-3">{{ form_row(form.montantTtc) }}</div>
+
+            <div class="col-12 col-md-4">{{ form_row(form.soldeApres) }}</div>
+          </div>
+          <div class="form-text mt-2">
+            Astuce : tu peux corriger une valeur importée sans relancer l’import.
+          </div>
+        </div>
+      </div>
+
+      <div class="cardx mb-4">
+        <div class="cardx-h">
+          <h5 class="cardx-title"><i class="bi bi-truck-front text-warning"></i> Véhicule / Chauffeur</h5>
+        </div>
+        <div class="p-3 p-md-4">
+          <div class="row g-3">
+            <div class="col-12 col-md-4">{{ form_row(form.codeVehicule) }}</div>
+            <div class="col-12 col-md-4">{{ form_row(form.immatriculation) }}</div>
+            <div class="col-12 col-md-4">{{ form_row(form.kilometrage) }}</div>
+
+            <div class="col-12 col-md-6">{{ form_row(form.codeChauffeur) }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cardx mb-4">
+        <div class="cardx-h">
+          <h5 class="cardx-title"><i class="bi bi-shield-exclamation text-warning"></i> Réponse / Autorisations</h5>
+        </div>
+        <div class="p-3 p-md-4">
+          <div class="row g-3">
+            <div class="col-12 col-md-4">{{ form_row(form.codeReponse) }}</div>
+            <div class="col-12 col-md-4">{{ form_row(form.numeroOpposition) }}</div>
+            <div class="col-12 col-md-4">{{ form_row(form.numeroAutorisation) }}</div>
+            <div class="col-12">{{ form_row(form.motifAutorisation) }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cardx mb-4">
+        <div class="cardx-h">
+          <h5 class="cardx-title"><i class="bi bi-gear text-warning"></i> Modes / Facturation</h5>
+        </div>
+        <div class="p-3 p-md-4">
+          <div class="row g-3">
+            <div class="col-12 col-md-4">{{ form_row(form.modeTransaction) }}</div>
+            <div class="col-12 col-md-4">{{ form_row(form.modeVente) }}</div>
+            <div class="col-12 col-md-4">{{ form_row(form.modeValidation) }}</div>
+
+            <div class="col-12 col-md-6">{{ form_row(form.facturationClient) }}</div>
+            <div class="col-12 col-md-6">{{ form_row(form.facturationSite) }}</div>
+
+            <div class="col-12 col-md-6">{{ form_row(form.numeroFacture) }}</div>
+            <div class="col-12 col-md-6">{{ form_row(form.avoirGerant) }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-end gap-2">
+        <a href="{{ path('app_administrateur_tce_index', { entite: entite.id }) }}" class="btn btn-secondary">
+          <i class="bi bi-arrow-left"></i> Retour
+        </a>
+        <button type="submit" class="btn btn-gradient">
+          <i class="bi bi-check"></i> {{ is_edit ? 'Enregistrer les modifications' : 'Créer la transaction' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="col-xl-4">
+      <div class="cardx mb-4">
+        <div class="cardx-h">
+          <h5 class="cardx-title"><i class="bi bi-link-45deg text-warning"></i> Liaisons</h5>
+        </div>
+        <div class="p-3 p-md-4">
+          <div class="row g-3">
+            <div class="col-12">{{ form_row(form.engin) }}</div>
+            <div class="col-12">{{ form_row(form.utilisateur) }}</div>
+          </div>
+          <div class="small text-muted mt-2">
+            Lie manuellement la transaction à un engin/employé si le matching automatique n’a pas trouvé.
+          </div>
+        </div>
+      </div>
+
+      <div class="cardx mb-4">
+        <div class="cardx-h">
+          <h5 class="cardx-title"><i class="bi bi-database text-warning"></i> Métadonnées import</h5>
+        </div>
+        <div class="p-3 p-md-4">
+          <div class="row g-3">
+            <div class="col-12">{{ form_row(form.sourceFilename) }}</div>
+            <div class="col-12 col-md-6">{{ form_row(form.sourceRow) }}</div>
+            <div class="col-12 col-md-6">{{ form_row(form.importKey) }}</div>
+            <div class="col-12">{{ form_row(form.importedAt) }}</div>
+          </div>
+          <div class="small text-muted mt-2">
+            À modifier seulement si tu sais ce que tu fais (anti-doublon).
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {{ form_end(form) }}
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('.js-tomselect').forEach((el) => {
+        if (el.tomselect) return;
+        new TomSelect(el, {
+          create: false,
+          allowEmptyOption: true,
+          plugins: { clear_button: { title: 'Effacer' } }
+        });
+      });
+    });
+  </script>
+{% endblock %}

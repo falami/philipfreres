@@ -1,0 +1,130 @@
+{# templates/administrateur/utilisateur_external_id/import.html.twig #}
+{% extends 'base_admin.html.twig' %}
+{% block title %}Import — IDs externes Utilisateurs{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('dist/css/style.css') }}">
+  <link rel="stylesheet" href="{{ asset('dist/css/formulaire.css') }}">
+  <style>
+    :root{
+      --theme-color-principal: {{ themeColorPrimaire|default(entite.couleurPrincipal|default('#233342')) }};
+      --theme-color-secondaire: {{ themeColorSecondaire|default(entite.couleurSecondaire|default('#ffc107')) }};
+      --bg:#f5f7fb; --panel:#fff; --ink:#0f172a; --muted:#64748b; --stroke: rgba(15,23,42,.10);
+      --radius: 18px;
+    }
+    body{ background:var(--bg); }
+    .hero{
+      border-radius:22px; padding:1.2rem; position:relative; overflow:hidden; color:#fff;
+      background:
+        radial-gradient(900px 380px at 92% 0%, color-mix(in srgb, var(--theme-color-secondaire) 32%, transparent), transparent 60%),
+        linear-gradient(135deg,
+          color-mix(in srgb, var(--theme-color-principal) 92%, #000 8%),
+          color-mix(in srgb, var(--theme-color-principal) 70%, #fff 30%)
+        );
+    }
+    .accent{ width:12px; border-radius:999px; background:var(--theme-color-secondaire); }
+    .chip{ display:inline-flex; align-items:center; gap:.45rem; padding:.28rem .65rem; border-radius:999px; font-size:.82rem;
+      background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.14); color:rgba(255,255,255,.92); white-space:nowrap; }
+    .chip i{ color:var(--theme-color-secondaire); }
+    .cardx{ background:var(--panel); border:1px solid var(--stroke); border-radius:var(--radius); overflow:hidden; }
+    .cardx-h{ padding:.95rem 1.05rem; display:flex; align-items:center; justify-content:space-between; gap:1rem;
+      background:linear-gradient(180deg, rgba(0,0,0,.015), transparent); border-bottom:1px solid var(--stroke); }
+    .cardx-title{ margin:0; font-weight:800; color:var(--ink); display:flex; align-items:center; gap:.6rem; }
+  </style>
+{% endblock %}
+
+{% block body %}
+
+  <div class="hero p-3 mb-4 d-flex gap-3">
+    <div class="accent"></div>
+    <div class="flex-grow-1">
+      <h2 class="m-0 fw-bold">
+        <i class="bi bi-person-badge me-2" style="color:var(--theme-color-secondaire)"></i>
+        Import — IDs externes des utilisateurs
+      </h2>
+      <div class="opacity-75 mt-1">
+        Associe un identifiant externe (ALX / EDENRED / TOTAL) à un utilisateur existant.
+      </div>
+      <div class="d-flex gap-2 flex-wrap mt-3">
+        <span class="chip"><i class="bi bi-building"></i> {{ entite.nom }}</span>
+        <span class="chip"><i class="bi bi-people-fill"></i> Utilisateurs</span>
+        <span class="chip"><i class="bi bi-diagram-3-fill"></i> External IDs</span>
+      </div>
+    </div>
+  </div>
+
+  {% include 'flagMessage.html.twig' %}
+
+  <div class="cardx">
+    <div class="cardx-h">
+      <h5 class="cardx-title"><i class="bi bi-upload text-warning"></i> Fichier à importer</h5>
+
+      <div class="d-flex gap-2 flex-wrap">
+        <span class="chip">provider + value + utilisateur_id/email/nom+prenom</span>
+        <a class="chip text-decoration-none"
+           href="{{ path('app_administrateur_utilisateur_external_id_import_example', {entite: entite.id}) }}">
+          <i class="bi bi-download"></i> Télécharger un exemple
+        </a>
+      </div>
+    </div>
+
+    <div class="p-3 p-md-4">
+      {{ form_start(form, {attr:{novalidate:'novalidate'}}) }}
+        {{ form_row(form.file) }}
+
+        <div class="form-text mt-2">
+          Colonnes recommandées :
+          <strong>email</strong> (ou <strong>utilisateur_id</strong> / <strong>nom</strong> + <strong>prenom</strong>),
+          <strong>provider</strong>, <strong>value</strong>, <strong>active</strong>, <strong>note</strong>.
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mt-3">
+          <a href="{{ path('app_administrateur_utilisateur_index', {entite: entite.id}) }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Retour
+          </a>
+          <button class="btn btn-gradient" type="submit">
+            <i class="bi bi-play-fill"></i> Lancer l’import
+          </button>
+        </div>
+      {{ form_end(form) }}
+    </div>
+  </div>
+
+  {% if result %}
+    <div class="cardx mt-3">
+      <div class="cardx-h">
+        <h5 class="cardx-title"><i class="bi bi-clipboard-check"></i> Résultat</h5>
+        <span class="chip"><i class="bi bi-hash"></i> Total: {{ result.total }}</span>
+      </div>
+      <div class="p-3 p-md-4">
+        <div class="row g-2">
+          <div class="col-md-4"><div class="alert alert-success mb-0">Importés : <strong>{{ result.imported }}</strong></div></div>
+          <div class="col-md-4"><div class="alert alert-info mb-0">Mis à jour : <strong>{{ result.updated }}</strong></div></div>
+          <div class="col-md-4"><div class="alert alert-secondary mb-0">Ignorés : <strong>{{ result.skipped }}</strong></div></div>
+        </div>
+
+        {% if result.warnings is not empty %}
+          <hr>
+          <h6 class="fw-bold mb-2"><i class="bi bi-exclamation-triangle"></i> Avertissements</h6>
+          <ul class="small mb-0">
+            {% for row, msg in result.warnings %}
+              <li><strong>Ligne {{ row }}</strong> — {{ msg }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+
+        {% if result.errors is not empty %}
+          <hr>
+          <h6 class="fw-bold text-danger mb-2"><i class="bi bi-x-octagon"></i> Erreurs</h6>
+          <ul class="small mb-0">
+            {% for row, msg in result.errors %}
+              <li><strong>Ligne {{ row }}</strong> — {{ msg }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+
+{% endblock %}

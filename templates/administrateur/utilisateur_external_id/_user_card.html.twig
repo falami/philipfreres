@@ -1,0 +1,128 @@
+
+
+
+{# ✅ ne pas afficher la card si aucune correspondance #}
+{% set hasAny =
+  (map['total']|default([])|length > 0)
+  or (map['edenred']|default([])|length > 0)
+  or (map['alx']|default([])|length > 0)
+%}
+
+{% if not hasAny %}
+  {# rien #}
+{% else %}
+
+
+{% set photoPath = user.photo ? asset('uploads/photos/utilisateur/' ~ user.photo) : null %}
+{% set initials = ((user.prenom|default('')|slice(0,1)) ~ (user.nom|default('')|slice(0,1)))|upper %}
+{% set userLabel = (user.prenom ~ ' ' ~ user.nom)|trim %}
+{% set email = user.email|default('') %}
+
+<div class="user-card">
+  <div class="user-card__top">
+    <div class="avatar">
+      {% if photoPath %}
+        <img src="{{ photoPath }}" alt="Photo {{ userLabel }}">
+      {% else %}
+        <span class="ini">{{ initials ?: 'U' }}</span>
+      {% endif %}
+    </div>
+
+    <div class="flex-grow-1" style="min-width:0">
+      <div class="u-name text-truncate">{{ userLabel ?: ('Utilisateur #' ~ user.id) }}</div>
+      <div class="u-meta text-truncate">
+        <i class="bi bi-envelope me-1" style="opacity:.7"></i>{{ email ?: '—' }}
+      </div>
+    </div>
+
+    <div class="d-flex gap-1">
+      <a class="btn btn-sm btn-light fw-semibold"
+         href="{{ path('app_administrateur_utilisateur_modifier', { entite: entite.id, id: user.id }) }}"
+         title="Voir l'utilisateur">
+        <i class="bi bi-person"></i>
+      </a>
+
+      <a class="btn btn-sm btn-light fw-semibold"
+         href="{{ path('app_administrateur_utilisateur_external_id_index', { entite: entite.id, utilisateur: user.id }) }}"
+         title="External IDs (fiche)">
+        <i class="bi bi-plug"></i>
+      </a>
+    </div>
+  </div>
+
+  <div class="user-card__body">
+
+    {# TOTAL #}
+    <div class="provider-row">
+      <div class="p-left">
+        <div class="p-ico"><i class="bi bi-fuel-pump"></i></div>
+        <div>
+          <div class="p-title">TOTAL</div>
+        </div>
+      </div>
+      <div class="badges">
+        {% set vals = map['total']|default([]) %}
+        {% if vals is empty %}
+          <span class="b is-empty">—</span>
+        {% else %}
+          {% for v in vals|slice(0,4) %}
+            <span class="b">{{ v }}</span>
+          {% endfor %}
+          {% if vals|length > 4 %}
+            <span class="b">+{{ vals|length - 4 }}</span>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+
+    {# EDENRED #}
+    <div class="provider-row">
+      <div class="p-left">
+        <div class="p-ico"><i class="bi bi-credit-card-2-front"></i></div>
+        <div>
+          <div class="p-title">EDENRED</div>
+        </div>
+      </div>
+      <div class="badges">
+        {% set vals = map['edenred']|default([]) %}
+        {% if vals is empty %}
+          <span class="b is-empty">—</span>
+        {% else %}
+          {% for v in vals|slice(0,4) %}
+            <span class="b">{{ v }}</span>
+          {% endfor %}
+          {% if vals|length > 4 %}
+            <span class="b">+{{ vals|length - 4 }}</span>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+
+    {# ALX #}
+    <div class="provider-row">
+      <div class="p-left">
+        <div class="p-ico"><i class="bi bi-truck"></i></div>
+        <div>
+          <div class="p-title">ALX</div>
+        </div>
+      </div>
+      <div class="badges">
+        {% set vals = map['alx']|default([]) %}
+        {% if vals is empty %}
+          <span class="b is-empty">—</span>
+        {% else %}
+          {% for v in vals|slice(0,4) %}
+            <span class="b">{{ v }}</span>
+          {% endfor %}
+          {% if vals|length > 4 %}
+            <span class="b">+{{ vals|length - 4 }}</span>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+{% endif %}

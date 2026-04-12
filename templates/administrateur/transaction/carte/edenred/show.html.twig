@@ -1,0 +1,959 @@
+{# templates/administrateur/transaction/carte/edenred/show.html.twig #}
+{% extends 'base_admin.html.twig' %}
+{% block title %}Transaction EDENRED #{{ t.id }}{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('dist/css/style.css') }}">
+
+  {# Fonts (optionnel - même rendu premium) #}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
+  <style>
+    /* ==========================================================
+       ULTRA PREMIUM - tokens (entité aware)
+       ========================================================== */
+    :root{
+      --theme-color-principal: {{ themeColorPrimaire|default(entite.couleurPrincipal|default('#233342')) }};
+      --theme-color-secondaire: {{ themeColorSecondaire|default(entite.couleurSecondaire|default('#ffc107')) }};
+      --theme-color-tertiaire: {{ themeColorTertiaire|default(entite.couleurTertiaire|default('#F0F0F0')) }};
+      --theme-color-quaternaire: {{ couleurQuaternaire|default(entite.couleurQuaternaire|default('#000000')) }};
+
+      --bg: #f6f8fc;
+      --panel: rgba(255,255,255,.86);
+      --panel-2: rgba(255,255,255,.72);
+
+      --ink: #0b1220;
+      --ink-2: rgba(11,18,32,.78);
+      --ink-3: rgba(11,18,32,.56);
+
+      --stroke: rgba(15, 23, 42, .10);
+      --stroke-2: rgba(15, 23, 42, .08);
+
+      --shadow-sm: 0 1px 3px rgba(15,23,42,.06), 0 1px 2px rgba(15,23,42,.04);
+      --shadow-md: 0 10px 28px rgba(15,23,42,.10);
+      --shadow-lg: 0 22px 70px rgba(15,23,42,.14);
+
+      --radius: 18px;
+      --radius-lg: 24px;
+
+      --font-sans: 'DM Sans', system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: 'DM Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --font-display: 'Playfair Display', Georgia, serif;
+
+      --ease: 260ms cubic-bezier(.2,.8,.2,1);
+    }
+
+    /* ==========================================================
+       HERO (glass + accent rail + dots)
+       ========================================================== */
+    .edn-hero{ position: relative; overflow: hidden; margin-bottom: 24px; }
+    .edn-hero-card{
+      position: relative;
+      border-radius: var(--radius-lg);
+      border: 1px solid color-mix(in srgb, var(--stroke) 90%, transparent);
+      background:
+        radial-gradient(1200px 420px at 12% -10%,
+          color-mix(in srgb, var(--theme-color-tertiaire) 42%, transparent),
+          transparent 58%
+        ),
+        radial-gradient(900px 380px at 92% 0%,
+          color-mix(in srgb, var(--theme-color-secondaire) 26%, transparent),
+          transparent 60%
+        ),
+        linear-gradient(135deg,
+          color-mix(in srgb, var(--theme-color-principal) 92%, #000 8%),
+          color-mix(in srgb, var(--theme-color-principal) 70%, #fff 30%)
+        );
+      box-shadow: var(--shadow-lg);
+      color: #fff;
+      overflow: hidden;
+    }
+    .edn-hero-card::before{
+      content:"";
+      position:absolute; inset:-2px;
+      background-image: radial-gradient(rgba(255,255,255,.16) 1px, transparent 1px);
+      background-size: 18px 18px;
+      opacity:.12;
+      mix-blend-mode: overlay;
+      pointer-events:none;
+    }
+    .edn-hero-card::after{
+      content:"";
+      position:absolute; inset:0;
+      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,0) 55%);
+      opacity:.9;
+      pointer-events:none;
+    }
+    .edn-hero-inner{
+      position: relative;
+      z-index: 2;
+      padding: 22px 22px;
+      display: flex;
+      gap: 14px;
+      align-items: stretch;
+    }
+    .edn-hero-rail{
+      width: 12px;
+      border-radius: 999px;
+      background: var(--theme-color-secondaire);
+      box-shadow: 0 0 0 6px color-mix(in srgb, var(--theme-color-secondaire) 18%, transparent);
+      flex: 0 0 auto;
+    }
+    .edn-hero-main{ flex: 1; min-width: 0; }
+    .edn-eyebrow{
+      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+      margin-bottom: 10px; opacity: .95;
+    }
+    .edn-eyebrow .pill{
+      display:inline-flex; align-items:center; gap:.45rem;
+      padding:.35rem .7rem; border-radius:999px;
+      background: rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.16);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      font-size:.82rem; white-space: nowrap;
+    }
+    .edn-eyebrow .pill i{ color: var(--theme-color-secondaire); }
+
+    .edn-title{
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 600;
+      letter-spacing: -.02em;
+      font-size: clamp(26px, 3.4vw, 40px);
+      line-height: 1.15;
+    }
+    .edn-title .id{
+      color: color-mix(in srgb, var(--theme-color-secondaire) 92%, #fff 8%);
+      text-shadow: 0 10px 30px rgba(0,0,0,.18);
+    }
+    .edn-sub{ margin: 8px 0 0; color: rgba(255,255,255,.82); font-size: 13.5px; }
+
+    .edn-chips{ margin-top: 14px; display:flex; flex-wrap:wrap; gap: 8px; }
+    .chip{
+      display:inline-flex; align-items:center; gap:.45rem;
+      padding:.38rem .75rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.16);
+      background: rgba(255,255,255,.10);
+      color: rgba(255,255,255,.92);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      font-size: .84rem;
+      white-space: nowrap;
+    }
+    .chip i{ color: var(--theme-color-secondaire); }
+    .chip--ok{
+      background: color-mix(in srgb, #16a34a 18%, rgba(255,255,255,.10));
+      border-color: color-mix(in srgb, #22c55e 30%, rgba(255,255,255,.16));
+    }
+
+    .edn-actions{
+      display:flex; gap:10px; align-items:center; justify-content:flex-end;
+      flex-wrap:wrap; margin-left:auto;
+    }
+    .btnx{
+      display:inline-flex; align-items:center; gap:.55rem;
+      padding: .58rem 1rem;
+      border-radius: 14px;
+      font-size: .92rem;
+      font-weight: 800;
+      text-decoration:none;
+      border: 1px solid transparent;
+      transition: transform var(--ease), box-shadow var(--ease), background var(--ease), border-color var(--ease);
+      white-space: nowrap;
+    }
+    .btnx i{ font-size: 1.02em; }
+    .btnx-ghost{
+      background: rgba(255,255,255,.08);
+      border-color: rgba(255,255,255,.20);
+      color:#fff;
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      box-shadow: 0 12px 28px rgba(0,0,0,.16);
+    }
+    .btnx-ghost:hover{
+      transform: translateY(-1px);
+      background: rgba(255,255,255,.12);
+      border-color: rgba(255,255,255,.34);
+      color:#fff;
+    }
+    .btnx-solid{
+      background: rgba(255,255,255,.92);
+      border-color: rgba(255,255,255,.92);
+      color: var(--ink);
+      box-shadow: 0 14px 34px rgba(0,0,0,.16);
+    }
+    .btnx-solid:hover{
+      transform: translateY(-1px);
+      background:#fff;
+      border-color:#fff;
+    }
+    .btn-mini{
+      border-radius: 12px;
+      font-weight: 900;
+      padding: .48rem .7rem;
+      font-size: .86rem;
+    }
+
+    /* ==========================================================
+       GRID / CARDS
+       ========================================================== */
+    .edn-grid{
+      margin: 0 auto;
+      display:grid;
+      grid-template-columns: 420px 1fr;
+      gap: 18px;
+      align-items:start;
+    }
+    @media (max-width: 992px){
+      .edn-grid{ grid-template-columns: 1fr; }
+      .edn-actions{ justify-content:flex-start; }
+    }
+
+    .cardx{
+      background: var(--panel);
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      overflow:hidden;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .cardx-h{
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--stroke);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,0)),
+        radial-gradient(600px 220px at 10% 0%,
+          color-mix(in srgb, var(--theme-color-principal) 12%, transparent),
+          transparent 60%
+        );
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 1rem;
+    }
+    .cardx-title{
+      margin:0;
+      display:flex;
+      align-items:center;
+      gap:.6rem;
+      font-weight: 950;
+      letter-spacing: -.02em;
+      color: var(--ink);
+    }
+    .ico{
+      width: 42px; height: 42px;
+      border-radius: 16px;
+      display:grid; place-items:center;
+      background: color-mix(in srgb, var(--theme-color-principal) 12%, transparent);
+      border: 1px solid color-mix(in srgb, var(--theme-color-principal) 20%, transparent);
+      color: color-mix(in srgb, var(--theme-color-principal) 72%, #000 28%);
+    }
+    .badge-soft{
+      font-size: .75rem;
+      font-weight: 900;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: .34rem .62rem;
+      border-radius: 999px;
+      background: rgba(255,255,255,.72);
+      border: 1px solid var(--stroke-2);
+      color: var(--ink-3);
+      white-space: nowrap;
+    }
+
+    .sum{ padding: 16px 18px; }
+    .sum-id{ display:flex; align-items:baseline; gap:.55rem; margin-bottom: 10px; }
+    .sum-id .hash{ color: var(--ink-3); font-weight: 700; }
+    .sum-id .num{
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 42px;
+      line-height: 1;
+      letter-spacing: -.02em;
+    }
+
+    .rowx{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--stroke);
+    }
+    .rowx:last-child{ border-bottom: none; }
+    .k{
+      font-size: .72rem;
+      font-weight: 950;
+      letter-spacing: .10em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      display:flex;
+      align-items:center;
+      gap:.4rem;
+      white-space: nowrap;
+    }
+    .k i{ color: color-mix(in srgb, var(--theme-color-secondaire) 80%, #000 20%); }
+    .v{
+      text-align:right;
+      font-weight: 900;
+      color: var(--ink);
+      line-height: 1.25;
+      min-width: 0;
+      word-break: break-word;
+    }
+    .v small{
+      display:block;
+      margin-top: .22rem;
+      font-weight: 700;
+      color: var(--ink-3);
+    }
+    .mono{ font-family: var(--font-mono); font-weight: 700; }
+
+    .moneybox{
+      margin-top: 14px;
+      border-radius: 18px;
+      border: 1px solid color-mix(in srgb, var(--theme-color-secondaire) 22%, var(--stroke));
+      background:
+        radial-gradient(700px 260px at 20% 0%,
+          color-mix(in srgb, var(--theme-color-secondaire) 18%, transparent),
+          transparent 60%
+        ),
+        rgba(255,255,255,.78);
+      box-shadow: 0 12px 30px rgba(15,23,42,.07);
+      padding: 14px 14px;
+    }
+    .moneyrow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding: 8px 2px;
+    }
+    .moneyrow + .moneyrow{
+      border-top: 1px dashed color-mix(in srgb, var(--theme-color-secondaire) 22%, var(--stroke));
+    }
+    .moneyrow .label{
+      font-size: .72rem;
+      font-weight: 950;
+      letter-spacing: .10em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+    }
+    .moneyrow .val{
+      font-family: var(--font-mono);
+      font-weight: 800;
+      color: var(--ink);
+    }
+    .moneyrow.ttc .label{ color: color-mix(in srgb, var(--theme-color-principal) 80%, #000 20%); }
+    .moneyrow.ttc .val{
+      font-size: 1.25rem;
+      letter-spacing: -.02em;
+      color: color-mix(in srgb, var(--theme-color-principal) 90%, #000 10%);
+    }
+    .meta{
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--stroke);
+      color: var(--ink-3);
+      font-size: .88rem;
+      line-height: 1.55;
+    }
+    .meta strong{ color: var(--ink-2); font-weight: 900; }
+
+    .source{
+      margin-top: 14px;
+      border-radius: 16px;
+      border: 1px solid var(--stroke);
+      background: rgba(255,255,255,.72);
+      padding: 12px 12px;
+      display:flex;
+      align-items:flex-start;
+      gap: 10px;
+    }
+    .source .sico{
+      width: 38px; height: 38px;
+      border-radius: 14px;
+      display:grid; place-items:center;
+      background: rgba(15,23,42,.05);
+      border: 1px solid var(--stroke-2);
+      color: var(--ink-3);
+      flex: 0 0 auto;
+    }
+    .source .stxt{
+      color: var(--ink-3);
+      font-size: .9rem;
+      line-height: 1.5;
+    }
+    .source .stxt strong{
+      font-family: var(--font-mono);
+      font-weight: 800;
+      color: var(--ink-2);
+      font-size: .86rem;
+    }
+
+    /* Details grid */
+    .detail-grid{ display:grid; grid-template-columns: 1fr 1fr; }
+    @media (max-width: 640px){ .detail-grid{ grid-template-columns: 1fr; } }
+
+    .detail-item{
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--stroke);
+      position: relative;
+      transition: background var(--ease);
+      background: rgba(255,255,255,.60);
+    }
+    .detail-item:hover{ background: rgba(255,255,255,.80); }
+    .detail-item:nth-child(odd):not(.full){ border-right: 1px solid var(--stroke); }
+    @media (max-width: 640px){ .detail-item:nth-child(odd):not(.full){ border-right: none; } }
+    .detail-item.full{ grid-column: 1 / -1; }
+
+    .dlbl{
+      font-size: .70rem;
+      font-weight: 950;
+      letter-spacing: .10em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      display:flex;
+      align-items:center;
+      gap:.45rem;
+      margin-bottom: 6px;
+    }
+    .dlbl i{ color: color-mix(in srgb, var(--theme-color-principal) 70%, #000 30%); }
+    .dval{
+      font-size: .98rem;
+      font-weight: 800;
+      color: var(--ink);
+      line-height: 1.45;
+      word-break: break-word;
+    }
+    .dval .sub{
+      display:block;
+      margin-top: .2rem;
+      color: var(--ink-3);
+      font-weight: 700;
+      font-size: .9rem;
+    }
+    .empty{ color: var(--ink-3); font-style: italic; font-weight: 700; }
+
+    .importkey{
+      background:
+        radial-gradient(700px 260px at 12% 0%,
+          color-mix(in srgb, var(--theme-color-principal) 12%, transparent),
+          transparent 60%
+        ),
+        rgba(255,255,255,.72);
+    }
+    .keyline{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    code.key{
+      font-family: var(--font-mono);
+      font-size: .86rem;
+      background: rgba(255,255,255,.9);
+      border: 1px solid var(--stroke);
+      border-radius: 12px;
+      padding: .35rem .6rem;
+      color: var(--ink-2);
+      word-break: break-all;
+    }
+
+    /* Map */
+    .map-wrap{
+      border-radius: 18px;
+      border: 1px solid var(--stroke);
+      overflow: hidden;
+      background: rgba(255,255,255,.72);
+      box-shadow: 0 16px 38px rgba(15,23,42,.10);
+      position: relative;
+    }
+    #ednMap{ height: 320px; width: 100%; }
+    @media (max-width: 640px){ #ednMap{ height: 260px; } }
+
+    .map-overlay{
+      position:absolute;
+      left: 14px; top: 14px;
+      display:flex; align-items:center; gap: 8px;
+      padding: 8px 10px;
+      border-radius: 14px;
+      background: rgba(11,18,32,.72);
+      color:#fff;
+      border: 1px solid rgba(255,255,255,.10);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 14px 34px rgba(0,0,0,.18);
+      z-index: 500;
+      font-size: .9rem;
+      font-weight: 800;
+    }
+    .map-overlay i{ color: var(--theme-color-secondaire); }
+
+    .map-status{
+      position:absolute;
+      right: 14px; top: 14px;
+      padding: 8px 10px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.86);
+      border: 1px solid var(--stroke);
+      color: var(--ink-2);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      box-shadow: var(--shadow-md);
+      z-index: 500;
+      font-size: .86rem;
+      font-weight: 800;
+      max-width: 70%;
+    }
+    .map-status.ok{ border-color: color-mix(in srgb, #22c55e 30%, var(--stroke)); }
+    .map-status.bad{ border-color: color-mix(in srgb, #ef4444 30%, var(--stroke)); }
+
+    /* Toast */
+    .toastx{
+      position: fixed;
+      bottom: 26px;
+      right: 26px;
+      background: rgba(11,18,32,.92);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 14px;
+      box-shadow: var(--shadow-lg);
+      padding: 10px 14px;
+      display:flex;
+      align-items:center;
+      gap:.55rem;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity var(--ease), transform var(--ease);
+      z-index: 9999;
+      pointer-events: none;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .toastx.show{ opacity: 1; transform: translateY(0); }
+    .toastx i{ color: var(--theme-color-secondaire); }
+
+    /* Motion */
+    @keyframes fadeUp { from{ opacity:0; transform: translateY(14px);} to{opacity:1; transform: translateY(0);} }
+    .edn-hero-card{ animation: fadeUp .45s ease both; }
+    .edn-grid > *:nth-child(1){ animation: fadeUp .45s .08s ease both; }
+    .edn-grid > *:nth-child(2){ animation: fadeUp .45s .16s ease both; }
+
+    /* Leaflet tweaks */
+    .leaflet-control-zoom a{
+      border-radius: 12px !important;
+      border: 1px solid rgba(15,23,42,.12) !important;
+      box-shadow: 0 10px 22px rgba(15,23,42,.10);
+    }
+    .leaflet-popup-content-wrapper{
+      border-radius: 16px;
+      box-shadow: 0 18px 44px rgba(15,23,42,.16);
+    }
+    .leaflet-popup-content{
+      margin: 12px 14px;
+      font-family: var(--font-sans);
+    }
+  </style>
+{% endblock %}
+
+{% block body %}
+
+  {% include 'flagMessage.html.twig' %}
+
+  {# ===================== HERO ===================== #}
+  <div class="edn-hero">
+    <div class="edn-hero-card">
+      <div class="edn-hero-inner">
+        <div class="edn-hero-rail"></div>
+
+        <div class="edn-hero-main">
+          <div class="edn-eyebrow">
+            <span class="pill"><i class="bi bi-receipt"></i> Edenred</span>
+            <span class="pill"><i class="bi bi-building"></i> {{ entite.nom }}</span>
+            <span class="pill"><i class="bi bi-shield-check"></i> Fiche transaction</span>
+          </div>
+
+          <h1 class="edn-title">Transaction <span class="id">#{{ t.id }}</span></h1>
+          <p class="edn-sub">Lecture premium : résumé, détails complets, et localisation (si disponible) par géocodage.</p>
+
+          <div class="edn-chips">
+            <span class="chip"><i class="bi bi-calendar-event"></i> {{ t.dateTransaction ? t.dateTransaction|date('d/m/Y') : '-' }}</span>
+            <span class="chip"><i class="bi bi-hash"></i> {{ t.numeroTransaction ?? '-' }}</span>
+            <span class="chip chip--ok"><i class="bi bi-check-circle-fill"></i> Importée</span>
+            {% if t.enseigne %}
+              <span class="chip"><i class="bi bi-shop"></i> {{ t.enseigne }}</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="edn-actions">
+          <a href="{{ path('app_administrateur_tce_index', { entite: entite.id }) }}" class="btnx btnx-ghost">
+            <i class="bi bi-arrow-left"></i> Retour
+          </a>
+          <a href="{{ path('app_administrateur_tce_edit', { entite: entite.id, id: t.id }) }}" class="btnx btnx-ghost">
+            <i class="bi bi-pencil"></i> Modifier
+          </a>
+          <button type="button" class="btnx btnx-solid" onclick="copyKey('{{ t.importKey ?? '' }}')">
+            <i class="bi bi-clipboard-check"></i> Copier la clé
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  {# ===================== GRID ===================== #}
+  <div class="edn-grid">
+
+    {# ========== LEFT ========== #}
+    <div style="display:flex; flex-direction:column; gap:16px;">
+
+      {# ---- Résumé ---- #}
+      <div class="cardx">
+        <div class="cardx-h">
+          <h3 class="cardx-title"><span class="ico"><i class="bi bi-stars"></i></span> Résumé</h3>
+          <span class="badge-soft">EDENRED</span>
+        </div>
+
+        <div class="sum">
+          <div class="sum-id">
+            <span class="hash">#</span>
+            <span class="num">{{ t.id }}</span>
+          </div>
+
+          <div class="rowx">
+            <div class="k"><i class="bi bi-calendar-event"></i> Date</div>
+            <div class="v">{{ t.dateTransaction ? t.dateTransaction|date('d/m/Y') : '-' }}</div>
+          </div>
+
+          <div class="rowx">
+            <div class="k"><i class="bi bi-receipt"></i> Txn</div>
+            <div class="v mono">{{ t.numeroTransaction ?? '-' }}</div>
+          </div>
+
+          <div class="rowx">
+            <div class="k"><i class="bi bi-credit-card-2-front"></i> Carte</div>
+            <div class="v mono">{{ t.carteNumero ?? '-' }}</div>
+          </div>
+
+          <div class="rowx">
+            <div class="k"><i class="bi bi-tag"></i> Produit</div>
+            <div class="v">{{ t.produit ?? '-' }}</div>
+          </div>
+
+          <div class="rowx">
+            <div class="k"><i class="bi bi-geo-alt"></i> Site</div>
+            <div class="v">
+              {{ t.siteLibelleCourt ?? t.siteLibelle ?? '-' }}
+              {% if t.siteCodeSite %}<small class="mono">Code site: {{ t.siteCodeSite }}</small>{% endif %}
+            </div>
+          </div>
+
+          {# Cast string decimal -> number (gère virgule) #}
+          {% set qteNum = (t.quantite is not null) ? (t.quantite|replace({',':'.'}) + 0) : null %}
+          {% set puNum  = (t.prixUnitaire is not null) ? (t.prixUnitaire|replace({',':'.'}) + 0) : null %}
+          {% set total  = (qteNum is not null and puNum is not null) ? (qteNum * puNum) : null %}
+
+          <div class="moneybox" aria-label="Montants">
+            <div class="moneyrow">
+              <span class="label">TTC</span>
+              <span class="val">{{ t.montantTtc is not null ? (t.montantTtc|replace({',':'.'}) + 0)|number_format(2, ',', ' ') ~ ' €' : '-' }}</span>
+            </div>
+            <div class="moneyrow">
+              <span class="label">HT</span>
+              <span class="val">{{ t.montantHt is not null ? (t.montantHt|replace({',':'.'}) + 0)|number_format(2, ',', ' ') ~ ' €' : '-' }}</span>
+            </div>
+            <div class="moneyrow">
+              <span class="label">Qté</span>
+              <span class="val mono">{{ t.quantite ?? '-' }}</span>
+            </div>
+            <div class="moneyrow">
+              <span class="label">PU</span>
+              <span class="val mono">{{ t.prixUnitaire ?? '-' }}</span>
+            </div>
+            <div class="moneyrow ttc">
+              <span class="label">Total estimé</span>
+              <span class="val">{% if total is not null %}{{ total|number_format(2, ',', ' ') }} €{% else %}-{% endif %}</span>
+            </div>
+
+            <div class="meta">
+              {% if t.immatriculation %}<strong>Immat</strong> : <span class="mono">{{ t.immatriculation }}</span>{% endif %}
+              {% if t.kilometrage %}&nbsp;·&nbsp;<strong>Km</strong> : <span class="mono">{{ t.kilometrage }}</span>{% endif %}
+            </div>
+          </div>
+
+          <div class="source">
+            <div class="sico"><i class="bi bi-file-earmark-spreadsheet"></i></div>
+            <div class="stxt">
+              Fichier : <strong>{{ t.sourceFilename ?? '-' }}</strong><br>
+              Ligne : <strong>{{ t.sourceRow ?? '-' }}</strong>
+              {% if t.importedAt %}
+                <div class="mt-1">Import : <strong>{{ t.importedAt|date('d/m/Y H:i') }}</strong></div>
+              {% endif %}
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {# ---- Localisation (géocodage Nominatim à partir du libellé site) ---- #}
+      <div class="cardx">
+        <div class="cardx-h">
+          <h3 class="cardx-title"><span class="ico"><i class="bi bi-geo-alt"></i></span> Localisation</h3>
+          <span class="badge-soft">Leaflet</span>
+        </div>
+
+        <div class="sum">
+          {% set siteLabel = (t.siteLibelleCourt ?? t.siteLibelle ?? '')|trim %}
+          <div class="rowx" style="border-bottom:none; padding-bottom: 10px;">
+            <div class="k"><i class="bi bi-pin-map"></i> Site</div>
+            <div class="v">
+              {{ siteLabel ? siteLabel : '-' }}
+              {% if t.enseigne %}<small>{{ t.enseigne }}</small>{% endif %}
+            </div>
+          </div>
+
+          <div class="map-wrap">
+            <div class="map-overlay"><i class="bi bi-pin-angle-fill"></i> Géocodage</div>
+            <div class="map-status" id="mapStatus">Chargement…</div>
+            <div id="ednMap"></div>
+          </div>
+
+          <div class="meta" style="margin-top: 12px;">
+            <strong>Astuce :</strong> pour une précision parfaite, ajoute plus tard <code class="mono">latitude/longitude</code> dans l’entité.
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    {# ========== RIGHT ========== #}
+    <div class="cardx">
+      <div class="cardx-h">
+        <h3 class="cardx-title"><span class="ico"><i class="bi bi-layout-text-window-reverse"></i></span> Détails complets</h3>
+        <span class="badge-soft">Edenred</span>
+      </div>
+
+      <div class="detail-grid">
+
+        <div class="detail-item">
+          <div class="dlbl"><i class="bi bi-calendar-event"></i> Date transaction</div>
+          <div class="dval">{{ t.dateTransaction ? t.dateTransaction|date('d/m/Y') : '<span class="empty">-</span>'|raw }}</div>
+        </div>
+
+        <div class="detail-item">
+          <div class="dlbl"><i class="bi bi-receipt"></i> Numéro transaction</div>
+          <div class="dval mono">{{ t.numeroTransaction ?? '<span class="empty">-</span>'|raw }}</div>
+        </div>
+
+        <div class="detail-item">
+          <div class="dlbl"><i class="bi bi-credit-card-2-front"></i> Carte numéro</div>
+          <div class="dval mono">{{ t.carteNumero ?? '<span class="empty">-</span>'|raw }}</div>
+        </div>
+
+        <div class="detail-item">
+          <div class="dlbl"><i class="bi bi-tag"></i> Produit</div>
+          <div class="dval">{{ t.produit ?? '<span class="empty">-</span>'|raw }}</div>
+        </div>
+
+        <div class="detail-item">
+          <div class="dlbl"><i class="bi bi-shop"></i> Enseigne</div>
+          <div class="dval">{{ t.enseigne ?? '<span class="empty">-</span>'|raw }}</div>
+        </div>
+
+        <div class="detail-item">
+          <div class="dlbl"><i class="bi bi-geo"></i> Type site</div>
+          <div class="dval">{{ t.siteType ?? '<span class="empty">-</span>'|raw }}</div>
+        </div>
+
+        <div class="detail-item full">
+          <div class="dlbl"><i class="bi bi-geo-alt"></i> Libellé site</div>
+          <div class="dval">
+            {{ t.siteLibelleCourt ?? t.siteLibelle ?? '' }}
+            {% if not t.siteLibelleCourt and not t.siteLibelle %}<span class="empty">-</span>{% endif %}
+            {% if t.siteCodeSite or t.siteNumeroTerminal %}
+              <span class="sub">
+                {% if t.siteCodeSite %}<span class="mono">Code: {{ t.siteCodeSite }}</span>{% endif %}
+                {% if t.siteNumeroTerminal %} · <span class="mono">Terminal: {{ t.siteNumeroTerminal }}</span>{% endif %}
+              </span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="detail-item">
+          <div class="dlbl"><i class="bi bi-cash-coin"></i> TTC</div>
+          <div class="dval mono">{% if t.montantTtc is not null %}{{ (t.montantTtc|replace({',':'.'}) + 0)|number_format(2, ',', ' ') }} €{% else %}<span class="empty">-</span>{% endif %}</div>
+        </div>
+
+        <div class="detail-item">
+          <div class="dlbl"><i class="bi bi-currency-euro"></i> HT</div>
+          <div class="dval mono">{% if t.montantHt is not null %}{{ (t.montantHt|replace({',':'.'}) + 0)|number_format(2, ',', ' ') }} €{% else %}<span class="empty">-</span>{% endif %}</div>
+        </div>
+
+        <div class="detail-item">
+          <div class="dlbl"><i class="bi bi-rulers"></i> Quantité</div>
+          <div class="dval mono">{{ t.quantite ?? '<span class="empty">-</span>'|raw }}</div>
+        </div>
+
+        <div class="detail-item">
+          <div class="dlbl"><i class="bi bi-tag"></i> Prix unitaire</div>
+          <div class="dval mono">{{ t.prixUnitaire ?? '<span class="empty">-</span>'|raw }}</div>
+        </div>
+
+        <div class="detail-item">
+          <div class="dlbl"><i class="bi bi-truck-front"></i> Immatriculation</div>
+          <div class="dval mono">{{ t.immatriculation ?? '<span class="empty">-</span>'|raw }}</div>
+        </div>
+
+        <div class="detail-item">
+          <div class="dlbl"><i class="bi bi-speedometer2"></i> Kilométrage</div>
+          <div class="dval mono">{{ t.kilometrage ?? '<span class="empty">-</span>'|raw }}</div>
+        </div>
+
+        <div class="detail-item full">
+          <div class="dlbl"><i class="bi bi-file-earmark-spreadsheet"></i> Source import</div>
+          <div class="dval">
+            {{ t.sourceFilename ?? '' }}
+            {% if t.sourceRow %}<span class="mono"> - ligne {{ t.sourceRow }}</span>{% endif %}
+            {% if t.importedAt %}<span class="mono"> - {{ t.importedAt|date('d/m/Y H:i') }}</span>{% endif %}
+            {% if not t.sourceFilename and not t.sourceRow and not t.importedAt %}<span class="empty">-</span>{% endif %}
+          </div>
+        </div>
+
+        <div class="detail-item full importkey">
+          <div class="dlbl"><i class="bi bi-key"></i> Import key</div>
+          <div class="keyline">
+            <code class="key" id="importKeyVal">{{ t.importKey ?? '-' }}</code>
+            <button type="button" class="btnx btnx-solid btn-mini" onclick="copyKey('{{ t.importKey ?? '' }}')">
+              <i class="bi bi-clipboard"></i> Copier
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <div class="toastx" id="copiedToast" role="status" aria-live="polite">
+    <i class="bi bi-check-circle-fill"></i>
+    <span>Clé copiée dans le presse-papier</span>
+  </div>
+
+  {# Leaflet JS #}
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <script>
+    function copyKey(key){
+      if(!key) return;
+      (navigator.clipboard ? navigator.clipboard.writeText(key) : Promise.reject())
+        .then(() => showToast())
+        .catch(() => {
+          const el = document.getElementById('importKeyVal');
+          if(el){
+            const r = document.createRange();
+            r.selectNodeContents(el);
+            const sel = window.getSelection();
+            sel.removeAllRanges(); sel.addRange(r);
+            document.execCommand('copy');
+            sel.removeAllRanges();
+            showToast();
+          }
+        });
+    }
+
+    let toastTimer = null;
+    function showToast(){
+      const t = document.getElementById('copiedToast');
+      if(!t) return;
+      t.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+    }
+
+    /* ===================== LEAFLET MAP (Nominatim) ===================== */
+
+    // On tente de géocoder : "siteLabel + enseigne" (souvent suffisant)
+    const siteLabel = {{ (t.siteLibelleCourt ?? t.siteLibelle ?? '')|json_encode|raw }};
+    const enseigne  = {{ (t.enseigne ?? '')|json_encode|raw }};
+
+    const query = (siteLabel && enseigne) ? `${siteLabel}, ${enseigne}` : (siteLabel || enseigne || '');
+
+    const $status = document.getElementById('mapStatus');
+    function setStatus(txt, kind){
+      if(!$status) return;
+      $status.textContent = txt;
+      $status.classList.remove('ok','bad');
+      if(kind) $status.classList.add(kind);
+    }
+
+    const map = L.map('ednMap', { zoomControl: true, scrollWheelZoom: false });
+    const fallback = [46.2276, 2.2137]; // FR
+    map.setView(fallback, 5);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+
+    let marker = null;
+
+    async function geocodeNominatim(q){
+      const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(q);
+      const r = await fetch(url, { headers: { 'Accept': 'application/json' }});
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+      const data = await r.json();
+      return (Array.isArray(data) && data.length) ? data[0] : null;
+    }
+
+    function placeMarker(lat, lon, label){
+      const pos = [lat, lon];
+      if(marker) marker.remove();
+      marker = L.marker(pos).addTo(map);
+
+      const popup = `
+        <div style="min-width:210px">
+          <div style="font-weight:900; margin-bottom:6px;">Localisation</div>
+          <div style="color:rgba(11,18,32,.75); font-size:13px; line-height:1.4;">
+            ${label ? label : ''}
+          </div>
+        </div>
+      `;
+      marker.bindPopup(popup, { maxWidth: 320 }).openPopup();
+
+      map.setView(pos, 15, { animate: true });
+      setStatus('Localisation trouvée ✅', 'ok');
+    }
+
+    (async () => {
+      if(!query || query.length < 3){
+        setStatus('Libellé insuffisant pour localiser le site.', 'bad');
+        return;
+      }
+
+      try{
+        setStatus('Géocodage en cours…');
+        const hit = await geocodeNominatim(query);
+        if(!hit){
+          setStatus('Localisation introuvable (libellé non reconnu).', 'bad');
+          return;
+        }
+
+        const lat = parseFloat(hit.lat);
+        const lon = parseFloat(hit.lon);
+        const label = hit.display_name || query;
+
+        placeMarker(lat, lon, label);
+      }catch(e){
+        setStatus('Erreur géocodage : ' + (e?.message || 'inconnue'), 'bad');
+      }
+    })();
+  </script>
+
+{% endblock %}

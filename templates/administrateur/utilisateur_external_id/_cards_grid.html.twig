@@ -1,0 +1,13 @@
+{% if items is empty %}
+  <div class="alert alert-light border w-100" style="grid-column:1/-1;">
+    <i class="bi bi-info-circle me-1"></i> Aucun résultat.
+  </div>
+{% else %}
+  {% for it in items %}
+    {% include 'administrateur/utilisateur_external_id/_user_card.html.twig' with {
+      entite: entite,
+      user: it.user,
+      map: it.map
+    } only %}
+  {% endfor %}
+{% endif %}

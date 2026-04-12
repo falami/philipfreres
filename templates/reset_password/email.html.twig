@@ -1,0 +1,48 @@
+{# templates/reset_password/email.html.twig #}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Réinitialisation du mot de passe</title>
+<style>
+    body{margin:0;padding:0;background:#0f1b28;font-family:Arial,sans-serif;}
+    .wrapper{max-width:600px;margin:40px auto;background:#ffffff;border-radius:10px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.2);}
+    .header{background:#0d6efd;color:white;padding:20px;text-align:center;}
+    .content{padding:30px;text-align:center;color:#333;}
+    .btn{display:inline-block;padding:12px 20px;margin:20px 0;background:#198754;color:white;text-decoration:none;border-radius:6px;font-weight:bold;}
+    .footer{padding:20px;font-size:13px;color:#888;text-align:center;background:#f4f4f4;}
+</style>
+</head>
+<body>
+
+<div class="wrapper">
+    <div class="header">
+        <h2>Réinitialisation du mot de passe</h2>
+    </div>
+
+    <div class="content">
+        <p>Bonjour{{ user is defined and user.prenom ? ' ' ~ user.prenom : '' }},</p>
+
+        <p>Vous avez demandé à réinitialiser votre mot de passe.</p>
+
+        <a href="{{ resetTokenUrl }}" class="btn">
+            Réinitialiser mon mot de passe
+        </a>
+
+        <p>Ce lien expirera dans <strong>{{ ttlHuman|default('1 heure') }}</strong>.</p>
+
+        <p style="font-size:12px;color:#666;">
+            Si le bouton ne fonctionne pas, copiez ce lien :<br>
+            {{ resetTokenUrl }}
+        </p>
+
+        <p>Si vous n’êtes pas à l’origine de cette demande, ignorez cet email.</p>
+    </div>
+
+    <div class="footer">
+        &copy; {{ "now"|date("Y") }} Philip Frères - Tous droits réservés.
+    </div>
+</div>
+
+</body>
+</html>

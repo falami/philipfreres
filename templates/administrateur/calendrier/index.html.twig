@@ -1,0 +1,971 @@
+{# templates/administrateur/calendrier/index.html.twig #}
+{% extends 'base_admin.html.twig' %}
+
+{% block title %}Planning ressources{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('dist/css/style.css') }}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css">
+
+  <style>
+    :root{
+      --theme-color-principal: {{ themeColorPrimaire|default(entite.couleurPrincipal|default('#233342')) }};
+      --theme-color-secondaire: {{ themeColorSecondaire|default(entite.couleurSecondaire|default('#ffc107')) }};
+      --theme-color-tertiaire: {{ themeColorTertiaire|default(entite.couleurTertiaire|default('#F0F0F0')) }};
+      --theme-color-quaternaire: {{ couleurQuaternaire|default(entite.couleurQuaternaire|default('#000000')) }};
+      --bg:#f5f7fb;
+      --panel:#fff;
+      --ink:#0f172a;
+      --muted:#64748b;
+      --stroke:rgba(15,23,42,.10);
+      --shadow:0 18px 55px rgba(15,23,42,.10);
+      --radius:22px;
+      --cell-w: 96px;
+      --col-resource: 280px;
+      --col-meta: 220px;
+    }
+
+    body{
+      background:
+        radial-gradient(900px 380px at 12% -10%, color-mix(in srgb, var(--theme-color-secondaire) 11%, transparent), transparent 60%),
+        radial-gradient(900px 380px at 100% 10%, color-mix(in srgb, var(--theme-color-principal) 11%, transparent), transparent 60%),
+        var(--bg);
+    }
+
+    .hero{
+      border-radius:26px;
+      position:relative;
+      overflow:hidden;
+      color:#fff;
+      box-shadow:0 22px 56px rgba(0,0,0,.14);
+      background:
+        radial-gradient(1200px 420px at 12% -10%, color-mix(in srgb, var(--theme-color-tertiaire) 35%, transparent), transparent 58%),
+        radial-gradient(900px 380px at 92% 0%, color-mix(in srgb, var(--theme-color-secondaire) 28%, transparent), transparent 60%),
+        radial-gradient(700px 260px at 55% 115%, color-mix(in srgb, var(--theme-color-quaternaire) 18%, transparent), transparent 62%),
+        linear-gradient(135deg,
+          color-mix(in srgb, var(--theme-color-principal) 92%, #000 8%),
+          color-mix(in srgb, var(--theme-color-principal) 68%, #fff 32%)
+        );
+    }
+
+    .hero::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,0) 55%);
+      opacity:.85;
+    }
+
+    .hero .accent{
+      width:12px;
+      border-radius:999px;
+      background:var(--theme-color-secondaire);
+      box-shadow:0 0 0 6px color-mix(in srgb, var(--theme-color-secondaire) 18%, transparent);
+    }
+
+    .hero-chip{
+      display:inline-flex;
+      align-items:center;
+      gap:.5rem;
+      padding:.38rem .78rem;
+      border-radius:999px;
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.15);
+      font-size:.82rem;
+      color:rgba(255,255,255,.92);
+      backdrop-filter:blur(8px);
+      white-space:nowrap;
+      font-weight:800;
+    }
+
+    .cardx{
+      background:var(--panel);
+      border:1px solid var(--stroke);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:visible;
+    }
+
+    .cardx-h{
+      padding:1rem 1.1rem;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:1rem;
+      border-bottom:1px solid var(--stroke);
+      background:
+        radial-gradient(900px 220px at 20% 0%, color-mix(in srgb, var(--theme-color-principal) 6%, transparent), transparent 60%),
+        #fff;
+    }
+
+    .cardx-title{
+      margin:0;
+      font-weight:950;
+      letter-spacing:-.01em;
+      color:var(--ink);
+      display:flex;
+      align-items:center;
+      gap:.65rem;
+    }
+
+    .cardx-title i{
+      width:36px;height:36px;
+      display:inline-grid;place-items:center;
+      border-radius:12px;
+      background: color-mix(in srgb, var(--theme-color-secondaire) 18%, #fff);
+      border:1px solid color-mix(in srgb, var(--theme-color-secondaire) 22%, var(--stroke));
+      color: color-mix(in srgb, var(--theme-color-principal) 75%, #000 25%);
+    }
+
+    .toolbar{
+      border-radius:18px;
+      background:rgba(255,255,255,.88);
+      backdrop-filter:blur(12px);
+      border:1px solid var(--stroke);
+      box-shadow:0 18px 42px rgba(0,0,0,.06);
+      padding:1rem;
+      position:sticky;
+      top:0;
+      z-index:40;
+    }
+
+    .toolbar-grid{
+      display:grid;
+      grid-template-columns:repeat(12,minmax(0,1fr));
+      gap:12px;
+      align-items:end;
+    }
+
+    .f-item{ grid-column:span 3; }
+    .f-item-lg{ grid-column:span 6; }
+
+    @media (max-width:1200px){
+      .f-item{ grid-column:span 6; }
+      .f-item-lg{ grid-column:span 12; }
+    }
+
+    @media (max-width:768px){
+      .f-item,.f-item-lg{ grid-column:span 12; }
+    }
+
+    .form-label{
+      font-size:.78rem;
+      font-weight:900;
+      color:var(--muted);
+      margin-bottom:.35rem;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+    }
+
+    .form-control,.form-select,.ts-control{
+      min-height:48px;
+      border-radius:14px !important;
+      border:1px solid var(--stroke) !important;
+      background:rgba(255,255,255,.98) !important;
+      box-shadow:none !important;
+      color:var(--ink) !important;
+    }
+
+    .ts-wrapper.multi .ts-control{
+      min-height:48px !important;
+      max-height:48px;
+      overflow-y:auto;
+    }
+
+    .ts-wrapper .ts-control > div{
+      max-width:170px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      border-radius:999px !important;
+      font-weight:800;
+    }
+
+    .btn-premium{
+      border:0;
+      color:#fff;
+      border-radius:14px;
+      min-height:48px;
+      font-weight:900;
+      background:linear-gradient(135deg,
+        color-mix(in srgb, var(--theme-color-principal) 92%, #000 8%),
+        color-mix(in srgb, var(--theme-color-principal) 55%, var(--theme-color-secondaire) 45%)
+      );
+      box-shadow:0 14px 30px rgba(15,23,42,.14);
+    }
+
+    .btn-outline-soft{
+      border-radius:14px;
+      min-height:48px;
+      font-weight:900;
+      border:1px solid var(--stroke);
+      background:#fff;
+      color:var(--ink);
+    }
+
+    .kpis{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:12px;
+    }
+
+    @media (max-width:900px){
+      .kpis{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+    }
+    @media (max-width:576px){
+      .kpis{ grid-template-columns:1fr; }
+    }
+
+    .kpi{
+      border:1px solid var(--stroke);
+      border-radius:18px;
+      padding:14px 16px;
+      background:#fff;
+      box-shadow:0 10px 24px rgba(15,23,42,.06);
+    }
+
+    .kpi .label{
+      color:var(--muted);
+      font-size:.82rem;
+      font-weight:900;
+      margin-bottom:.25rem;
+    }
+
+    .kpi .value{
+      color:var(--ink);
+      font-size:1.2rem;
+      font-weight:950;
+    }
+
+    .planner-wrap{
+      overflow:auto;
+      max-height:75vh;
+      border-radius:18px;
+      border:1px solid var(--stroke);
+      background:#fff;
+    }
+
+    table.planner{
+      border-collapse:separate;
+      border-spacing:0;
+      min-width:calc(var(--col-resource) + var(--col-meta) + (var(--cell-w) * 7));
+      width:max-content;
+    }
+
+    .planner thead th{
+      position:sticky;
+      top:0;
+      z-index:5;
+      background:#fff;
+      border-bottom:1px solid var(--stroke);
+    }
+
+    .planner th,
+    .planner td{
+      border-right:1px solid var(--stroke);
+      border-bottom:1px solid var(--stroke);
+      padding:0;
+      vertical-align:middle;
+    }
+
+    .planner .sticky-left-1{
+      position:sticky;
+      left:0;
+      z-index:6;
+      background:#fff;
+      width:var(--col-resource);
+      min-width:var(--col-resource);
+      max-width:var(--col-resource);
+    }
+
+    .planner .sticky-left-2{
+      position:sticky;
+      left:var(--col-resource);
+      z-index:6;
+      background:#fff;
+      width:var(--col-meta);
+      min-width:var(--col-meta);
+      max-width:var(--col-meta);
+    }
+
+    .planner .month-head{
+      text-align:center;
+      font-weight:900;
+      font-size:1rem;
+      color:var(--ink);
+      padding:.7rem .5rem;
+      background:
+        radial-gradient(900px 220px at 20% 0%, color-mix(in srgb, var(--theme-color-principal) 6%, transparent), transparent 60%),
+        #fff;
+    }
+
+    .planner .day-head{
+      width:var(--cell-w);
+      min-width:var(--cell-w);
+      max-width:var(--cell-w);
+      text-align:center;
+      padding:.55rem .2rem;
+      font-weight:900;
+      color:var(--muted);
+      font-size:.86rem;
+    }
+
+    .planner .resource-head,
+    .planner .meta-head{
+      font-weight:950;
+      color:var(--ink);
+      padding:.75rem .85rem;
+    }
+
+    .planner .row-user .sticky-left-1,
+    .planner .row-user .sticky-left-2{
+      background:color-mix(in srgb, var(--theme-color-principal) 4%, #fff);
+    }
+
+    .planner .row-user .resource-cell{
+      font-weight:950;
+    }
+
+    .planner .row-engin .resource-cell{
+      padding-left:2.3rem;
+    }
+
+    .planner .resource-cell,
+    .planner .meta-cell{
+      padding:.7rem .85rem;
+      font-size:.92rem;
+      color:var(--ink);
+      background:#fff;
+    }
+
+    .planner .meta-cell{
+      color:var(--muted);
+      font-weight:800;
+      white-space:nowrap;
+    }
+
+    .planner .day-cell{
+      width:var(--cell-w);
+      min-width:var(--cell-w);
+      max-width:var(--cell-w);
+      height:56px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.96), rgba(248,250,252,.96));
+    }
+
+    .planner .cell-inner{
+      width:100%;
+      height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:4px;
+    }
+
+    .planner-pill{
+      width:100%;
+      border:0;
+      border-radius:14px;
+      padding:6px 8px;
+      text-align:center;
+      font-weight:900;
+      color:#fff;
+      font-size:.74rem;
+      line-height:1.15;
+      box-shadow:0 8px 18px rgba(15,23,42,.12);
+      cursor:pointer;
+    }
+
+    .planner-pill small{
+      display:block;
+      font-size:.68rem;
+      opacity:.92;
+      font-weight:800;
+    }
+
+    .planner-pill.alx{ background:linear-gradient(135deg,#198754,#0f5132); }
+    .planner-pill.total{ background:linear-gradient(135deg,#dc3545,#a61e2b); }
+    .planner-pill.edenred{ background:linear-gradient(135deg,#d39e00,#9a7400); }
+    .planner-pill.note{ background:linear-gradient(135deg,#0d6efd,#0a4fb5); }
+
+    .toggle-btn{
+      border:0;
+      background:transparent;
+      color:var(--muted);
+      font-size:1rem;
+      margin-right:.45rem;
+      width:22px;
+      text-align:center;
+      font-weight:900;
+      cursor:pointer;
+    }
+
+    .modal-premium .modal-content{
+      border:1px solid var(--stroke);
+      border-radius:24px;
+      overflow:hidden;
+      box-shadow:0 28px 70px rgba(15,23,42,.18);
+    }
+
+    .modal-premium .modal-header{
+      background:
+        radial-gradient(900px 220px at 10% 0%, color-mix(in srgb, var(--theme-color-secondaire) 18%, transparent), transparent 60%),
+        linear-gradient(135deg,
+          color-mix(in srgb, var(--theme-color-principal) 92%, #000 8%),
+          color-mix(in srgb, var(--theme-color-principal) 68%, #fff 32%)
+        );
+      color:#fff;
+      border-bottom:0;
+    }
+
+    .detail-card{
+      border:1px solid var(--stroke);
+      border-radius:18px;
+      background:#fff;
+      padding:14px 16px;
+      box-shadow:0 10px 24px rgba(15,23,42,.05);
+    }
+
+    .detail-top{
+      display:flex;
+      justify-content:space-between;
+      gap:1rem;
+      align-items:flex-start;
+      margin-bottom:.35rem;
+    }
+
+    .detail-label{
+      font-weight:950;
+      color:var(--ink);
+    }
+
+    .detail-meta{
+      color:var(--muted);
+      font-size:.84rem;
+      font-weight:800;
+    }
+
+    .badge-provider{
+      border-radius:999px;
+      padding:.3rem .55rem;
+      font-size:.75rem;
+      font-weight:900;
+      color:#fff;
+      white-space:nowrap;
+    }
+
+    .badge-provider.alx{ background:#198754; }
+    .badge-provider.total{ background:#dc3545; }
+    .badge-provider.edenred{ background:#d39e00; }
+    .badge-provider.note{ background:#0d6efd; }
+
+    @media (max-width:768px){
+      :root{
+        --col-resource:220px;
+        --col-meta:170px;
+        --cell-w:84px;
+      }
+    }
+  </style>
+{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+  <div class="hero p-3 p-md-4 mb-4 d-flex gap-3 align-items-start">
+    <div class="accent"></div>
+    <div class="flex-grow-1 position-relative" style="z-index:1;">
+      <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+        <div>
+          <h2 class="m-0 fw-bold">
+            <i class="bi bi-calendar3 me-2" style="color:var(--theme-color-secondaire)"></i>
+            Planning ressources premium
+          </h2>
+          <div class="opacity-75 mt-2">
+            Vue condensée par <strong>employé</strong> et par <strong>engin utilisé</strong>, avec détail complet au clic.
+          </div>
+
+          <div class="d-flex flex-wrap gap-2 mt-3">
+            <span class="hero-chip"><i class="bi bi-building"></i> {{ entite.nom }}</span>
+            <span class="hero-chip"><i class="bi bi-people"></i> Employés</span>
+            <span class="hero-chip"><i class="bi bi-truck-front"></i> Engins</span>
+            <span class="hero-chip"><i class="bi bi-cash-stack"></i> Dépenses</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toolbar mb-4">
+    <div class="toolbar-grid">
+      <div class="f-item">
+        <label class="form-label">Plage de dates</label>
+        <input type="text" id="fRange" class="form-control" placeholder="Choisir une période">
+      </div>
+
+      <div class="f-item">
+        <label class="form-label">Fournisseurs</label>
+        <select id="fProviders" multiple>
+          <option value="ALX">ALX</option>
+          <option value="TOTAL">TOTAL</option>
+          <option value="EDENRED">EDENRED</option>
+          <option value="NOTE">NOTE</option>
+        </select>
+      </div>
+
+      <div class="f-item">
+        <label class="form-label">Employés</label>
+        <select id="fEmployes" multiple>
+          {% for u in employes %}
+            <option value="{{ u.id }}">{{ u.prenom }} {{ u.nom }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="f-item">
+        <label class="form-label">Engins</label>
+        <select id="fEngins" multiple>
+          {% for e in engins %}
+            <option value="{{ e.id }}">{{ e.nom }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="f-item-lg">
+        <label class="form-label">Actions</label>
+        <div class="d-flex flex-wrap gap-2">
+          <button type="button" class="btn btn-premium" id="btnApply">Actualiser</button>
+          <button type="button" class="btn btn-outline-soft" id="btnToday">Aujourd’hui</button>
+          <button type="button" class="btn btn-outline-soft" id="btnReset">Réinitialiser</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="kpis mb-4">
+    <div class="kpi">
+      <div class="label">Période</div>
+      <div class="value" id="kpiRange">-</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Ressources</div>
+      <div class="value" id="kpiResources">-</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Événements</div>
+      <div class="value" id="kpiEvents">-</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Montant total</div>
+      <div class="value" id="kpiAmount">-</div>
+    </div>
+  </div>
+
+  <div class="cardx">
+    <div class="cardx-h">
+      <h5 class="cardx-title">
+        <i class="bi bi-diagram-3-fill"></i>
+        Planning utilisateur / engins
+      </h5>
+    </div>
+
+    <div class="p-3">
+      <div class="planner-wrap">
+        <table class="planner" id="plannerTable">
+          <thead id="plannerHead"></thead>
+          <tbody id="plannerBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade modal-premium" id="eventDetailModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="eventModalTitle">Détail de la journée</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+
+      <div class="modal-body p-4">
+        <div class="row g-3 mb-3">
+          <div class="col-md-3">
+            <div class="detail-card">
+              <div class="detail-meta">Employé</div>
+              <div class="detail-label" id="modalEmploye">-</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="detail-card">
+              <div class="detail-meta">Engin</div>
+              <div class="detail-label" id="modalEngin">-</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="detail-card">
+              <div class="detail-meta">Jour</div>
+              <div class="detail-label" id="modalDate">-</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="detail-card">
+              <div class="detail-meta">Total</div>
+              <div class="detail-label" id="modalTotal">-</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="modalItems" class="d-grid gap-3"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/fr.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  if (window.flatpickr && window.flatpickr.l10ns?.fr) {
+    flatpickr.localize(flatpickr.l10ns.fr);
+  }
+
+  const modalEl = document.getElementById('eventDetailModal');
+  const detailModal = (modalEl && window.bootstrap) ? new bootstrap.Modal(modalEl) : null;
+
+  const $range = document.getElementById('fRange');
+  const $providers = document.getElementById('fProviders');
+  const $employes = document.getElementById('fEmployes');
+  const $engins = document.getElementById('fEngins');
+
+  const $head = document.getElementById('plannerHead');
+  const $body = document.getElementById('plannerBody');
+
+  const today = new Date();
+  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+  function toIso(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function moneyFromCents(cents) {
+    return new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: 'EUR'
+    }).format((Number(cents || 0) / 100));
+  }
+
+  let fp = flatpickr($range, {
+    mode: "range",
+    dateFormat: "d/m/Y",
+    altInput: true,
+    altFormat: "j F Y",
+    allowInput: true,
+    disableMobile: true,
+    defaultDate: [firstDay, lastDay]
+  });
+
+  new TomSelect($providers, {
+    plugins: ['remove_button'],
+    hideSelected: true,
+    closeAfterSelect: false,
+    create: false,
+    maxOptions: null,
+    placeholder: 'Tous les fournisseurs'
+  });
+
+  new TomSelect($employes, {
+    plugins: ['remove_button'],
+    hideSelected: true,
+    closeAfterSelect: false,
+    create: false,
+    maxOptions: null,
+    placeholder: 'Tous les employés'
+  });
+
+  new TomSelect($engins, {
+    plugins: ['remove_button'],
+    hideSelected: true,
+    closeAfterSelect: false,
+    create: false,
+    maxOptions: null,
+    placeholder: 'Tous les engins'
+  });
+
+  function selectedValues(selectEl) {
+    if (!selectEl || !selectEl.tomselect) return [];
+    const val = selectEl.tomselect.getValue();
+    return Array.isArray(val) ? val : (val ? [val] : []);
+  }
+
+  function buildQuery() {
+    const params = new URLSearchParams();
+    const selected = fp.selectedDates || [];
+    const start = selected[0] ? toIso(selected[0]) : '';
+    const end = selected[1] ? toIso(selected[1]) : (selected[0] ? toIso(selected[0]) : '');
+
+    if (start) params.set('dateStart', start);
+    if (end) params.set('dateEnd', end);
+
+    selectedValues($providers).forEach(v => params.append('providers[]', v));
+    selectedValues($employes).forEach(v => params.append('employeIds[]', v));
+    selectedValues($engins).forEach(v => params.append('enginIds[]', v));
+
+    return params.toString();
+  }
+
+  function providerClass(provider) {
+    const p = String(provider || '').toLowerCase();
+    if (p === 'alx') return 'alx';
+    if (p === 'total') return 'total';
+    if (p === 'edenred') return 'edenred';
+    return 'note';
+  }
+
+  function buildMonthGroups(days) {
+    const groups = [];
+    for (const d of days) {
+      const key = d.monthLabel;
+      const last = groups[groups.length - 1];
+      if (!last || last.label !== key) {
+        groups.push({ label: key, count: 1 });
+      } else {
+        last.count++;
+      }
+    }
+    return groups;
+  }
+
+  function renderHead(days) {
+    const monthGroups = buildMonthGroups(days);
+
+    let row1 = `
+      <tr>
+        <th class="sticky-left-1 resource-head" rowspan="2">Ressource</th>
+        <th class="sticky-left-2 meta-head" rowspan="2">Synthèse</th>
+    `;
+
+    for (const group of monthGroups) {
+      row1 += `<th class="month-head" colspan="${group.count}">${group.label}</th>`;
+    }
+    row1 += `</tr>`;
+
+    let row2 = `<tr>`;
+    for (const day of days) {
+      row2 += `<th class="day-head">${day.day}</th>`;
+    }
+    row2 += `</tr>`;
+
+    $head.innerHTML = row1 + row2;
+  }
+
+  function renderCell(cell, userName, enginName, dayDate) {
+    if (!cell) {
+      return `<td class="day-cell"><div class="cell-inner"></div></td>`;
+    }
+
+    return `
+      <td class="day-cell">
+        <div class="cell-inner">
+          <button
+            type="button"
+            class="planner-pill ${providerClass(cell.provider)}"
+            data-cell='${JSON.stringify({
+              userName,
+              enginName,
+              dayDate,
+              amount_label: cell.amount_label,
+              qty_label: cell.qty_label,
+              count: cell.count,
+              items: cell.items
+            }).replace(/'/g, "&apos;")}'>
+            ${cell.amount_label}
+            <small>${cell.qty_label}</small>
+          </button>
+        </div>
+      </td>
+    `;
+  }
+
+  function renderBody(data) {
+    const rows = [];
+    const cells = data.cells || {};
+    const days = data.days || [];
+
+    for (const user of (data.resources || [])) {
+      const hasChildren = (user.children || []).length > 0;
+
+      rows.push(`
+        <tr class="row-user" data-user="${user.id}">
+          <td class="sticky-left-1 resource-cell">
+            <button type="button" class="toggle-btn" data-toggle="${user.id}">
+              ${hasChildren ? '−' : ''}
+            </button>
+            ${user.name}
+          </td>
+          <td class="sticky-left-2 meta-cell">${user.meta}</td>
+          ${days.map(() => `<td class="day-cell"></td>`).join('')}
+        </tr>
+      `);
+
+      for (const child of (user.children || [])) {
+        rows.push(`
+          <tr class="row-engin" data-parent="${user.id}">
+            <td class="sticky-left-1 resource-cell">↳ ${child.name}</td>
+            <td class="sticky-left-2 meta-cell">${child.meta}</td>
+            ${days.map(day => renderCell(
+              (cells[child.id] || {})[day.date] || null,
+              user.name,
+              child.name,
+              day.date
+            )).join('')}
+          </tr>
+        `);
+      }
+    }
+
+    $body.innerHTML = rows.join('');
+  }
+
+  function refreshKpis(data) {
+    const selected = fp.selectedDates || [];
+    const start = selected[0] ? selected[0].toLocaleDateString('fr-FR') : '-';
+    const end = selected[1] ? selected[1].toLocaleDateString('fr-FR') : start;
+
+    document.getElementById('kpiRange').textContent = `${start} → ${end}`;
+    document.getElementById('kpiResources').textContent = data.summary?.resource_count || 0;
+    document.getElementById('kpiEvents').textContent = data.summary?.event_count || 0;
+    document.getElementById('kpiAmount').textContent = data.summary?.amount_label || '-';
+  }
+
+  function openDetail(payload) {
+    document.getElementById('eventModalTitle').textContent = `Détail du ${payload.dayDate}`;
+    document.getElementById('modalEmploye').textContent = payload.userName || '-';
+    document.getElementById('modalEngin').textContent = payload.enginName || '-';
+    document.getElementById('modalDate').textContent = payload.dayDate || '-';
+    document.getElementById('modalTotal').textContent = `${payload.amount_label} • ${payload.qty_label}`;
+
+    const itemsHtml = (payload.items || []).map(item => `
+      <div class="detail-card">
+        <div class="detail-top">
+          <div>
+            <div class="detail-label">${item.label || '-'}</div>
+            <div class="detail-meta">
+              ${item.start_at || '-'} • ${item.user_label || '-'} • ${item.engin_label || '-'}
+            </div>
+          </div>
+          <span class="badge-provider ${providerClass(item.provider)}">${item.provider}</span>
+        </div>
+
+        <div class="row g-3 mt-1">
+          <div class="col-md-3">
+            <div class="detail-meta">Montant</div>
+            <div class="detail-label">${moneyFromCents(item.amount_cents)}</div>
+          </div>
+          <div class="col-md-3">
+            <div class="detail-meta">Quantité</div>
+            <div class="detail-label">${Number(item.qty || 0).toLocaleString('fr-FR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} L</div>
+          </div>
+          <div class="col-md-3">
+            <div class="detail-meta">Source</div>
+            <div class="detail-label">${item.source_type || '-'}</div>
+          </div>
+          <div class="col-md-3">
+            <div class="detail-meta">Transaction</div>
+            <div class="detail-label">${item.tx_id || '-'}</div>
+          </div>
+        </div>
+
+        ${item.commentaire ? `
+          <div class="mt-3">
+            <div class="detail-meta">Commentaire</div>
+            <div class="detail-label">${item.commentaire}</div>
+          </div>
+        ` : ''}
+      </div>
+    `).join('');
+
+    document.getElementById('modalItems').innerHTML = itemsHtml || `
+      <div class="detail-card">
+        <div class="detail-label">Aucun détail</div>
+      </div>
+    `;
+
+    if (detailModal) {
+      detailModal.show();
+    }
+  }
+
+  async function refreshPlanning() {
+    const response = await fetch(`{{ path('app_administrateur_calendrier_planning_data', {entite: entite.id}) }}?${buildQuery()}`, {
+      headers: { 'Accept': 'application/json' }
+    });
+
+    if (!response.ok) {
+      throw new Error('Erreur lors du chargement du planning');
+    }
+
+    const data = await response.json();
+    renderHead(data.days || []);
+    renderBody(data);
+    refreshKpis(data);
+  }
+
+  document.getElementById('btnApply')?.addEventListener('click', () => {
+    refreshPlanning().catch(console.error);
+  });
+
+  document.getElementById('btnToday')?.addEventListener('click', function() {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    fp.setDate([start, end], true);
+    refreshPlanning().catch(console.error);
+  });
+
+  document.getElementById('btnReset')?.addEventListener('click', function() {
+    fp.setDate([firstDay, lastDay], true);
+    if ($providers.tomselect) $providers.tomselect.clear(true);
+    if ($employes.tomselect) $employes.tomselect.clear(true);
+    if ($engins.tomselect) $engins.tomselect.clear(true);
+    refreshPlanning().catch(console.error);
+  });
+
+  $body.addEventListener('click', function(e) {
+    const toggleBtn = e.target.closest('[data-toggle]');
+    if (toggleBtn) {
+      const userId = toggleBtn.getAttribute('data-toggle');
+      const children = document.querySelectorAll(`tr[data-parent="${userId}"]`);
+      const collapsed = toggleBtn.textContent.trim() === '+';
+
+      children.forEach(tr => {
+        tr.style.display = collapsed ? '' : 'none';
+      });
+
+      toggleBtn.textContent = collapsed ? '−' : '+';
+      return;
+    }
+
+    const pill = e.target.closest('.planner-pill');
+    if (pill) {
+      const payload = JSON.parse(pill.getAttribute('data-cell').replace(/&apos;/g, "'"));
+      openDetail(payload);
+    }
+  });
+
+  refreshPlanning().catch(console.error);
+});
+</script>
+{% endblock %}

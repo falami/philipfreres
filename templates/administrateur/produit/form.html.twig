@@ -1,0 +1,429 @@
+{# templates/administrateur/produit/form.html.twig #}
+{% extends 'base_admin.html.twig' %}
+{% set is_edit = modeEdition ?? false %}
+
+{% block title %}{{ is_edit ? 'Modifier' : 'Ajouter' }} un type de dépense{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('dist/css/style.css') }}">
+  <link rel="stylesheet" href="{{ asset('dist/css/formulaire.css') }}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css">
+
+  <style>
+    :root{
+      --theme-color-principal: {{ themeColorPrimaire|default(entite.couleurPrincipal|default('#233342')) }};
+      --theme-color-secondaire: {{ themeColorSecondaire|default(entite.couleurSecondaire|default('#ffc107')) }};
+      --theme-color-tertiaire: {{ themeColorTertiaire|default(entite.couleurTertiaire|default('#F0F0F0')) }};
+      --theme-color-quaternaire: {{ couleurQuaternaire|default(entite.couleurQuaternaire|default('#000000')) }};
+
+      --bg:#f5f7fb; --panel:#fff; --ink:#0f172a; --muted:#64748b;
+      --stroke: rgba(15, 23, 42, .10);
+      --shadow: 0 18px 55px rgba(15, 23, 42, .10);
+      --radius: 18px;
+    }
+
+    body{ background: var(--bg); }
+
+    /* ===== HERO (copie style user/form) ===== */
+    .hero{
+      border-radius:22px;
+      position: relative;
+      overflow: hidden;
+      color: #fff;
+      box-shadow: 0 18px 50px rgba(0,0,0,.14);
+
+      background:
+        radial-gradient(1200px 420px at 12% -10%,
+          color-mix(in srgb, var(--theme-color-tertiaire) 35%, transparent),
+          transparent 58%
+        ),
+        radial-gradient(900px 380px at 92% 0%,
+          color-mix(in srgb, var(--theme-color-secondaire) 32%, transparent),
+          transparent 60%
+        ),
+        radial-gradient(700px 260px at 55% 115%,
+          color-mix(in srgb, var(--theme-color-quaternaire) 18%, transparent),
+          transparent 62%
+        ),
+        linear-gradient(135deg,
+          color-mix(in srgb, var(--theme-color-principal) 92%, #000 8%),
+          color-mix(in srgb, var(--theme-color-principal) 70%, #fff 30%)
+        );
+    }
+    .hero::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,0) 55%);
+      opacity:.85;
+    }
+    .hero .accent{
+      width: 12px;
+      border-radius: 999px;
+      background: var(--theme-color-secondaire);
+      box-shadow: 0 0 0 6px color-mix(in srgb, var(--theme-color-secondaire) 18%, transparent);
+      flex: 0 0 auto;
+    }
+    .chip{
+      display:inline-flex; align-items:center; gap:.45rem;
+      padding:.28rem .65rem; border-radius:999px; font-size:.82rem;
+      background: rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.14);
+      color: rgba(255,255,255,.92);
+      white-space: nowrap;
+    }
+    .chip i{ color: var(--theme-color-secondaire); }
+    .hero .btn{ border-radius: 14px; font-weight: 800; }
+    .hero .btn-outline-theme{
+      border-color: rgba(255,255,255,.35);
+      color:#fff;
+    }
+    .hero .btn-outline-theme:hover{
+      background: rgba(255,255,255,.10);
+      border-color: rgba(255,255,255,.55);
+      color:#fff;
+    }
+
+    @media (max-width:768px){
+      .hero{ border-radius:16px; }
+    }
+
+    /* ===== Cards premium ===== */
+    .cardx{
+      background: var(--panel);
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      box-shadow: 0 10px 28px rgba(15,23,42,.08);
+      overflow:hidden;
+    }
+    .cardx-h{
+      padding: .95rem 1.05rem;
+      display:flex; align-items:center; justify-content:space-between; gap:1rem;
+      background: linear-gradient(180deg, rgba(0,0,0,.015), transparent);
+      border-bottom: 1px solid var(--stroke);
+    }
+    .cardx-title{
+      margin:0; font-weight:800; letter-spacing:-.01em; color: var(--ink);
+      display:flex; align-items:center; gap:.6rem;
+    }
+
+    /* ===== Form polish ===== */
+    label.form-label{ font-weight: 700; color: var(--ink); }
+    .form-text, .text-muted, .small{ color: var(--muted) !important; }
+
+    .form-control, .form-select{
+      border-radius: 14px;
+      border: 1px solid var(--stroke);
+      padding: .65rem .85rem;
+      min-height: 44px;
+    }
+    .form-control:focus, .form-select:focus{
+      border-color: color-mix(in srgb, var(--theme-color-principal) 55%, var(--stroke));
+      box-shadow: 0 0 0 .2rem color-mix(in srgb, var(--theme-color-principal) 18%, transparent);
+    }
+
+    /* TomSelect polish + FIX dropdown */
+    .ts-wrapper .ts-control{
+      border-radius: 14px !important;
+      padding: .55rem .75rem !important;
+      border-color: var(--stroke) !important;
+      min-height: 44px !important;
+    }
+    .ts-wrapper.focus .ts-control{
+      box-shadow: 0 0 0 .2rem color-mix(in srgb, var(--theme-color-principal) 18%, transparent) !important;
+      border-color: color-mix(in srgb, var(--theme-color-principal) 55%, var(--stroke)) !important;
+    }
+    .ts-dropdown{ z-index: 9999 !important; }
+    .ts-wrapper.focus, .ts-wrapper.dropdown-active{ z-index: 9999; }
+    .card, .card-body, .container, .container-fluid, .cardx, .cardx *{ overflow: visible; }
+
+    /* ===== Sticky actions (col droite) ===== */
+    .sticky-actions{
+      position: sticky; bottom: 14px; z-index: 5;
+      background: color-mix(in srgb, var(--panel) 82%, transparent);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      padding: .75rem;
+      box-shadow: var(--shadow);
+    }
+
+    /* ===== Soft blocks ===== */
+    .soft-box{
+      border-radius: 16px;
+      border: 1px dashed rgba(15,35,54,.18);
+      background: rgba(248,251,254,.75);
+      padding: 1rem;
+    }
+  </style>
+{% endblock %}
+
+{% block javascripts %}
+  {{ parent() }}
+  <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+{% endblock %}
+
+{% block body %}
+
+  {# ===== HERO ===== #}
+  <div class="hero p-3 mb-4 d-flex gap-3">
+    <div class="accent"></div>
+
+    <div class="flex-grow-1">
+      <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+        <div>
+          <h2 class="m-0 fw-bold">
+            <i class="bi bi-tags me-2" style="color:var(--theme-color-secondaire)"></i>
+            {{ is_edit ? 'Modifier un type de dépense' : 'Ajouter un type de dépense' }}
+          </h2>
+
+          <div class="opacity-75 mt-1">
+            Structure interne + future affectation automatique via import.
+          </div>
+
+          <div class="d-flex gap-2 flex-wrap mt-3">
+            <span class="chip"><i class="bi bi-building"></i> {{ entite.nom }}</span>
+            <span class="chip"><i class="bi bi-diagram-3"></i> Catégories</span>
+            <span class="chip"><i class="bi bi-link-45deg"></i> Mapping</span>
+            <span class="chip"><i class="bi bi-pencil-square"></i> {{ is_edit ? 'Mode édition' : 'Mode création' }}</span>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <a class="btn btn-outline-light btn-sm fw-semibold"
+             href="{{ path('app_administrateur_produit_index', { entite: entite.id }) }}">
+            <i class="bi bi-arrow-left me-1"></i> Retour
+          </a>
+
+          {% if t is defined and t and t.id %}
+            <a class="btn btn-light btn-sm fw-semibold"
+               href="{{ path('app_administrateur_produit_external_id_index', { entite: entite.id, produit: t.id }) }}">
+              <i class="bi bi-link-45deg me-1"></i> Correspondances
+            </a>
+          {% endif %}
+
+          <button type="button" class="btn btn-light btn-sm fw-semibold"
+                  onclick="window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'})">
+            <i class="bi bi-arrow-down me-1"></i> Actions
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% include 'flagMessage.html.twig' %}
+
+  {{ form_start(form, {attr:{novalidate:'novalidate', id:'typeDepenseForm'}}) }}
+  {{ form_errors(form) }}
+
+  <div class="row g-4">
+    {# ====================== COL LEFT ====================== #}
+    <div class="col-lg-8">
+
+      <div class="cardx mb-4">
+        <div class="cardx-h">
+          <h5 class="cardx-title"><i class="bi bi-card-checklist text-warning"></i> Informations</h5>
+          <span class="chip">Étape 1</span>
+        </div>
+
+        <div class="p-3 p-md-4">
+          <div class="row g-3">
+
+            <div class="col-12 col-md-6">
+              {{ form_row(form.categorieProduit, {
+                attr: { class: (form.categorieProduit.vars.attr.class|default('') ~ ' js-ts')|trim }
+              }) }}
+            </div>
+
+            <div class="col-12 col-md-6">
+              {{ form_row(form.sousCategorieProduit, {
+                attr: { class: (form.sousCategorieProduit.vars.attr.class|default('') ~ ' js-ts')|trim }
+              }) }}
+            </div>
+          </div>
+
+          <div class="form-text mt-2">
+            Conseil : garde des libellés stables (ils serviront pour les correspondances fournisseurs).
+          </div>
+        </div>
+      </div>
+
+      {% if is_edit and t is defined and t and t.id %}
+        <div class="cardx mb-4">
+          <div class="cardx-h">
+            <h5 class="cardx-title"><i class="bi bi-link-45deg text-warning"></i> Correspondances fournisseurs</h5>
+            <span class="chip">Optionnel</span>
+          </div>
+          <div class="p-3 p-md-4">
+            <div class="soft-box">
+              <div class="d-flex align-items-start gap-3">
+                <div style="width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;
+                            background: rgba(255,193,7,.14); border:1px solid rgba(255,193,7,.20);">
+                  <i class="bi bi-credit-card-2-front" style="font-size:20px;color:#b98500;"></i>
+                </div>
+                <div class="flex-grow-1">
+                  <div class="fw-semibold">Gérer les correspondances ALX / Total / Edenred</div>
+                  <div class="small text-muted mt-1">
+                    Associe des libellés externes à ce type de dépense pour l’affectation automatique lors des imports.
+                  </div>
+
+                  <div class="mt-3">
+                    <a class="btn btn-outline-secondary btn-sm fw-semibold"
+                       href="{{ path('app_administrateur_produit_external_id_index', { entite: entite.id, produit: t.id }) }}">
+                      <i class="bi bi-link-45deg me-1"></i> Ouvrir les correspondances
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+
+      {# ===== Actions bas ===== #}
+      <div class="d-flex justify-content-end gap-2 mt-3">
+        <a class="btn btn-secondary"
+           href="{{ path('app_administrateur_produit_index', { entite: entite.id }) }}">
+          <i class="bi bi-arrow-left"></i> Retour
+        </a>
+
+        <button type="submit" class="btn btn-warning fw-semibold" id="btnBottomSubmit">
+          <i class="bi bi-check2-circle me-1"></i> {{ is_edit ? 'Enregistrer' : 'Créer' }}
+        </button>
+      </div>
+
+    </div>
+
+    {# ====================== COL RIGHT ====================== #}
+    <div class="col-lg-4">
+
+      <div class="cardx mb-4">
+        <div class="cardx-h">
+          <h5 class="cardx-title"><i class="bi bi-clipboard2-check text-warning"></i> Résumé</h5>
+          <span class="chip">Contrôle</span>
+        </div>
+
+        <div class="p-3 p-md-4">
+          <div class="small text-muted mb-3">Vérifie avant d’enregistrer.</div>
+
+          <div class="border rounded-4 p-3 mb-3"
+               style="border-color: var(--stroke) !important; background: linear-gradient(180deg, color-mix(in srgb, var(--theme-color-principal) 8%, transparent), transparent);">
+            <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+              <div class="fw-bold">Type de dépense</div>
+              <span id="resume-valid-pill"
+                    class="badge rounded-pill px-3 py-2"
+                    style="border:1px solid var(--stroke); background: rgba(255,193,7,.15); color: var(--ink);">
+                ⚠️ Incomplet
+              </span>
+            </div>
+
+            <div class="mt-2 small">
+              <div class="d-flex justify-content-between gap-3 py-1">
+                <span class="text-muted">Catégorie</span>
+                <span class="fw-semibold text-end" id="resume-cat">-</span>
+              </div>
+              <div class="d-flex justify-content-between gap-3 py-1">
+                <span class="text-muted">Sous-catégorie</span>
+                <span class="fw-semibold text-end" id="resume-subcat">-</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <a class="btn btn-light w-50"
+               href="{{ path('app_administrateur_produit_index', { entite: entite.id }) }}">Annuler</a>
+            <button type="submit" class="btn btn-warning fw-semibold w-50" id="btnRightSubmit">
+              <i class="bi bi-check2-circle me-1"></i> Enregistrer
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="sticky-actions d-none d-lg-block">
+        <div class="d-flex align-items-center justify-content-between gap-2">
+          <div class="small text-muted">
+            <strong class="text-dark">Astuce :</strong> libellé + catégorie.
+          </div>
+          <button type="submit" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-check2"></i>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  {# important : garder le token CSRF #}
+  {{ form_widget(form._token) }}
+  {{ form_end(form, { render_rest: false }) }}
+
+  <script>
+  document.addEventListener('DOMContentLoaded', function () {
+
+    // ----- TomSelect helper -----
+    function initTomSelectOn(el, opts){
+      if (!el) return null;
+      if (el.tomselect) return el.tomselect;
+
+      return new TomSelect(el, Object.assign({
+        dropdownParent: 'body',
+        create: false,
+        allowEmptyOption: true,
+        maxItems: 1,
+        plugins: ['clear_button'],
+        render: { no_results: () => '<div class="px-2 py-1 text-muted">Aucun résultat</div>' }
+      }, opts || {}));
+    }
+
+    // ----- DOM -----
+    const catEl     = document.getElementById('{{ form.categorieProduit.vars.id }}');
+    const subEl     = document.getElementById('{{ form.sousCategorieProduit.vars.id }}');
+
+    const $r = {
+      cat: document.getElementById('resume-cat'),
+      sub: document.getElementById('resume-subcat'),
+      pill: document.getElementById('resume-valid-pill')
+    };
+
+    const catTS = initTomSelectOn(catEl);
+    const subTS = initTomSelectOn(subEl);
+
+    function selectedText(selectEl){
+      if (!selectEl) return '';
+      if (selectEl.tomselect) {
+        const items = selectEl.tomselect.items || [];
+        return items.map(v => (selectEl.tomselect.options[v]?.text || '')).filter(Boolean).join(', ');
+      }
+      return Array.from(selectEl.selectedOptions).map(o => o.textContent.trim()).join(', ');
+    }
+
+    function refreshResume(){
+      const cat = selectedText(catEl) || '-';
+      const sub = selectedText(subEl) || '-';
+
+      if ($r.cat)     $r.cat.textContent = cat;
+      if ($r.sub)     $r.sub.textContent = sub;
+
+      const ok = !! (catEl?.value && catEl.value !== '');
+      if ($r.pill) {
+        $r.pill.textContent = ok ? '✅ Complet' : '⚠️ Incomplet';
+        $r.pill.style.background = ok ? 'rgba(25,135,84,.15)' : 'rgba(255,193,7,.15)';
+        $r.pill.style.borderColor = ok ? 'rgba(25,135,84,.35)' : 'rgba(255,193,7,.35)';
+        $r.pill.style.color = 'var(--ink)';
+      }
+    }
+
+
+    catTS?.on('change', refreshResume);
+    subTS?.on('change', refreshResume);
+
+    catEl?.addEventListener('change', refreshResume);
+    subEl?.addEventListener('change', refreshResume);
+
+    refreshResume();
+  });
+  </script>
+
+{% endblock %}

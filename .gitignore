@@ -1,20 +1,24 @@
+.DS_Store
+.vscode/
+.idea/
 
-###> symfony/framework-bundle ###
-/.env.local
-/.env.local.php
-/.env.*.local
-/config/secrets/prod/prod.decrypt.private.php
-/public/bundles/
-/var/
-/vendor/
-###< symfony/framework-bundle ###
+.env.local
+.env.local.php
+.env.*.local
+.env.local.php.bak
 
-###> phpunit/phpunit ###
-/phpunit.xml
-/.phpunit.cache/
-###< phpunit/phpunit ###
-
-###> symfony/asset-mapper ###
-/public/assets/
+/config/.env
+/config/.env.local
+/config/.env.local.php
+/config/.env.prod.local
+/config/gcp/
 /assets/vendor/
-###< symfony/asset-mapper ###
+
+/node_modules/
+/vendor/
+/var/
+
+/public/dist/
+/public/vendor/
+/public/uploads/
+

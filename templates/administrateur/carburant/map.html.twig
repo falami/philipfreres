@@ -1,0 +1,1225 @@
+{# templates/administrateur/carburant/map.html.twig #}
+{% extends 'base_admin.html.twig' %}
+{% block title %}Carte des dépenses carburant{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('dist/css/style.css') }}">
+  <link rel="stylesheet" href="{{ asset('dist/css/formulaire.css') }}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+  {# Leaflet + cluster #}
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+
+  <style>
+    :root{
+      --theme-color-principal: {{ themeColorPrimaire|default(entite.couleurPrincipal|default('#233342')) }};
+      --theme-color-secondaire: {{ themeColorSecondaire|default(entite.couleurSecondaire|default('#ffc107')) }};
+      --theme-color-tertiaire: {{ themeColorTertiaire|default(entite.couleurTertiaire|default('#F0F0F0')) }};
+      --theme-color-quaternaire: {{ couleurQuaternaire|default(entite.couleurQuaternaire|default('#000000')) }};
+      --bg:#f5f7fb; --panel:#fff; --ink:#0f172a; --muted:#64748b;
+      --stroke: rgba(15, 23, 42, .10); --shadow: 0 18px 55px rgba(15, 23, 42, .10);
+      --radius:18px;
+    }
+
+    body{
+      background: radial-gradient(900px 380px at 20% 0%,
+        color-mix(in srgb, var(--theme-color-secondaire) 10%, transparent),
+        transparent 60%
+      ),
+      radial-gradient(900px 380px at 90% 10%,
+        color-mix(in srgb, var(--theme-color-principal) 10%, transparent),
+        transparent 60%
+      ),
+      var(--bg);
+    }
+
+    .hero{
+      border-radius: 22px; position: relative; overflow: hidden; color:#fff;
+      box-shadow: 0 18px 50px rgba(0,0,0,.14);
+      background:
+        radial-gradient(1200px 420px at 12% -10%,
+          color-mix(in srgb, var(--theme-color-tertiaire) 35%, transparent),
+          transparent 58%
+        ),
+        radial-gradient(900px 380px at 92% 0%,
+          color-mix(in srgb, var(--theme-color-secondaire) 32%, transparent),
+          transparent 60%
+        ),
+        radial-gradient(700px 260px at 55% 115%,
+          color-mix(in srgb, var(--theme-color-quaternaire) 18%, transparent),
+          transparent 62%
+        ),
+        linear-gradient(135deg,
+          color-mix(in srgb, var(--theme-color-principal) 92%, #000 8%),
+          color-mix(in srgb, var(--theme-color-principal) 70%, #fff 30%)
+        );
+    }
+    .hero::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,0) 55%);opacity:.85;}
+    .hero .accent{width:12px;border-radius:999px;background:var(--theme-color-secondaire);box-shadow:0 0 0 6px color-mix(in srgb,var(--theme-color-secondaire) 18%,transparent);}
+    .hero .chip{display:inline-flex;align-items:center;gap:.5rem;padding:.32rem .7rem;border-radius:999px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.14);font-size:.82rem;color:rgba(255,255,255,.92);backdrop-filter:blur(6px);white-space:nowrap;}
+    .hero .chip i{color:var(--theme-color-secondaire);}
+
+
+    .cardx{ background:var(--panel); border:1px solid var(--stroke); border-radius:var(--radius); box-shadow:0 10px 28px rgba(15,23,42,.08); overflow:visible;}
+    .cardx-h{
+      padding: 1rem 1.1rem;
+      display:flex; align-items:center; justify-content:space-between; gap:1rem;
+      border-bottom:1px solid var(--stroke);
+    }
+    .cardx-title{ margin:0; font-weight:900; letter-spacing:-.01em; color:var(--ink); display:flex; align-items:center; gap:.6rem;}
+    .cardx-title i{
+      width: 34px; height: 34px;
+      display:inline-grid; place-items:center;
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--theme-color-secondaire) 18%, #fff);
+      border: 1px solid color-mix(in srgb, var(--theme-color-secondaire) 22%, var(--stroke));
+    }
+    .chip{ font-size:.78rem; padding:.25rem .55rem; border-radius:999px; background:color-mix(in srgb,var(--theme-color-principal) 10%,transparent); border:1px solid color-mix(in srgb,var(--theme-color-principal) 18%, var(--stroke)); color:var(--muted); white-space:nowrap;}
+
+    /* ===== TOOLBAR (same as dashboard) ===== */
+    .toolbar{
+      border-radius: 16px;
+      background: #fff;
+      border: 1px solid var(--stroke);
+      box-shadow: 0 10px 24px rgba(0,0,0,.05);
+      padding: .85rem;
+    }
+    .filters-sticky{ position: sticky; top: 0px; z-index: 20; }
+    .toolbar .chip{
+      display:inline-flex; align-items:center; gap:.5rem;
+      padding:.35rem .7rem;
+      border-radius:999px;
+      background: rgba(0,0,0,.03);
+      border: 1px solid rgba(0,0,0,.06);
+      font-size:.85rem;
+      color: rgba(0,0,0,.65);
+    }
+    .toolbar .chip .dropdown-toggle{
+      border-radius: 999px;
+      border: 1px solid rgba(0,0,0,.10);
+      background: rgba(255,255,255,.75);
+      box-shadow: 0 8px 18px rgba(0,0,0,.06);
+      color: rgba(0,0,0,.72);
+      font-weight: 700;
+      padding: .38rem .70rem;
+      line-height: 1.1;
+      transition: transform .08s ease, box-shadow .18s ease, border-color .18s ease;
+    }
+    .toolbar .chip .dropdown-toggle:hover{
+      border-color: rgba(0,0,0,.16);
+      box-shadow: 0 12px 22px rgba(0,0,0,.08);
+    }
+    .toolbar .dropdown-menu{
+      border-radius: 16px;
+      border: 1px solid rgba(0,0,0,.10);
+      box-shadow: 0 18px 46px rgba(0,0,0,.18);
+      padding: .65rem;
+      background:
+        radial-gradient(900px 220px at 10% 0%, rgba(255,193,7,.10), transparent 55%),
+        #fff;
+      overflow: hidden;
+    }
+    .toolbar .dropdown-menu .form-control{
+      border-radius: 999px;
+      border: 1px solid rgba(0,0,0,.12);
+      background: rgba(255,255,255,.95);
+      padding: .42rem .85rem;
+      box-shadow: none !important;
+    }
+    .toolbar .dropdown-menu .form-control:focus{
+      border-color: rgba(255,193,7,.55);
+      box-shadow: 0 0 0 .2rem rgba(255,193,7,.18) !important;
+    }
+    .toolbar .dropdown-menu .btn{
+      border-radius: 999px;
+      border: 1px solid rgba(0,0,0,.10);
+      background: rgba(0,0,0,.03);
+      font-weight: 700;
+      padding: .35rem .7rem;
+    }
+    .toolbar .dropdown-menu .btn:hover{
+      background: rgba(255,193,7,.12);
+      border-color: rgba(255,193,7,.35);
+    }
+    .toolbar .dropdown-menu .dropdown-list{
+      border-radius: 12px;
+      border: 1px solid rgba(0,0,0,.06);
+      background: rgba(255,255,255,.92);
+      padding: .25rem;
+      max-height: 280px;
+      overflow: auto;
+    }
+    .toolbar .dropdown-menu .dropdown-item{
+      border-radius: 12px;
+      padding: .45rem .55rem;
+      margin: .10rem 0;
+      border: 1px solid transparent;
+      background: transparent;
+    }
+    .toolbar .dropdown-menu .dropdown-item:hover{
+      background: rgba(255,193,7,.10);
+      border-color: rgba(255,193,7,.20);
+    }
+    .toolbar .dropdown-menu .form-check-input{
+      width: 1.05rem;
+      height: 1.05rem;
+      border-radius: .35rem;
+      border: 1px solid rgba(0,0,0,.18);
+      margin-top: 0;
+    }
+    .toolbar .dropdown-menu .form-check-input:checked{
+      background-color: var(--theme-color-secondaire);
+      border-color: rgba(0,0,0,.10);
+    }
+    .toolbar .dropdown-menu *::-webkit-scrollbar{ width: 10px; }
+    .toolbar .dropdown-menu *::-webkit-scrollbar-track{ background: rgba(0,0,0,.04); border-radius: 999px; }
+    .toolbar .dropdown-menu *::-webkit-scrollbar-thumb{ background: rgba(0,0,0,.18); border-radius: 999px; }
+    .toolbar .dropdown-menu *::-webkit-scrollbar-thumb:hover{ background: rgba(0,0,0,.26); }
+
+    .badge-soft{
+      border:1px solid var(--stroke);
+      background: color-mix(in srgb, var(--theme-color-secondaire) 16%, var(--panel));
+      color: var(--ink);
+      border-radius: 999px;
+      padding: .35rem .6rem;
+      font-weight: 900;
+      font-size:.78rem;
+      white-space: nowrap;
+    }
+
+    /* ===== Map container premium ===== */
+    #fuelMap{
+      height: 640px;
+      border-radius: 18px;
+      border: 1px dashed color-mix(in srgb, var(--theme-color-principal) 22%, var(--stroke));
+      overflow: hidden;
+      background:
+        radial-gradient(900px 220px at 25% 0%,
+          color-mix(in srgb, var(--theme-color-principal) 8%, transparent),
+          transparent 60%
+        ),
+        #fff;
+    }
+
+
+    /* =========================================
+      FIX Z-INDEX: la carte ne doit jamais
+      passer au-dessus des filtres / dropdowns
+      ========================================= */
+
+    /* 1) On crée un contexte isolé pour la carte */
+    #fuelMap{
+      position: relative;
+      z-index: 1;           /* carte = couche basse */
+      isolation: isolate;   /* évite les z-index Leaflet qui "débordent" */
+    }
+
+    /* 2) On force les éléments Leaflet à rester sous les menus */
+    #fuelMap .leaflet-pane,
+    #fuelMap .leaflet-map-pane,
+    #fuelMap .leaflet-control-container{
+      z-index: 1 !important;
+    }
+
+    /* 3) Les filtres sticky + dropdown doivent être au-dessus */
+    .filters-sticky{
+      position: sticky;
+      top: 0;
+      z-index: 1050;        /* au-dessus de Leaflet */
+    }
+
+    /* Bootstrap dropdown (au-dessus de tout) */
+    .dropdown-menu{
+      position: absolute;
+      z-index: 2000;
+    }
+
+    /* Si un jour tu as des modales: au-dessus aussi */
+    .modal,
+    .modal-backdrop{
+      z-index: 3000;
+    }
+
+    .money{ font-variant-numeric: tabular-nums; font-weight: 950; white-space: nowrap; }
+
+    /* Popup nicer */
+    .leaflet-popup-content-wrapper{
+      border-radius: 16px !important;
+      box-shadow: 0 22px 55px rgba(15,23,42,.20) !important;
+      border: 1px solid rgba(15,23,42,.10) !important;
+      overflow: hidden;
+    }
+    .leaflet-popup-tip{
+      box-shadow: 0 22px 55px rgba(15,23,42,.20) !important;
+    }
+
+    /* ===========================
+       MOBILE ONLY - Filters collapse
+       (identique à ton dashboard)
+       =========================== */
+    @media (max-width: 576px){
+      .toolbar.filters-sticky{ position: sticky; top: 0; z-index: 30; }
+
+      .filters-mobile-toggle{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:.75rem;
+        padding:.6rem 1rem;
+        border-radius: 14px;
+        border: 1px solid var(--stroke);
+        background: rgba(255,255,255,.92);
+        box-shadow: 0 10px 24px rgba(0,0,0,.06);
+        cursor:pointer;
+        user-select:none;
+      }
+      .filters-mobile-toggle .left{
+        display:flex; align-items:center; gap:.6rem;
+        font-weight: 900; color: var(--ink);
+      }
+      .filters-mobile-toggle .left i{ color: var(--theme-color-secondaire); font-size: 1.05rem; }
+      .filters-mobile-toggle .right{ display:flex; align-items:center; gap:.5rem; }
+      .filters-mobile-toggle .chev{ transition: transform .18s ease; opacity:.85; }
+
+      .toolbar .filters-mobile-body{
+        margin-top:.55rem;
+        overflow: hidden;
+        max-height: 0;
+        opacity: 0;
+        transform: translateY(-4px);
+        transition: max-height .22s ease, opacity .18s ease, transform .18s ease;
+      }
+
+      .toolbar.is-open .filters-mobile-body{
+        max-height: 900px;
+        opacity: 1;
+        transform: translateY(0);
+      }
+      .toolbar.is-open .filters-mobile-toggle .chev{ transform: rotate(180deg); }
+
+      .toolbar .filters-mobile-body > .d-flex{
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: .55rem !important;
+      }
+      .toolbar .filters-mobile-body .chip{
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+      }
+      .toolbar .dropdown-menu{ min-width: 100% !important; }
+
+      #fuelMap{ height: 520px; }
+    }
+
+    /* évite qu'un parent crée un stacking context au-dessus du sticky */
+.cardx,
+.toolbar{
+  transform: none !important;
+  filter: none !important;
+}
+
+.leaflet-control{ z-index: 500 !important; }
+.leaflet-top, .leaflet-bottom{ z-index: 500 !important; }
+.leaflet-pane{ z-index: 200 !important; }
+  </style>
+{% endblock %}
+
+{% block javascripts %}
+  {{ parent() }}
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://npmcdn.com/flatpickr/dist/l10n/fr.js"></script>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+{% endblock %}
+
+{% block body %}
+
+  {# ===== HERO ===== #}
+  <div class="hero p-3 mb-4 d-flex gap-3">
+    <div class="accent"></div>
+    <div class="flex-grow-1">
+      <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+        <div>
+          <h2 class="m-0 fw-bold">
+            <i class="bi bi-geo-alt-fill me-2" style="color:var(--theme-color-secondaire)"></i>
+            Carte des dépenses carburant
+          </h2>
+          <div class="opacity-75 mt-1">
+            Visualise les lieux de dépense (ALX + TOTAL + EDENRED) avec employé, engin, date/heure.
+          </div>
+
+          <div class="d-flex flex-wrap gap-2 mt-3">
+            <span class="chip"><i class="bi bi-truck"></i> Carburant</span>
+            <span class="chip"><i class="bi bi-building"></i> {{ entite.nom }}</span>
+            <span class="chip"><i class="bi bi-stars"></i> Premium</span>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2 flex-wrap">
+          <button class="btn btn-light btn-sm fw-semibold" id="btnRefreshMap">
+            <i class="bi bi-arrow-repeat me-1"></i> Actualiser
+          </button>
+          <a class="btn btn-primary btn-sm fw-semibold"
+            href="{{ path('app_administrateur_geo_reconcile', { entite: entite.id }) }}">
+            <i class="bi bi-eye me-2"></i> Matchmaking
+          </a>
+
+          
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ===== TOOLBAR FILTRES (mêmes ids/classes que ton dashboard) ===== #}
+  <div class="toolbar mb-3 filters-sticky" id="fuelToolbar">
+
+    <div class="filters-mobile-toggle d-none d-sm-none" id="btnFiltersMobile" role="button" tabindex="0">
+      <div class="left">
+        <i class="bi bi-sliders"></i>
+      </div>
+      <div class="right">
+        <span class="badge-soft" id="filtersMobileCount">-</span>
+        <i class="bi bi-chevron-down chev"></i>
+      </div>
+    </div>
+
+    <div class="filters-mobile-body">
+      <div class="d-flex flex-wrap gap-2 align-items-center">
+
+        <div class="me-auto d-flex flex-wrap gap-2 align-items-center">
+
+          {# Période (ids identiques) #}
+          <span class="chip">
+            <i class="bi bi-calendar3"></i>
+
+            <select id="periodType" class="form-select form-select-sm ms-2" style="width:auto">
+              <option value="all">Tout</option>
+              <option value="year" selected>Année</option>
+              <option value="quarter">Trimestre</option>
+              <option value="month">Mois</option>
+            </select>
+
+            <select id="periodYear" class="form-select form-select-sm ms-2" style="width:auto"></select>
+
+            <select id="periodQuarter" class="form-select form-select-sm ms-2" style="width:auto; display:none">
+              <option value="1">T1</option>
+              <option value="2">T2</option>
+              <option value="3">T3</option>
+              <option value="4">T4</option>
+            </select>
+
+            <select id="periodMonth" class="form-select form-select-sm ms-2" style="width:auto; display:none"></select>
+
+            <button type="button" class="btn btn-sm btn-light ms-2" id="btnPeriodClear" title="Réinitialiser la période">
+              <i class="bi bi-eraser"></i>
+            </button>
+          </span>
+
+          {# Fournisseurs #}
+          <span class="chip">
+            <i class="bi bi-truck"></i>
+            Four.
+            <button class="btn btn-sm btn-light ms-2 dropdown-toggle" type="button"
+                    data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+              <span id="provSelectedCount">Tous</span>
+            </button>
+
+            <div class="dropdown-menu" style="min-width:340px;">
+              <input type="text" class="form-control form-control-sm mb-2" placeholder="Rechercher..." data-filter="prov">
+              <div class="d-flex gap-2 mb-2">
+                <button class="btn btn-sm btn-outline-secondary" type="button" data-check-all="prov">Tout</button>
+                <button class="btn btn-sm btn-outline-secondary" type="button" data-uncheck-all="prov">Aucun</button>
+              </div>
+
+              <div id="provList" class="dropdown-list">
+                {% set provs = ['ALX','TOTAL','EDENRED'] %}
+                {% for p in provs %}
+                  <label class="dropdown-item d-flex align-items-center gap-2" style="white-space:normal;">
+                    <input class="form-check-input m-0 fuel-filter-prov" type="checkbox" value="{{ p }}" checked>
+                    <span>{{ p }}</span>
+                  </label>
+                {% endfor %}
+              </div>
+            </div>
+          </span>
+
+          {# Engins #}
+          <span class="chip">
+            <i class="bi bi-truck-front"></i>
+            Eng.
+            <button class="btn btn-sm btn-light ms-2 dropdown-toggle" type="button"
+                    data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+              <span id="enginSelectedCount">Tous</span>
+            </button>
+
+            <div class="dropdown-menu" style="min-width:360px;">
+              <input type="text" class="form-control form-control-sm mb-2" placeholder="Rechercher..." data-filter="engin">
+              <div class="d-flex gap-2 mb-2">
+                <button class="btn btn-sm btn-outline-secondary" type="button" data-check-all="engin">Tout</button>
+                <button class="btn btn-sm btn-outline-secondary" type="button" data-uncheck-all="engin">Aucun</button>
+              </div>
+
+              <div id="enginList" class="dropdown-list">
+                <label class="dropdown-item d-flex align-items-center gap-2" style="white-space:normal;">
+                  <input class="form-check-input m-0 fuel-filter-engin" type="checkbox" value="__NULL__" checked>
+                  <span><i class="bi bi-slash-circle me-1"></i> Non catégorisé</span>
+                </label>
+
+                {% for e in engins %}
+                  <label class="dropdown-item d-flex align-items-center gap-2" style="white-space:normal;">
+                    <input class="form-check-input m-0 fuel-filter-engin" type="checkbox" value="{{ e.id }}" checked>
+                    <span>{{ e.nom }}</span>
+                  </label>
+                {% endfor %}
+              </div>
+            </div>
+          </span>
+
+          {# Employés #}
+          <span class="chip">
+            <i class="bi bi-people"></i>
+            Emp.
+            <button class="btn btn-sm btn-light ms-2 dropdown-toggle" type="button"
+                    data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+              <span id="empSelectedCount">Tous</span>
+            </button>
+
+            <div class="dropdown-menu" style="min-width:380px;">
+              <input type="text" class="form-control form-control-sm mb-2" placeholder="Rechercher..." data-filter="emp">
+              <div class="d-flex gap-2 mb-2">
+                <button class="btn btn-sm btn-outline-secondary" type="button" data-check-all="emp">Tout</button>
+                <button class="btn btn-sm btn-outline-secondary" type="button" data-uncheck-all="emp">Aucun</button>
+              </div>
+
+              <div id="empList" class="dropdown-list">
+                <label class="dropdown-item d-flex align-items-center gap-2" style="white-space:normal;">
+                  <input class="form-check-input m-0 fuel-filter-emp" type="checkbox" value="__NULL__" checked>
+                  <span><i class="bi bi-slash-circle me-1"></i> Non catégorisé</span>
+                </label>
+
+                {% for u in employes %}
+                  <label class="dropdown-item d-flex align-items-center gap-2" style="white-space:normal;">
+                    <input class="form-check-input m-0 fuel-filter-emp" type="checkbox" value="{{ u.id }}" checked>
+                    <span>{{ u.prenom }} {{ u.nom }}</span>
+                  </label>
+                {% endfor %}
+              </div>
+            </div>
+          </span>
+
+          {# Catégories produit #}
+          <span class="chip">
+            <i class="bi bi-grid-3x3-gap"></i>
+            Cat.
+            <button class="btn btn-sm btn-light ms-2 dropdown-toggle" type="button"
+                    data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+              <span id="catSelectedCount">Tous</span>
+            </button>
+
+            <div class="dropdown-menu" style="min-width:380px;">
+              <input type="text" class="form-control form-control-sm mb-2" placeholder="Rechercher..." data-filter="cat">
+              <div class="d-flex gap-2 mb-2">
+                <button class="btn btn-sm btn-outline-secondary" type="button" data-check-all="cat">Tout</button>
+                <button class="btn btn-sm btn-outline-secondary" type="button" data-uncheck-all="cat">Aucun</button>
+              </div>
+
+              <div id="catList" class="dropdown-list">
+                <label class="dropdown-item d-flex align-items-center gap-2" style="white-space:normal;">
+                  <input class="form-check-input m-0 fuel-filter-cat" type="checkbox" value="__NULL__" checked>
+                  <span><i class="bi bi-slash-circle me-1"></i> Non catégorisé</span>
+                </label>
+
+                {% for c in categorieProduits %}
+                  <label class="dropdown-item d-flex align-items-center gap-2" style="white-space:normal;">
+                    <input class="form-check-input m-0 fuel-filter-cat" type="checkbox" value="{{ c.value }}" checked>
+                    <span>{{ c.label() }}</span>
+                  </label>
+                {% endfor %}
+              </div>
+            </div>
+          </span>
+
+          {# Sous-catégories produit #}
+          <span class="chip">
+            <i class="bi bi-diagram-3"></i>
+            Ss-cat.
+            <button class="btn btn-sm btn-light ms-2 dropdown-toggle" type="button"
+                    data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+              <span id="sousSelectedCount">Tous</span>
+            </button>
+
+            <div class="dropdown-menu" style="min-width:420px;">
+              <input type="text" class="form-control form-control-sm mb-2" placeholder="Rechercher..." data-filter="sous">
+              <div class="d-flex gap-2 mb-2">
+                <button class="btn btn-sm btn-outline-secondary" type="button" data-check-all="sous">Tout</button>
+                <button class="btn btn-sm btn-outline-secondary" type="button" data-uncheck-all="sous">Aucun</button>
+              </div>
+
+              <div id="sousList" class="dropdown-list">
+                <label class="dropdown-item d-flex align-items-center gap-2" style="white-space:normal;">
+                  <input class="form-check-input m-0 fuel-filter-sous" type="checkbox" value="__NULL__" checked>
+                  <span><i class="bi bi-slash-circle me-1"></i> Non catégorisé</span>
+                </label>
+
+                {% for s in sousCategorieProduits %}
+                  <label class="dropdown-item d-flex align-items-center gap-2" style="white-space:normal;">
+                    <input class="form-check-input m-0 fuel-filter-sous" type="checkbox" value="{{ s.value }}" checked>
+                    <span>{{ s.label() }}</span>
+                  </label>
+                {% endfor %}
+              </div>
+            </div>
+          </span>
+
+        </div>
+
+        <div class="d-flex gap-2 align-items-center">
+          <button id="btnReset" class="btn btn-outline-secondary btn-sm fw-semibold" type="button">
+            <i class="bi bi-arrow-counterclockwise"></i> Reset
+          </button>
+        </div>
+
+      </div>
+
+      {# champs cachés conservés pour getFilters() #}
+      <input type="hidden" id="fStart" value="{{ start }}">
+      <input type="hidden" id="fEnd" value="{{ end }}">
+      <input type="text" class="d-none" id="fRange" />
+    </div>
+  </div>
+
+  {# ===== MAP ONLY ===== #}
+  <div class="cardx mb-5">
+    <div class="cardx-h">
+      <h5 class="cardx-title"><i class="bi bi-pin-map-fill text-warning"></i> Lieux de dépense</h5>
+      <span class="chip"><i class="bi bi-layers"></i> Cluster</span>
+    </div>
+
+    <div class="p-3 p-md-4">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+        <span class="badge-soft" id="mapKpiPlaces"><i class="bi bi-geo me-1"></i> -</span>
+        <span class="small text-muted" id="mapKpiInfo">-</span>
+      </div>
+
+      <div id="fuelMap"></div>
+
+      <div class="small text-muted mt-2">
+        Astuce : clique un point pour voir <b>employé</b>, <b>engin</b>, <b>date/heure</b>, <b>montant</b> (sample).
+      </div>
+    </div>
+  </div>
+
+
+<script>
+(function(){
+  if (window.flatpickr && window.flatpickr.l10ns?.fr) flatpickr.localize(flatpickr.l10ns.fr);
+
+  // =========================
+  // AUTO REFRESH (robuste)
+  // =========================
+  let autoTimer = null;
+  let isRefreshing = false;
+  let pendingRefresh = false;
+
+  function scheduleRefresh(delay = 350){
+    clearTimeout(autoTimer);
+    autoTimer = setTimeout(() => runRefresh(), delay);
+  }
+
+  async function runRefresh(){
+    if (isRefreshing) { pendingRefresh = true; return; }
+    isRefreshing = true;
+    try { await refresh(); }
+    finally {
+      isRefreshing = false;
+      if (pendingRefresh){ pendingRefresh = false; scheduleRefresh(120); }
+    }
+  }
+
+  // =========================
+  // DATES (flatpickr range)
+  // =========================
+  const $start = document.getElementById('fStart');
+  const $end   = document.getElementById('fEnd');
+  const $range = document.getElementById('fRange');
+
+  function isoLocal(d){
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  }
+  function dateFromIso(isoStr){
+    if (!isoStr) return null;
+    const [y,m,d] = isoStr.split('-').map(Number);
+    if (!y||!m||!d) return null;
+    return new Date(y, m-1, d);
+  }
+
+  const fp = flatpickr($range, {
+    locale: { ...flatpickr.l10ns.fr, rangeSeparator: " → " },
+    mode: "range",
+    dateFormat: "d/m/Y",
+    allowInput: true,
+    disableMobile: true,
+    defaultDate: [dateFromIso($start.value), dateFromIso($end.value)].filter(Boolean),
+    onChange: function(sd){
+      const from = sd[0] ? isoLocal(sd[0]) : '';
+      const to   = sd[1] ? isoLocal(sd[1]) : from;
+      $start.value = from;
+      $end.value = to;
+      scheduleRefresh(250);
+    }
+  });
+
+  // =========================
+  // PERIOD SELECTORS (year/quarter/month)
+  // =========================
+  const $periodType    = document.getElementById('periodType');
+  const $periodYear    = document.getElementById('periodYear');
+  const $periodQuarter = document.getElementById('periodQuarter');
+  const $periodMonth   = document.getElementById('periodMonth');
+  const $btnPeriodClear= document.getElementById('btnPeriodClear');
+
+  function pad2(n){ return String(n).padStart(2,'0'); }
+  function lastDayOfMonth(year, month1to12){ return new Date(year, month1to12, 0).getDate(); }
+
+  function setRangeIso(isoStart, isoEnd){
+    $start.value = isoStart;
+    $end.value   = isoEnd;
+    fp.setDate([dateFromIso(isoStart), dateFromIso(isoEnd)], true);
+  }
+
+  function updatePeriodUi(){
+    const t = $periodType.value;
+    $periodQuarter.style.display = (t === 'quarter') ? '' : 'none';
+    $periodMonth.style.display   = (t === 'month')   ? '' : 'none';
+    $periodYear.style.display    = (t === 'all')     ? 'none' : '';
+  }
+
+  function applyPeriodToRange(){
+    const t = $periodType.value;
+
+    if (t === 'all') {
+      setRangeIso("{{ start }}", "{{ end }}");
+      return;
+    }
+
+    const y = parseInt($periodYear.value || '0', 10);
+    if (!Number.isFinite(y) || y <= 0) return;
+
+    if (t === 'year') {
+      setRangeIso(`${y}-01-01`, `${y}-12-31`);
+      return;
+    }
+
+    if (t === 'quarter') {
+      const q = parseInt($periodQuarter.value || '0', 10);
+      if (!Number.isFinite(q) || q < 1 || q > 4) return;
+
+      const sm = (q - 1) * 3 + 1;
+      const em = sm + 2;
+      const endDay = pad2(lastDayOfMonth(y, em));
+      setRangeIso(`${y}-${pad2(sm)}-01`, `${y}-${pad2(em)}-${endDay}`);
+      return;
+    }
+
+    if (t === 'month') {
+      const m = parseInt($periodMonth.value || '0', 10);
+      if (!Number.isFinite(m) || m < 1 || m > 12) return;
+
+      const endDay = pad2(lastDayOfMonth(y, m));
+      setRangeIso(`${y}-${pad2(m)}-01`, `${y}-${pad2(m)}-${endDay}`);
+      return;
+    }
+  }
+
+  function initPeriodSelectors(){
+    const now = new Date();
+    const curY = now.getFullYear();
+    const curM = now.getMonth() + 1;
+    const curQ = Math.floor((curM - 1) / 3) + 1;
+
+    $periodYear.innerHTML = '';
+    for(let y = curY - 4; y <= curY + 1; y++){
+      const opt = document.createElement('option');
+      opt.value = String(y);
+      opt.textContent = String(y);
+      $periodYear.appendChild(opt);
+    }
+    $periodYear.value = String(curY);
+
+    $periodMonth.innerHTML = '';
+    for(let m = 1; m <= 12; m++){
+      const opt = document.createElement('option');
+      opt.value = String(m);
+      opt.textContent = pad2(m);
+      $periodMonth.appendChild(opt);
+    }
+    $periodMonth.value = String(curM);
+
+    $periodQuarter.value = String(curQ);
+
+    $periodType.value = 'year';
+    updatePeriodUi();
+    applyPeriodToRange();
+  }
+
+  initPeriodSelectors();
+
+  $periodType?.addEventListener('change', () => { updatePeriodUi(); applyPeriodToRange(); scheduleRefresh(200); });
+  $periodYear?.addEventListener('change', () => { applyPeriodToRange(); scheduleRefresh(200); });
+  $periodQuarter?.addEventListener('change', () => { applyPeriodToRange(); scheduleRefresh(200); });
+  $periodMonth?.addEventListener('change', () => { applyPeriodToRange(); scheduleRefresh(200); });
+
+  $btnPeriodClear?.addEventListener('click', () => { initPeriodSelectors(); scheduleRefresh(200); });
+
+  // =========================
+  // FILTER HELPERS (dropdowns)
+  // =========================
+  function getChecked(selector){
+    return Array.from(document.querySelectorAll(selector + ':checked'))
+      .map(i => i.value)
+      .filter(v => v !== null && v !== undefined && String(v).trim() !== '');
+  }
+
+  function setAll(selector, checked){
+    document.querySelectorAll(selector).forEach((cb) => {
+      const item = cb.closest('label');
+      const hidden = item?.classList.contains('d-none');
+      if (!hidden) cb.checked = checked;
+    });
+  }
+
+  function updateCounts(){
+    const provAll = document.querySelectorAll('.fuel-filter-prov').length;
+    const engAll  = document.querySelectorAll('.fuel-filter-engin').length;
+    const empAll  = document.querySelectorAll('.fuel-filter-emp').length;
+    const catAll  = document.querySelectorAll('.fuel-filter-cat').length;
+    const sousAll = document.querySelectorAll('.fuel-filter-sous').length;
+
+    const prov = getChecked('.fuel-filter-prov').length;
+    const eng  = getChecked('.fuel-filter-engin').length;
+    const emp  = getChecked('.fuel-filter-emp').length;
+    const cat  = getChecked('.fuel-filter-cat').length;
+    const sous = getChecked('.fuel-filter-sous').length;
+
+    document.getElementById('provSelectedCount').textContent =
+      (prov === 0) ? 'Aucun' : (prov === provAll ? 'Tous' : (prov + ' sel.'));
+    document.getElementById('enginSelectedCount').textContent =
+      (eng === 0) ? 'Aucun' : (eng === engAll ? 'Tous' : (eng + ' sel.'));
+    document.getElementById('empSelectedCount').textContent =
+      (emp === 0) ? 'Aucun' : (emp === empAll ? 'Tous' : (emp + ' sel.'));
+    document.getElementById('catSelectedCount').textContent =
+      (cat === 0) ? 'Aucun' : (cat === catAll ? 'Tous' : (cat + ' sel.'));
+    document.getElementById('sousSelectedCount').textContent =
+      (sous === 0) ? 'Aucun' : (sous === sousAll ? 'Tous' : (sous + ' sel.'));
+  }
+
+  function filterDropdown(listSelector, query){
+    const q = (query || '').trim().toLowerCase();
+
+    document.querySelectorAll(listSelector + ' label').forEach((item) => {
+      const txt = (item.textContent || '').toLowerCase();
+      const match = (q === '') || txt.includes(q);
+
+      item.classList.toggle('d-none', !match);
+
+      // Excel-like: si ça ne matche pas -> on décoche
+      if (!match) {
+        const cb = item.querySelector('input[type="checkbox"]');
+        if (cb && cb.checked) cb.checked = false;
+      }
+    });
+
+    updateCounts();
+  }
+
+  $(document).on('input', 'input[data-filter="prov"]', function(){ filterDropdown('#provList', this.value); });
+  $(document).on('input', 'input[data-filter="engin"]', function(){ filterDropdown('#enginList', this.value); });
+  $(document).on('input', 'input[data-filter="emp"]', function(){ filterDropdown('#empList', this.value); });
+  $(document).on('input', 'input[data-filter="cat"]', function(){ filterDropdown('#catList', this.value); });
+  $(document).on('input', 'input[data-filter="sous"]', function(){ filterDropdown('#sousList', this.value); });
+
+  // Tout/Aucun
+  $(document).on('click', '[data-check-all="prov"]', function(e){ e.preventDefault(); e.stopPropagation(); setAll('.fuel-filter-prov', true); updateCounts(); scheduleRefresh(250); });
+  $(document).on('click', '[data-uncheck-all="prov"]', function(e){ e.preventDefault(); e.stopPropagation(); setAll('.fuel-filter-prov', false); updateCounts(); scheduleRefresh(250); });
+
+  $(document).on('click', '[data-check-all="engin"]', function(e){ e.preventDefault(); e.stopPropagation(); setAll('.fuel-filter-engin', true); updateCounts(); scheduleRefresh(250); });
+  $(document).on('click', '[data-uncheck-all="engin"]', function(e){ e.preventDefault(); e.stopPropagation(); setAll('.fuel-filter-engin', false); updateCounts(); scheduleRefresh(250); });
+
+  $(document).on('click', '[data-check-all="emp"]', function(e){ e.preventDefault(); e.stopPropagation(); setAll('.fuel-filter-emp', true); updateCounts(); scheduleRefresh(250); });
+  $(document).on('click', '[data-uncheck-all="emp"]', function(e){ e.preventDefault(); e.stopPropagation(); setAll('.fuel-filter-emp', false); updateCounts(); scheduleRefresh(250); });
+
+  $(document).on('click', '[data-check-all="cat"]', function(e){ e.preventDefault(); e.stopPropagation(); setAll('.fuel-filter-cat', true); updateCounts(); scheduleRefresh(250); });
+  $(document).on('click', '[data-uncheck-all="cat"]', function(e){ e.preventDefault(); e.stopPropagation(); setAll('.fuel-filter-cat', false); updateCounts(); scheduleRefresh(250); });
+
+  $(document).on('click', '[data-check-all="sous"]', function(e){ e.preventDefault(); e.stopPropagation(); setAll('.fuel-filter-sous', true); updateCounts(); scheduleRefresh(250); });
+  $(document).on('click', '[data-uncheck-all="sous"]', function(e){ e.preventDefault(); e.stopPropagation(); setAll('.fuel-filter-sous', false); updateCounts(); scheduleRefresh(250); });
+
+  $(document).on('change', '.fuel-filter-prov, .fuel-filter-engin, .fuel-filter-emp, .fuel-filter-cat, .fuel-filter-sous', function(){
+    updateCounts();
+    scheduleRefresh(250);
+  });
+
+  updateCounts();
+
+  // =========================
+  // FILTERS -> QUERYSTRING (exact pattern)
+  // =========================
+  function getFilters(){
+    const provAll = document.querySelectorAll('.fuel-filter-prov').length;
+    const engAll  = document.querySelectorAll('.fuel-filter-engin').length;
+    const empAll  = document.querySelectorAll('.fuel-filter-emp').length;
+
+    const prov = getChecked('.fuel-filter-prov');
+
+    const engRaw = getChecked('.fuel-filter-engin');
+    const engNull = engRaw.includes('__NULL__');
+    const engIds  = engRaw.filter(v => v !== '__NULL__').map(v => parseInt(v,10)).filter(Number.isFinite);
+
+    const empRaw = getChecked('.fuel-filter-emp');
+    const empNull = empRaw.includes('__NULL__');
+    const empIds  = empRaw.filter(v => v !== '__NULL__').map(v => parseInt(v,10)).filter(Number.isFinite);
+
+    const catAll  = document.querySelectorAll('.fuel-filter-cat').length;
+    const sousAll = document.querySelectorAll('.fuel-filter-sous').length;
+    const catSel  = getChecked('.fuel-filter-cat');
+    const sousSel = getChecked('.fuel-filter-sous');
+
+    const providersNone = (prov.length === 0);
+    const providers = (prov.length === provAll) ? [] : prov;
+
+    const enginNone = (engRaw.length === 0);
+    const enginAllSelected = (engRaw.length === engAll);
+
+    const employeNone = (empRaw.length === 0);
+    const employeAllSelected = (empRaw.length === empAll);
+
+    return {
+      dateStart: $start.value,
+      dateEnd: $end.value,
+
+      providersNone,
+      providers,
+
+      enginNone,
+      enginIds: enginAllSelected ? [] : engIds,
+      enginUncategorized: (!enginAllSelected && engNull) ? 1 : 0,
+
+      employeNone,
+      employeIds: employeAllSelected ? [] : empIds,
+      employeUncategorized: (!employeAllSelected && empNull) ? 1 : 0,
+
+      categorieNone: (catSel.length === 0),
+      categorieProduits: (catSel.length === catAll) ? [] : catSel,
+
+      sousCategorieNone: (sousSel.length === 0),
+      sousCategorieProduits: (sousSel.length === sousAll) ? [] : sousSel
+    };
+  }
+
+  function qs(filters){
+    const p = new URLSearchParams();
+    p.set('dateStart', filters.dateStart);
+    p.set('dateEnd', filters.dateEnd);
+
+    if (filters.providersNone) p.set('providersNone', '1');
+    if (filters.enginNone) p.set('enginNone', '1');
+    if (filters.employeNone) p.set('employeNone', '1');
+    if (filters.categorieNone) p.set('categorieNone', '1');
+    if (filters.sousCategorieNone) p.set('sousCategorieNone', '1');
+    if (filters.enginUncategorized) p.set('enginUncategorized', '1');
+    if (filters.employeUncategorized) p.set('employeUncategorized', '1');
+
+    (filters.providers||[]).forEach(v => p.append('providers[]', v));
+    (filters.enginIds||[]).forEach(id => p.append('enginIds[]', String(id)));
+    (filters.employeIds||[]).forEach(id => p.append('employeIds[]', String(id)));
+    (filters.categorieProduits||[]).forEach(v => p.append('categorieProduits[]', v));
+    (filters.sousCategorieProduits||[]).forEach(v => p.append('sousCategorieProduits[]', v));
+
+    return p.toString();
+  }
+
+  // =========================
+  // MAP (Leaflet + Cluster)
+  // =========================
+  let map = null;
+  let cluster = null;
+
+  function initMap(){
+    if (map) return;
+
+    map = L.map('fuelMap', {
+      zoomControl: true,
+      scrollWheelZoom: true,
+      preferCanvas: true
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+
+    cluster = L.markerClusterGroup({
+      chunkedLoading: true,
+      spiderfyOnMaxZoom: true,
+      showCoverageOnHover: false,
+      removeOutsideVisibleBounds: true,
+      maxClusterRadius: 52,
+    });
+
+    map.addLayer(cluster);
+    map.setView([46.6, 2.4], 6);
+
+    setTimeout(() => map.invalidateSize(), 120);
+  }
+
+  function escapeHtml(str){
+    return String(str ?? '').replace(/[&<>"']/g, s => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+    }[s]));
+  }
+
+  function money(cents){
+    const n = Number(cents||0)/100;
+    try { return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(n); }
+    catch(e){ return n.toFixed(2).replace('.',',')+' €'; }
+  }
+
+  function fmtDt(iso){
+    if(!iso) return '-';
+    return String(iso).replace('T',' ').slice(0,19);
+  }
+
+  function providerBadge(p){
+    const P = String(p||'').toUpperCase();
+    const meta = { ALX:'bi-upc-scan', TOTAL:'bi-fuel-pump', EDENRED:'bi-credit-card' }[P] || 'bi-tag';
+    return `<span class="badge-soft me-1"><i class="bi ${meta} me-1"></i>${escapeHtml(P)}</span>`;
+  }
+
+  function buildPopup(place){
+    const addr = escapeHtml(place.address || '');
+    const cnt = Number(place.cnt||0);
+    const amount = money(place.amount_cents||0);
+
+    const sample = Array.isArray(place.sample) ? place.sample : [];
+    const rows = sample.map(tx => {
+      const emp = tx.employe ? escapeHtml(tx.employe) : '<span class="text-muted">Non catégorisé</span>';
+      const eng = tx.engin ? escapeHtml(tx.engin) : '<span class="text-muted">Non catégorisé</span>';
+      const lbl = tx.label ? escapeHtml(tx.label) : '<span class="text-muted">-</span>';
+      const cat = tx.categorie ? escapeHtml(tx.categorie) : '<span class="text-muted">-</span>';
+      const sous = tx.sousCategorie ? escapeHtml(tx.sousCategorie) : '<span class="text-muted">-</span>';
+
+      const qty = (tx.qty != null && !Number.isNaN(Number(tx.qty)))
+        ? (Number(tx.qty).toFixed(2).replace('.', ',') + ' u')
+        : '';
+
+      return `
+        <div class="d-flex justify-content-between gap-2 py-1" style="border-bottom:1px solid rgba(15,23,42,.08)">
+          <div style="min-width:0">
+            <div class="small" style="font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+              ${providerBadge(tx.provider)}
+              ${fmtDt(tx.dt)}
+            </div>
+            <div class="small text-muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+              <i class="bi bi-person me-1"></i>${emp}
+              <span class="mx-2">·</span>
+              <i class="bi bi-truck-front me-1"></i>${eng}
+            </div>
+            <div class="small" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+              <i class="bi bi-tag me-1"></i>${lbl}
+              <span class="mx-2">·</span>
+              <i class="bi bi-grid-3x3-gap me-1"></i>${cat}
+              <span class="mx-2">·</span>
+              <i class="bi bi-diagram-3 me-1"></i>${sous}
+            </div>
+          </div>
+          <div class="text-end" style="white-space:nowrap">
+            <div class="money">${money(tx.amount_cents||0)}</div>
+            <div class="small text-muted">${qty}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div style="min-width:340px;max-width:420px">
+        <div class="mb-2">
+          <div style="font-weight:950;letter-spacing:-.01em">
+            <i class="bi bi-geo-alt-fill me-1" style="color:var(--theme-color-secondaire)"></i>
+            ${addr}
+          </div>
+          <div class="small text-muted mt-1">
+            <span class="badge-soft"><i class="bi bi-receipt me-1"></i>${cnt} transaction(s)</span>
+            <span class="badge-soft ms-1"><i class="bi bi-cash-stack me-1"></i>${amount}</span>
+          </div>
+        </div>
+
+        <div style="border:1px solid rgba(15,23,42,.10);border-radius:14px;overflow:hidden;background:rgba(255,255,255,.9)">
+          ${rows || `<div class="p-2 small text-muted">Aucune transaction à afficher.</div>`}
+        </div>
+      </div>
+    `;
+  }
+
+  function clearMap(){
+    if (!cluster) return;
+    cluster.clearLayers();
+  }
+
+  async function loadMapPlaces(){
+    initMap();
+
+    const url = "{{ path('app_administrateur_fuel_api_map_places', {entite: entite.id}) }}?" + qs(getFilters());
+    const r = await fetch(url, { headers: { 'Accept':'application/json' }});
+    if(!r.ok) throw new Error('Erreur API map');
+
+    const data = await r.json();
+    const places = Array.isArray(data.places) ? data.places : [];
+
+    clearMap();
+
+    document.getElementById('mapKpiPlaces').innerHTML = `<i class="bi bi-geo me-1"></i> ${places.length} lieu(x)`;
+    document.getElementById('mapKpiInfo').textContent = places.length ? 'Zoom pour détailler' : 'Aucun point géocodé';
+
+    for (const p of places) {
+      if (p.lat == null || p.lng == null) continue;
+
+      const m = L.marker([p.lat, p.lng], { title: p.address || '' });
+      m.bindPopup(buildPopup(p), { maxWidth: 460, closeButton: true, autoPanPadding: [30,30] });
+
+      cluster.addLayer(m);
+    }
+
+    const layers = cluster.getLayers();
+    if (layers.length) {
+      const group = L.featureGroup(layers);
+      map.fitBounds(group.getBounds().pad(0.18));
+    }
+
+    setTimeout(() => map.invalidateSize(), 120);
+  }
+
+  // =========================
+  // MOBILE COLLAPSE (same logic)
+  // =========================
+  const toolbar = document.getElementById('fuelToolbar');
+  const btn = document.getElementById('btnFiltersMobile');
+  const count = document.getElementById('filtersMobileCount');
+
+  function isMobile(){ return window.matchMedia && window.matchMedia('(max-width: 576px)').matches; }
+
+  function updateMobileCount(){
+    const prov = getChecked('.fuel-filter-prov').length;
+    const eng  = getChecked('.fuel-filter-engin').length;
+    const emp  = getChecked('.fuel-filter-emp').length;
+    const cat  = getChecked('.fuel-filter-cat').length;
+    const sous = getChecked('.fuel-filter-sous').length;
+
+    const parts = [];
+    if (prov) parts.push(`F: ${prov}`);
+    if (eng)  parts.push(`Eng: ${eng}`);
+    if (emp)  parts.push(`Emp: ${emp}`);
+    if (cat)  parts.push(`Cat: ${cat}`);
+    if (sous) parts.push(`Ss: ${sous}`);
+
+    count.textContent = parts.length ? parts.join(' · ') : 'Tous';
+  }
+
+  function hasFocusInside(){
+    return !!toolbar.querySelector('input:focus, textarea:focus, select:focus');
+  }
+
+  function syncBtnVisibility(){
+    if (isMobile()){
+      btn.classList.remove('d-none');
+    } else {
+      btn.classList.add('d-none');
+      toolbar.classList.add('is-open');
+    }
+  }
+
+  function toggle(){
+    if (!isMobile()) return;
+    if (hasFocusInside()) return;
+    toolbar.classList.toggle('is-open');
+  }
+
+  if (isMobile()) toolbar.classList.remove('is-open');
+  else toolbar.classList.add('is-open');
+
+  btn?.addEventListener('click', toggle);
+  btn?.addEventListener('keydown', (e)=>{ if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+
+  toolbar?.addEventListener('focusin', () => {
+    if (!isMobile()) return;
+    toolbar.classList.add('is-open');
+  });
+
+  let wasMobile = isMobile();
+  window.addEventListener('resize', () => {
+    const nowMobile = isMobile();
+    if (nowMobile === wasMobile) { syncBtnVisibility(); return; }
+    wasMobile = nowMobile;
+    syncBtnVisibility();
+    if (nowMobile) toolbar.classList.remove('is-open');
+    else toolbar.classList.add('is-open');
+  });
+
+  $(document).on('change input',
+    '.fuel-filter-prov, .fuel-filter-engin, .fuel-filter-emp, .fuel-filter-cat, .fuel-filter-sous',
+    updateMobileCount
+  );
+  syncBtnVisibility();
+  updateMobileCount();
+
+  // =========================
+  // ACTIONS
+  // =========================
+  document.getElementById('btnRefreshMap')?.addEventListener('click', (e)=>{ e.preventDefault(); runRefresh(); });
+  document.getElementById('btnApply')?.addEventListener('click', (e)=>{ e.preventDefault(); runRefresh(); });
+
+  document.getElementById('btnReset')?.addEventListener('click', () => {
+    $start.value = "{{ start }}";
+    $end.value = "{{ end }}";
+    fp.setDate([dateFromIso("{{ start }}"), dateFromIso("{{ end }}")], true);
+
+    setAll('.fuel-filter-prov', true);
+    setAll('.fuel-filter-engin', true);
+    setAll('.fuel-filter-emp', true);
+    setAll('.fuel-filter-cat', true);
+    setAll('.fuel-filter-sous', true);
+
+    $('input[data-filter]').val('').trigger('input');
+
+    updateCounts();
+    runRefresh();
+  });
+
+  // =========================
+  // REFRESH = load map
+  // =========================
+  async function refresh(){
+    try{
+      await loadMapPlaces();
+    } finally {
+      const btnApply = document.getElementById('btnApply');
+      if (btnApply) btnApply.disabled = false;
+    }
+  }
+
+  // init
+  runRefresh();
+
+})();
+</script>
+{% endblock %}

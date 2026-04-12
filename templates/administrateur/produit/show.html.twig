@@ -1,0 +1,258 @@
+{# templates/administrateur/produit/show.html.twig #}
+{% extends 'base_admin.html.twig' %}
+
+{% block title %}Type de dépense #{{ t.id }} — {{ t.categorieProduit.label() }}{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('dist/css/style.css') }}">
+  <link rel="stylesheet" href="{{ asset('dist/css/style-table.css') }}">
+  <style>
+    :root{
+      --theme-color-principal: {{ themeColorPrimaire|default(entite.couleurPrincipal|default('#233342')) }};
+      --theme-color-secondaire: {{ themeColorSecondaire|default(entite.couleurSecondaire|default('#ffc107')) }};
+      --theme-color-tertiaire: {{ themeColorTertiaire|default(entite.couleurTertiaire|default('#F0F0F0')) }};
+      --theme-color-quaternaire: {{ couleurQuaternaire|default(entite.couleurQuaternaire|default('#000')) }};
+      --stroke: rgba(15,23,42,.10);
+      --radius: 18px;
+    }
+
+    .cardx{
+      background:#fff;
+      border:1px solid var(--stroke);
+      border-radius:var(--radius);
+      box-shadow:0 10px 28px rgba(15,23,42,.08);
+      overflow:hidden;
+    }
+    .cardx-h{
+      padding:.95rem 1.05rem;
+      display:flex;align-items:center;justify-content:space-between;gap:1rem;
+      background:linear-gradient(180deg,rgba(0,0,0,.015),transparent);
+      border-bottom:1px solid var(--stroke);
+    }
+    .cardx-title{
+      margin:0;
+      font-weight:800;
+      letter-spacing:-.01em;
+      display:flex;align-items:center;gap:.6rem;
+      color:#0f172a;
+    }
+
+    /* HERO (même esprit que user/show) */
+    .hero{
+      border-radius:22px;
+      position:relative;
+      overflow:hidden;
+      color:#fff;
+      box-shadow:0 18px 50px rgba(0,0,0,.14);
+      background:
+        radial-gradient(1200px 420px at 12% -10%,
+          color-mix(in srgb, var(--theme-color-tertiaire) 35%, transparent),
+          transparent 58%
+        ),
+        radial-gradient(900px 380px at 92% 0%,
+          color-mix(in srgb, var(--theme-color-secondaire) 32%, transparent),
+          transparent 60%
+        ),
+        radial-gradient(700px 260px at 55% 115%,
+          color-mix(in srgb, var(--theme-color-quaternaire) 18%, transparent),
+          transparent 62%
+        ),
+        linear-gradient(135deg,
+          color-mix(in srgb, var(--theme-color-principal) 92%, #000 8%),
+          color-mix(in srgb, var(--theme-color-principal) 70%, #fff 30%)
+        );
+    }
+    .hero::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,0) 55%);
+      opacity:.85;
+    }
+
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:.45rem;
+      padding:.28rem .65rem;
+      border-radius:999px;
+      font-size:.82rem;
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.14);
+      color:rgba(255,255,255,.92);
+      white-space:nowrap;
+    }
+    .chip i{ color:var(--theme-color-secondaire); }
+
+    .avatar{
+      width:72px;height:72px;border-radius:18px;overflow:hidden;flex:0 0 auto;
+      border:1px solid rgba(255,255,255,.28);
+      background:rgba(255,255,255,.12);
+      display:grid;place-items:center;
+    }
+
+    @media (max-width:768px){
+      .hero{ border-radius:16px; }
+      .avatar{ width:58px;height:58px;border-radius:16px; }
+    }
+  </style>
+{% endblock %}
+
+{% block body %}
+  {# HERO #}
+  <div class="hero p-3 mb-4 d-flex gap-3 align-items-center">
+    <div class="avatar">
+      <i class="bi bi-tag fs-1"></i>
+    </div>
+
+    <div class="flex-grow-1">
+      <div class="d-flex justify-content-between gap-3 flex-wrap">
+        <div>
+          <h2 class="m-0 fw-bold">
+            <i class="bi bi-tag me-2" style="color:var(--theme-color-secondaire)"></i>
+            {{ t.categorieProduit.label() }}
+          </h2>
+
+          <div class="opacity-75 mt-1">
+            {{ t.categorieProduit.label }} • {{ t.sousCategorieProduit.label }}
+          </div>
+
+          <div class="d-flex gap-2 flex-wrap mt-3">
+            <span class="chip"><i class="bi bi-building"></i> {{ entite.nom }}</span>
+            <span class="chip"><i class="bi bi-hash"></i> #{{ t.id }}</span>
+            <span class="chip"><i class="bi bi-collection"></i> {{ t.categorieProduit.label }}</span>
+            <span class="chip"><i class="bi bi-diagram-3"></i> {{ t.sousCategorieProduit.label }}</span>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2 align-items-start">
+          <a href="{{ path('app_administrateur_produit_index', {entite: entite.id}) }}"
+             class="btn btn-outline-light btn-sm fw-semibold">
+            <i class="bi bi-arrow-left me-1"></i> Retour
+          </a>
+
+          <a href="{{ path('app_administrateur_produit_modifier', {entite: entite.id, id: t.id}) }}"
+             class="btn btn-light btn-sm fw-semibold">
+            <i class="bi bi-pencil me-1"></i> Modifier
+          </a>
+
+          <a class="btn btn-warning btn-sm fw-semibold"
+             href="{{ path('app_administrateur_produit_external_id_index', {entite: entite.id, produit: t.id}) }}">
+            <i class="bi bi-link-45deg me-1"></i> Correspondances
+          </a>
+
+          {# Optionnel : bouton supprimer si tu as la route + CSRF #}
+          {#
+          <form method="post"
+                action="{{ path('app_administrateur_produit_supprimer', {entite: entite.id, id: t.id}) }}"
+                onsubmit="return confirm('Supprimer ce type de dépense ?');">
+            <input type="hidden" name="_token" value="{{ csrf_token('delete_produit_' ~ t.id) }}">
+            <button class="btn btn-danger btn-sm fw-semibold" type="submit">
+              <i class="bi bi-trash me-1"></i> Supprimer
+            </button>
+          </form>
+          #}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% include 'flagMessage.html.twig' %}
+
+  <div class="row g-4">
+    {# ====================== LEFT ====================== #}
+    <div class="col-lg-7">
+      <div class="cardx">
+        <div class="cardx-h">
+          <h5 class="cardx-title"><i class="bi bi-info-circle text-warning"></i> Informations</h5>
+        </div>
+
+        <div class="p-3 p-md-4">
+          <div class="row g-3">
+
+            <div class="col-md-6">
+              <div class="text-muted small">ID</div>
+              <div class="fw-semibold">#{{ t.id }}</div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="text-muted small">Catégorie</div>
+              <div class="fw-semibold">{{ t.categorieProduit.label }}</div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="text-muted small">Sous-catégorie</div>
+              <div class="fw-semibold">{{ t.sousCategorieProduit.label }}</div>
+            </div>
+
+            <div class="col-12">
+              <div class="text-muted small">Usage</div>
+              <div class="text-muted">
+                Sert de référentiel interne + correspondances fournisseurs pour l’affectation automatique lors des imports.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {# ====================== RIGHT ====================== #}
+    <div class="col-lg-5">
+      <div class="cardx">
+        <div class="cardx-h">
+          <h5 class="cardx-title"><i class="bi bi-link-45deg text-warning"></i> Correspondances fournisseurs</h5>
+        </div>
+
+        <div class="p-3 p-md-4">
+          <div class="d-flex align-items-start gap-3">
+            <div style="width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;
+                        background: rgba(255,193,7,.14); border:1px solid rgba(255,193,7,.20);">
+              <i class="bi bi-credit-card-2-front" style="font-size:20px;color:#b98500;"></i>
+            </div>
+
+            <div class="flex-grow-1">
+              <div class="fw-semibold">ALX / Total / Edenred</div>
+              <div class="text-muted small mt-1">
+                Associe des libellés externes à ce type pour automatiser les imports.
+              </div>
+
+              <div class="mt-3 d-flex flex-wrap gap-2">
+                <a class="btn btn-outline-secondary btn-sm fw-semibold"
+                   href="{{ path('app_administrateur_produit_external_id_index', {entite: entite.id, produit: t.id}) }}">
+                  <i class="bi bi-link-45deg me-1"></i> Gérer
+                </a>
+
+                <a class="btn btn-outline-primary btn-sm fw-semibold"
+                   href="{{ path('app_administrateur_produit_modifier', {entite: entite.id, id: t.id}) }}">
+                  <i class="bi bi-pencil me-1"></i> Modifier
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {# Si un jour tu passes une liste "externalIds" au template, tu peux remplacer ce bloc. #}
+          {#
+          {% if externalIds|default([])|length > 0 %}
+            <hr>
+            <div class="vstack gap-2">
+              {% for xid in externalIds %}
+                <div class="d-flex justify-content-between align-items-center border rounded-4 p-2">
+                  <div>
+                    <div class="fw-semibold">{{ xid.provider.name }}</div>
+                    <div class="text-muted small">{{ xid.value }}</div>
+                  </div>
+                  <span class="badge text-bg-light">ID</span>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="text-muted mt-3">Aucune correspondance enregistrée.</div>
+          {% endif %}
+          #}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

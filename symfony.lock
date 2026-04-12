@@ -35,6 +35,24 @@
             "migrations/.gitignore"
         ]
     },
+    "karser/karser-recaptcha3-bundle": {
+        "version": "0.2",
+        "recipe": {
+            "repo": "github.com/symfony/recipes-contrib",
+            "branch": "main",
+            "version": "0.1",
+            "ref": "c51ce07c10331d506762efe25b6f5843c1a5ea17"
+        }
+    },
+    "liip/imagine-bundle": {
+        "version": "2.15",
+        "recipe": {
+            "repo": "github.com/symfony/recipes-contrib",
+            "branch": "main",
+            "version": "1.8",
+            "ref": "d1227d002b70d1a1f941d91845fcd7ac7fbfc929"
+        }
+    },
     "phpunit/phpunit": {
         "version": "12.4",
         "recipe": {
@@ -48,6 +66,18 @@
             "phpunit.dist.xml",
             "tests/bootstrap.php",
             "bin/phpunit"
+        ]
+    },
+    "stripe/stripe-php": {
+        "version": "19.3",
+        "recipe": {
+            "repo": "github.com/symfony/recipes-contrib",
+            "branch": "main",
+            "version": "19.0",
+            "ref": "d6829c693e3927a8972c7671d74a1a5c505712b0"
+        },
+        "files": [
+            "config/packages/stripe.yaml"
         ]
     },
     "symfony/asset-mapper": {
@@ -270,6 +300,15 @@
             "templates/base.html.twig"
         ]
     },
+    "symfony/uid": {
+        "version": "7.3",
+        "recipe": {
+            "repo": "github.com/symfony/recipes",
+            "branch": "main",
+            "version": "7.0",
+            "ref": "0df5844274d871b37fc3816c57a768ffc60a43a5"
+        }
+    },
     "symfony/ux-turbo": {
         "version": "2.31",
         "recipe": {
@@ -318,6 +357,21 @@
         "files": [
             "config/packages/messenger.yaml"
         ]
+    },
+    "symfonycasts/reset-password-bundle": {
+        "version": "1.23",
+        "recipe": {
+            "repo": "github.com/symfony/recipes",
+            "branch": "main",
+            "version": "1.0",
+            "ref": "97c1627c0384534997ae1047b93be517ca16de43"
+        },
+        "files": [
+            "config/packages/reset_password.yaml"
+        ]
+    },
+    "symfonycasts/verify-email-bundle": {
+        "version": "v1.17.4"
     },
     "twig/extra-bundle": {
         "version": "v3.22.0"

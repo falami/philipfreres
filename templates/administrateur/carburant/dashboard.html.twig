@@ -1,0 +1,2279 @@
+{# templates/administrateur/carburant/dashboard.html.twig #}
+{% extends 'base_admin.html.twig' %}
+{% block title %}Dashboard Carburant{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('dist/css/style.css') }}">
+  <link rel="stylesheet" href="{{ asset('dist/css/formulaire.css') }}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
+  <style>
+    :root{
+      --theme-color-principal: {{ themeColorPrimaire|default(entite.couleurPrincipal|default('#233342')) }};
+      --theme-color-secondaire: {{ themeColorSecondaire|default(entite.couleurSecondaire|default('#ffc107')) }};
+      --theme-color-tertiaire: {{ themeColorTertiaire|default(entite.couleurTertiaire|default('#F0F0F0')) }};
+      --theme-color-quaternaire: {{ couleurQuaternaire|default(entite.couleurQuaternaire|default('#000000')) }};
+      --bg:#f5f7fb; --panel:#fff; --ink:#0f172a; --muted:#64748b;
+      --stroke: rgba(15, 23, 42, .10); --shadow: 0 18px 55px rgba(15, 23, 42, .10);
+      --radius:18px;
+    }
+
+    .hero{
+      border-radius: 22px; position: relative; overflow: hidden; color:#fff;
+      box-shadow: 0 18px 50px rgba(0,0,0,.14);
+      background:
+        radial-gradient(1200px 420px at 12% -10%,
+          color-mix(in srgb, var(--theme-color-tertiaire) 35%, transparent),
+          transparent 58%
+        ),
+        radial-gradient(900px 380px at 92% 0%,
+          color-mix(in srgb, var(--theme-color-secondaire) 32%, transparent),
+          transparent 60%
+        ),
+        radial-gradient(700px 260px at 55% 115%,
+          color-mix(in srgb, var(--theme-color-quaternaire) 18%, transparent),
+          transparent 62%
+        ),
+        linear-gradient(135deg,
+          color-mix(in srgb, var(--theme-color-principal) 92%, #000 8%),
+          color-mix(in srgb, var(--theme-color-principal) 70%, #fff 30%)
+        );
+    }
+    .hero::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,0) 55%);opacity:.85;}
+    .hero .accent{width:12px;border-radius:999px;background:var(--theme-color-secondaire);box-shadow:0 0 0 6px color-mix(in srgb,var(--theme-color-secondaire) 18%,transparent);}
+    .hero .chip{display:inline-flex;align-items:center;gap:.5rem;padding:.32rem .7rem;border-radius:999px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.14);font-size:.82rem;color:rgba(255,255,255,.92);backdrop-filter:blur(6px);white-space:nowrap;}
+    .hero .chip i{color:var(--theme-color-secondaire);}
+    .cardx{ background:var(--panel); border:1px solid var(--stroke); border-radius:var(--radius); box-shadow:0 10px 28px rgba(15,23,42,.08); overflow:visible;}
+    .cardx-h{ 
+      padding:.95rem 1.05rem; 
+      display:flex; 
+      align-items:center; 
+      justify-content:space-between; 
+      gap:1rem;  
+      border-bottom:1px solid var(--stroke);
+    }
+    .cardx-title{ margin:0; font-weight:900; letter-spacing:-.01em; color:var(--ink); display:flex; align-items:center; gap:.6rem;}
+    .chip{ font-size:.78rem; padding:.25rem .55rem; border-radius:999px; background:color-mix(in srgb,var(--theme-color-principal) 10%,transparent); border:1px solid color-mix(in srgb,var(--theme-color-principal) 18%, var(--stroke)); color:var(--muted); white-space:nowrap;}
+
+    .kpi-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px;}
+    .kpi{grid-column:span 3;padding:14px;border:1px solid var(--stroke);border-radius:18px;}
+    .kpi .label{color:var(--muted);font-size:.85rem;font-weight:800;}
+    .kpi .value{font-weight:950;font-size:1.25rem;color:var(--ink);letter-spacing:-.01em;text-align: center;}
+    .kpi .sub{color:var(--muted);font-size:.82rem;margin-top:2px;text-align: center;}
+    @media (max-width:1200px){.kpi{grid-column:span 4;}}
+    @media (max-width:768px){.kpi{grid-column:span 12;}.hero{border-radius:16px;}}
+
+    .chart-box{height:360px;}
+    .chart-box.sm{height:340px;}
+    @media (max-width:768px){.chart-box{height:340px;}.chart-box.sm{height:320px;}}
+
+    /* Filters compact */
+    .filters-compact .form-label{font-size:.78rem;margin-bottom:.15rem;color:var(--muted);font-weight:900;}
+    .filters-compact .form-control,.filters-compact .form-select{padding:.34rem .65rem;min-height:34px;border-radius:12px;font-size:.9rem;}
+    .filters-compact .btn{padding:.32rem .6rem;border-radius:12px;font-weight:900;}
+
+    /* DataTables polish */
+    .dataTables_wrapper .dataTables_filter input,
+    .dataTables_wrapper .dataTables_length select{
+      border-radius: 999px !important;
+      border: 1px solid var(--stroke) !important;
+      background: var(--panel) !important;
+      color: var(--ink) !important;
+      padding: .35rem .75rem !important;
+      box-shadow: none !important;
+      outline: none !important;
+    }
+    .dataTables_wrapper .dataTables_paginate .pagination .page-link{
+      border-radius: 999px !important;
+      border:1px solid var(--stroke) !important;
+      color: var(--ink) !important;
+      background: var(--panel) !important;
+    }
+    .dataTables_wrapper .dataTables_paginate .pagination .active .page-link{
+      background: color-mix(in srgb, var(--theme-color-principal) 14%, var(--panel)) !important;
+      border-color: color-mix(in srgb, var(--theme-color-principal) 35%, var(--stroke)) !important;
+      font-weight: 900;
+    }
+    .money{ font-variant-numeric: tabular-nums; font-weight: 950; white-space: nowrap; }
+    .badge-soft{
+      border:1px solid var(--stroke);
+      background: color-mix(in srgb, var(--theme-color-secondaire) 16%, var(--panel));
+      color: var(--ink);
+      border-radius: 999px;
+      padding: .35rem .6rem;
+      font-weight: 900;
+      font-size:.78rem;
+      white-space: nowrap;
+    }
+
+
+    /* ===== Provider chips (ALX / TOTAL / EDENRED) ===== */
+.provider-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:.45rem;
+  padding:.28rem .62rem;
+  border-radius: 999px;
+  font-weight: 950;
+  font-size: .78rem;
+  border: 1px solid var(--stroke);
+  background: var(--panel);
+  box-shadow: 0 10px 22px rgba(15,23,42,.08);
+  user-select: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+}
+.provider-chip:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(15,23,42,.12);
+}
+.provider-chip:active{ transform: translateY(0); opacity:.85; }
+
+.provider-chip i{ font-size: .95rem; }
+
+.provider-chip.alx{
+  background: rgba(13,110,253,.10);
+  border-color: rgba(13,110,253,.20);
+  color: #0b3b8a;
+}
+.provider-chip.total{
+  background: rgba(220,53,69,.10);
+  border-color: rgba(220,53,69,.20);
+  color: #7a1420;
+}
+.provider-chip.edenred{
+  background: rgba(25,135,84,.12);
+  border-color: rgba(25,135,84,.22);
+  color: #0f5132;
+}
+
+.provider-chip.note{
+  background: rgba(108,117,125,.12);
+  border-color: rgba(108,117,125,.22);
+  color: #495057;
+}
+
+/* mini feedback "copié" */
+.provider-chip.is-copied{
+  outline: none;
+  box-shadow: 0 0 0 .2rem rgba(255,193,7,.18), 0 14px 28px rgba(15,23,42,.12);
+}
+
+
+
+/* ===== Page bg + breathing ===== */
+body{
+  background: radial-gradient(900px 380px at 20% 0%,
+    color-mix(in srgb, var(--theme-color-secondaire) 10%, transparent),
+    transparent 60%
+  ),
+  radial-gradient(900px 380px at 90% 10%,
+    color-mix(in srgb, var(--theme-color-principal) 10%, transparent),
+    transparent 60%
+  ),
+  var(--bg);
+}
+
+
+/* ===== Card header more premium ===== */
+.cardx-h{
+  padding: 1rem 1.1rem;
+}
+
+.cardx-title i{
+  width: 34px; height: 34px;
+  display:inline-grid; place-items:center;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--theme-color-secondaire) 18%, #fff);
+  border: 1px solid color-mix(in srgb, var(--theme-color-secondaire) 22%, var(--stroke));
+}
+
+/* ===== Filters: sticky + nicer layout ===== */
+.filters-sticky{
+  position: sticky;
+  top: 0px; /* adapte selon ta navbar */
+  z-index: 20;
+}
+
+.filters-compact .chip{
+  padding: .45rem .7rem;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--theme-color-principal) 6%, #fff);
+}
+
+.filter-pills{ display:flex; flex-wrap:wrap; gap:.6rem; align-items:center; }
+.filter-pill{
+  display:flex; align-items:center; gap:.55rem;
+  padding: .55rem .75rem;
+  border-radius: 16px;
+  border: 1px solid var(--stroke);
+  background: rgba(255,255,255,.78);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 26px rgba(15,23,42,.08);
+}
+.filter-pill .mini{ font-size:.75rem; color: var(--muted); font-weight:900; }
+.filter-pill .value{ font-weight: 900; color: var(--ink); }
+
+.filter-actions{
+  display:flex; gap:.5rem; justify-content:flex-end; align-items:center;
+}
+.btn-gradient{
+  border:0;
+  color:#fff;
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--theme-color-principal) 90%, #000 10%),
+    color-mix(in srgb, var(--theme-color-principal) 55%, var(--theme-color-secondaire) 45%)
+  );
+  box-shadow: 0 14px 30px rgba(15,23,42,.14);
+}
+.btn-gradient:hover{ filter: brightness(1.03); transform: translateY(-1px); }
+.btn-gradient:active{ transform: translateY(0); }
+
+/* dropdown menu more structured */
+.dropdown-menu{
+  border-radius: 16px !important;
+  border: 1px solid var(--stroke) !important;
+  box-shadow: 0 24px 55px rgba(15,23,42,.18) !important;
+}
+.dropdown-item{
+  border-radius: 12px;
+}
+.dropdown-item:hover{
+  background: color-mix(in srgb, var(--theme-color-principal) 8%, transparent);
+}
+
+/* ===== KPI more visual ===== */
+.kpi{
+  position: relative;
+  padding: 16px;
+  border-radius: 20px;
+}
+.kpi::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius: 20px;
+  pointer-events:none;
+  background: linear-gradient(180deg, rgba(255,255,255,.85), rgba(255,255,255,0));
+  opacity:.45;
+}
+.kpi .kpi-top{ display:flex; align-items:center; justify-content:space-between; gap:.75rem; position:relative; z-index:1; }
+.kpi .ico{
+  width: 38px; height: 38px;
+  border-radius: 14px;
+  display:grid; place-items:center;
+  background: color-mix(in srgb, var(--theme-color-principal) 10%, #fff);
+  border:1px solid var(--stroke);
+}
+.kpi .value{ font-size: 1.45rem; }
+.kpi .sub{ margin-top:.2rem; }
+
+/* ===== Charts: softer container ===== */
+.chart-box, .chart-box.sm{
+  border-radius: 18px;
+  border: 1px dashed color-mix(in srgb, var(--theme-color-principal) 22%, var(--stroke));
+  background:
+    radial-gradient(900px 220px at 25% 0%,
+      color-mix(in srgb, var(--theme-color-principal) 8%, transparent),
+      transparent 60%
+    ),
+    #fff;
+  padding: 12px;
+}
+
+/* ===== DataTable: sticky header + zebra + density ===== */
+#dtFuel thead th{
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #fff;
+  border-bottom: 1px solid var(--stroke) !important;
+  font-size: .82rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: color-mix(in srgb, var(--muted) 85%, #000);
+}
+#dtFuel tbody td{ padding-top:.7rem; padding-bottom:.7rem; }
+#dtFuel tbody tr:nth-child(odd){
+  background: color-mix(in srgb, var(--theme-color-principal) 3%, transparent);
+}
+#dtFuel tbody tr:hover{
+  background: color-mix(in srgb, var(--theme-color-secondaire) 10%, transparent) !important;
+}
+
+
+/* ===== TOOLBAR (like produit/index) ===== */
+.toolbar{
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid var(--stroke);
+  box-shadow: 0 10px 24px rgba(0,0,0,.05);
+  padding: .85rem;
+}
+
+/* icône carrée à gauche des chips (optionnel si tu veux) */
+.filter-icon{
+  width:38px; height:38px;
+  border-radius:14px;
+  display:grid; place-items:center;
+  background: color-mix(in srgb, var(--theme-color-principal) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--theme-color-principal) 18%, transparent);
+  color: color-mix(in srgb, var(--theme-color-principal) 75%, #000 25%);
+  flex: 0 0 auto;
+}
+
+/* chip style */
+.toolbar .chip{
+  display:inline-flex; align-items:center; gap:.5rem;
+  padding:.35rem .7rem;
+  border-radius:999px;
+  background: rgba(0,0,0,.03);
+  border: 1px solid rgba(0,0,0,.06);
+  font-size:.85rem;
+  color: rgba(0,0,0,.65);
+}
+
+/* ===== Dropdown premium (same as produit) ===== */
+.toolbar .chip .dropdown-toggle{
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,.10);
+  background: rgba(255,255,255,.75);
+  box-shadow: 0 8px 18px rgba(0,0,0,.06);
+  color: rgba(0,0,0,.72);
+  font-weight: 700;
+  padding: .38rem .70rem;
+  line-height: 1.1;
+  transition: transform .08s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.toolbar .chip .dropdown-toggle:hover{
+  border-color: rgba(0,0,0,.16);
+  box-shadow: 0 12px 22px rgba(0,0,0,.08);
+}
+.toolbar .chip .dropdown-toggle:active{ transform: translateY(1px); }
+
+.toolbar .dropdown-menu{
+  border-radius: 16px;
+  border: 1px solid rgba(0,0,0,.10);
+  box-shadow: 0 18px 46px rgba(0,0,0,.18);
+  padding: .65rem;
+  background:
+    radial-gradient(900px 220px at 10% 0%, rgba(255,193,7,.10), transparent 55%),
+    #fff;
+  overflow: hidden;
+}
+
+.toolbar .dropdown-menu .form-control{
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,.12);
+  background: rgba(255,255,255,.95);
+  padding: .42rem .85rem;
+  box-shadow: none !important;
+}
+.toolbar .dropdown-menu .form-control:focus{
+  border-color: rgba(255,193,7,.55);
+  box-shadow: 0 0 0 .2rem rgba(255,193,7,.18) !important;
+}
+
+.toolbar .dropdown-menu .btn{
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,.10);
+  background: rgba(0,0,0,.03);
+  font-weight: 700;
+  padding: .35rem .7rem;
+}
+.toolbar .dropdown-menu .btn:hover{
+  background: rgba(255,193,7,.12);
+  border-color: rgba(255,193,7,.35);
+}
+
+.toolbar .dropdown-menu .dropdown-list{
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,.06);
+  background: rgba(255,255,255,.92);
+  padding: .25rem;
+  max-height: 280px;
+  overflow: auto;
+}
+
+.toolbar .dropdown-menu .dropdown-item{
+  border-radius: 12px;
+  padding: .45rem .55rem;
+  margin: .10rem 0;
+  border: 1px solid transparent;
+  background: transparent;
+}
+.toolbar .dropdown-menu .dropdown-item:hover{
+  background: rgba(255,193,7,.10);
+  border-color: rgba(255,193,7,.20);
+}
+
+.toolbar .dropdown-menu .form-check-input{
+  width: 1.05rem;
+  height: 1.05rem;
+  border-radius: .35rem;
+  border: 1px solid rgba(0,0,0,.18);
+  margin-top: 0;
+}
+.toolbar .dropdown-menu .form-check-input:checked{
+  background-color: var(--theme-color-secondaire);
+  border-color: rgba(0,0,0,.10);
+}
+
+/* scrollbar clean */
+.toolbar .dropdown-menu *::-webkit-scrollbar{ width: 10px; }
+.toolbar .dropdown-menu *::-webkit-scrollbar-track{ background: rgba(0,0,0,.04); border-radius: 999px; }
+.toolbar .dropdown-menu *::-webkit-scrollbar-thumb{ background: rgba(0,0,0,.18); border-radius: 999px; }
+.toolbar .dropdown-menu *::-webkit-scrollbar-thumb:hover{ background: rgba(0,0,0,.26); }
+.kpi .ico i{ color: var(--theme-color-secondaire); }
+
+
+
+
+/* --- Libellé chip (desktop/tablette) --- */
+.toolbar .chip.chip-lib{
+  gap: .55rem;
+}
+
+.toolbar .chip-lib-title{
+  display:inline-flex;
+  align-items:center;
+  gap:.45rem;
+  font-weight: 900;
+}
+
+.toolbar .chip-lib-title .txt{
+  opacity:.9;
+}
+
+.toolbar .chip-lib-field{
+  display:inline-flex;
+  align-items:center;
+  gap:.45rem;
+}
+
+.toolbar .chip-lib-field #fLabel{
+  width: 220px; /* desktop */
+}
+
+.toolbar .chip-lib-field #btnLabelClear{
+  border-radius: 999px;
+}
+
+
+/* ===========================
+   MOBILE ONLY - Filters collapse
+   Ne change rien desktop/tablette
+   =========================== */
+@media (max-width: 576px){
+
+  /* toolbar devient "collapsible" */
+  .toolbar.filters-sticky{
+    position: sticky;
+    top: 0;
+    z-index: 30;
+  }
+
+  /* header mobile (bouton) */
+  .filters-mobile-toggle{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:.75rem;
+    padding:.6rem 1rem;
+    border-radius: 14px;
+    border: 1px solid var(--stroke);
+    background: rgba(255,255,255,.92);
+    box-shadow: 0 10px 24px rgba(0,0,0,.06);
+    cursor:pointer;
+    user-select:none;
+  }
+
+  .filters-mobile-toggle .left{
+    display:flex; align-items:center; gap:.6rem;
+    font-weight: 900;
+    color: var(--ink);
+  }
+  .filters-mobile-toggle .left i{
+    color: var(--theme-color-secondaire);
+    font-size: 1.05rem;
+  }
+  .filters-mobile-toggle .right{
+    display:flex; align-items:center; gap:.5rem;
+  }
+  .filters-mobile-toggle .badge-soft{
+    padding: .25rem .55rem;
+    font-size: .75rem;
+  }
+  .filters-mobile-toggle .chev{
+    transition: transform .18s ease;
+    opacity:.85;
+  }
+
+  /* contenu repliable */
+  .toolbar .filters-mobile-body{
+    margin-top:.55rem;
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: max-height .22s ease, opacity .18s ease, transform .18s ease;
+  }
+
+  /* état ouvert */
+  .toolbar.is-open .filters-mobile-body{
+    max-height: 900px; /* large pour contenir les chips */
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .toolbar.is-open .filters-mobile-toggle .chev{
+    transform: rotate(180deg);
+  }
+
+  /* sur mobile: chips plus compactes et passent en colonne */
+  .toolbar .filters-mobile-body > .d-flex{
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: .55rem !important;
+  }
+
+  /* les chips prennent toute la largeur */
+  .toolbar .filters-mobile-body .chip{
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  /* inputs plus étroits automatiquement */
+  #fLabel{ width: 100% !important; }
+
+  /* actions bas */
+  .toolbar .filters-mobile-body .filter-actions,
+  .toolbar .filters-mobile-body .d-flex.gap-2.align-items-center{
+    justify-content: space-between !important;
+  }
+
+  /* dropdown menus full width (confort mobile) */
+  .toolbar .dropdown-menu{
+    min-width: 100% !important;
+  }
+
+  @media (max-width: 576px){
+
+  /* la chip Lib devient un mini-bloc */
+  .toolbar .chip.chip-lib{
+    display:flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: .45rem;
+    padding: .6rem .7rem; /* un peu + respirant */
+  }
+
+  /* ligne titre */
+  .toolbar .chip-lib-title{
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    gap:.5rem;
+  }
+
+  /* ligne champ : input + bouton collés */
+  .toolbar .chip-lib-field{
+    display:flex;
+    align-items: stretch;
+    gap: 0; /* collé */
+  }
+
+  .toolbar .chip-lib-field #fLabel{
+    width: 100% !important;
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+  }
+
+  .toolbar .chip-lib-field #btnLabelClear{
+    flex: 0 0 auto;
+    border-left: 0;
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    border-top-right-radius: 14px !important;
+    border-bottom-right-radius: 14px !important;
+    padding-left: .75rem;
+    padding-right: .75rem;
+  }
+
+  /* optionnel : bouton un peu plus "soft" */
+  .toolbar .chip-lib-field #btnLabelClear{
+    background: rgba(0,0,0,.03);
+    border-color: rgba(0,0,0,.12);
+  }
+}
+}
+
+
+
+
+
+
+
+/* ===========================
+   MOBILE ONLY - Filters collapse
+   Ne change rien desktop/tablette
+   =========================== */
+@media (max-width: 576px){
+
+  /* toolbar sticky mobile */
+  .toolbar.filters-sticky{
+    position: sticky;
+    top: 0;
+    z-index: 30;
+  }
+
+  /* Bouton toggle visible en mobile (tu le gères aussi en JS, mais ici on sécurise) */
+  #btnFiltersMobile{
+    display:flex !important;
+  }
+
+  /* header mobile (bouton) */
+  .filters-mobile-toggle{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:.75rem;
+    padding:.6rem 1rem;
+    border-radius: 14px;
+    border: 1px solid var(--stroke);
+    background: rgba(255,255,255,.92);
+    box-shadow: 0 10px 24px rgba(0,0,0,.06);
+    cursor:pointer;
+    user-select:none;
+  }
+
+  .filters-mobile-toggle .left{
+    display:flex; align-items:center; gap:.6rem;
+    font-weight: 900;
+    color: var(--ink);
+  }
+  .filters-mobile-toggle .left i{
+    color: var(--theme-color-secondaire);
+    font-size: 1.05rem;
+  }
+  .filters-mobile-toggle .right{
+    display:flex; align-items:center; gap:.5rem;
+  }
+  .filters-mobile-toggle .badge-soft{
+    padding: .25rem .55rem;
+    font-size: .75rem;
+  }
+  .filters-mobile-toggle .chev{
+    transition: transform .18s ease;
+    opacity:.85;
+  }
+
+  /* Corps repliable : IMPORTANT -> ne pas clipper les dropdowns */
+  .toolbar .filters-mobile-body{
+    margin-top:.55rem;
+
+    /* fermé par défaut */
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(-4px);
+
+    overflow: hidden; /* OK fermé */
+    transition: max-height .22s ease, opacity .18s ease, transform .18s ease;
+  }
+
+  /* état ouvert */
+  .toolbar.is-open .filters-mobile-body{
+    max-height: none;      /* ✅ laisse vivre le contenu */
+    opacity: 1;
+    transform: translateY(0);
+    overflow: visible;     /* ✅ indispensable pour voir les dropdown menus */
+  }
+  .toolbar.is-open .filters-mobile-toggle .chev{
+    transform: rotate(180deg);
+  }
+
+  /* Layout: en colonne, plus lisible */
+  .toolbar .filters-mobile-body > .d-flex{
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: .6rem !important;
+  }
+
+  /* chips full width et wrap */
+  .toolbar .filters-mobile-body .chip{
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    white-space: normal;          /* ✅ évite le texte tronqué */
+    gap: .5rem;
+    padding: .55rem .7rem;        /* ✅ un peu plus respirant */
+  }
+
+  /* Dans les chips: selects/boutons plus "tap friendly" */
+  .toolbar .filters-mobile-body .chip .form-select,
+  .toolbar .filters-mobile-body .chip .btn{
+    min-height: 40px;
+    font-size: .95rem;
+    border-radius: 12px;
+  }
+
+  /* Les ms-2 en inline style deviennent pénibles en mobile -> on neutralise */
+  .toolbar .filters-mobile-body .chip .ms-2{
+    margin-left: 0 !important;
+  }
+
+  /* dropdown menus: largeur confort + pas coupés */
+  .toolbar .dropdown-menu{
+    min-width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* listes scrollables dans dropdowns (confort) */
+  .toolbar .dropdown-menu .dropdown-list{
+    max-height: 45vh;  /* ✅ plus adapté au téléphone */
+    overflow: auto;
+  }
+
+  /* Champ "Label" */
+  #fLabel{ width: 100% !important; }
+
+  /* Chip libellé : mini-bloc propre */
+  .toolbar .chip.chip-lib{
+    display:flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: .45rem;
+    padding: .6rem .7rem;
+  }
+  .toolbar .chip-lib-field{
+    display:flex;
+    align-items: stretch;
+    gap: 0;
+  }
+  .toolbar .chip-lib-field #fLabel{
+    width: 100% !important;
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+  }
+  .toolbar .chip-lib-field #btnLabelClear{
+    flex: 0 0 auto;
+    border-left: 0;
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    border-top-right-radius: 14px !important;
+    border-bottom-right-radius: 14px !important;
+    padding-left: .75rem;
+    padding-right: .75rem;
+    background: rgba(0,0,0,.03);
+    border-color: rgba(0,0,0,.12);
+  }
+}
+
+
+/* ===========================
+   FIX cardx-title on mobile
+   =========================== */
+/* ===========================
+   Card header responsive :
+   chip à droite si ça rentre, sinon à la ligne
+   =========================== */
+@media (max-width: 576px){
+
+  .cardx-h{
+    display:flex;
+    flex-wrap: wrap;                 /* ✅ autorise le passage à la ligne */
+    align-items: flex-start;
+    gap: .55rem;
+  }
+
+  /* le titre prend la place dispo mais ne force pas une "ligne complète" */
+  .cardx-title{
+    min-width: 0;                    /* ✅ crucial en flex */
+    flex: 1 1 auto;                  /* ✅ prend l'espace, peut rétrécir */
+    width: auto;                     /* ✅ PAS 100% sinon la chip descend toujours */
+    line-height: 1.15;
+    font-size: 1.02rem;
+    display:flex;
+    align-items:center;
+    gap:.6rem;
+    flex-wrap: wrap;                 /* icône + texte peuvent wrap */
+  }
+
+  .cardx-title i{
+    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+  }
+
+  /* chip : reste à droite (fin de ligne) si ça rentre */
+  .cardx-h > .chip{
+    flex: 0 0 auto;
+    margin-left: auto;               /* ✅ pousse à droite */
+    max-width: 100%;
+    white-space: nowrap;             /* ✅ sur une ligne tant que possible */
+  }
+
+  /* si ça ne rentre plus => la chip prend sa ligne */
+  .cardx-h > .chip{
+    /* rien d'autre à faire : avec wrap + margin-left:auto,
+       elle passe sous le titre automatiquement */
+  }
+}
+
+
+
+
+@media (max-width: 576px){
+  .hero-meta-chips{ display:none !important; }
+  .hero-meta-btn{ display:none !important; }
+}
+
+/* ✅ Pagination DataTables (Bootstrap 5) */
+.dataTables_wrapper .dataTables_paginate{
+  margin-top: .75rem;
+}
+
+/* espace entre les boutons */
+.dataTables_wrapper .dataTables_paginate .pagination{
+  gap: .45rem;                 /* 🔥 remplace ton margin:5px */
+  flex-wrap: wrap;             /* ✅ important sur mobile */
+  justify-content: center;     /* ✅ centré sur téléphone */
+}
+
+/* bouton */
+.dataTables_wrapper .dataTables_paginate .page-item .page-link{
+  border-radius: 999px !important;
+  border: 1px solid var(--stroke) !important;
+  background: var(--panel) !important;
+  color: var(--ink) !important;
+  padding: .38rem .75rem !important;
+  line-height: 1.1;
+}
+
+/* actif */
+.dataTables_wrapper .dataTables_paginate .page-item.active .page-link{
+  background: color-mix(in srgb, var(--theme-color-principal) 14%, var(--panel)) !important;
+  border-color: color-mix(in srgb, var(--theme-color-principal) 35%, var(--stroke)) !important;
+  font-weight: 900;
+}
+
+/* désactivé */
+.dataTables_wrapper .dataTables_paginate .page-item.disabled .page-link{
+  opacity: .55;
+}
+
+/* ✅ Mobile : boutons plus compacts + meilleure place */
+@media (max-width: 576px){
+  .dataTables_wrapper .dataTables_paginate .pagination{
+    gap: .35rem;
+  }
+  .dataTables_wrapper .dataTables_paginate .page-item .page-link{
+    padding: .30rem .60rem !important;
+    font-size: .90rem;
+  }
+
+  /* optionnel : évite que "Previous/Next" prenne trop de place */
+  .dataTables_wrapper .dataTables_paginate .page-item.previous .page-link,
+  .dataTables_wrapper .dataTables_paginate .page-item.next .page-link{
+    padding: .30rem .55rem !important;
+  }
+}
+
+  </style>
+{% endblock %}
+
+{% block javascripts %}
+  {{ parent() }}
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://npmcdn.com/flatpickr/dist/l10n/fr.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
+{% endblock %}
+
+{% block body %}
+  <div class="hero p-3 mb-4 d-flex gap-3">
+    <div class="accent"></div>
+    <div class="flex-grow-1">
+      <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+        <div>
+          <h2 class="m-0 fw-bold">
+            <i class="bi bi-fuel-pump-fill me-2" style="color:var(--theme-color-secondaire)"></i>
+            Dashboard carburant
+          </h2>
+          <div class="opacity-75 mt-1">
+            ALX + TOTAL + EDENRED + NOTE - employé, engin, période, KPI, tendances, top.
+          </div>
+
+          <div class="d-flex flex-wrap gap-2 mt-3 hero-meta-chips">
+            <span class="chip"><i class="bi bi-truck"></i> Carburant</span>
+            <span class="chip"><i class="bi bi-building"></i> {{ entite.nom }}</span>
+            <span class="chip"><i class="bi bi-stars"></i> Premium</span>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2 flex-wrap  hero-meta-btn">
+          <button class="btn btn-light btn-sm fw-semibold" id="btnRefreshTop">
+            <i class="bi bi-arrow-repeat me-1"></i> Actualiser
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ===== TOOLBAR FILTRES (like produit/index) ===== #}
+<div class="toolbar mb-3 filters-sticky" id="fuelToolbar">
+  
+  {# Bouton mobile (n'apparait que via CSS @media) #}
+  <div class="filters-mobile-toggle d-none d-sm-none" id="btnFiltersMobile" role="button" tabindex="0">
+    <div class="left">
+      <i class="bi bi-sliders"></i>
+    </div>
+    <div class="right">
+      <span class="badge-soft" id="filtersMobileCount">-</span>
+      <i class="bi bi-chevron-down chev"></i>
+    </div>
+  </div>
+
+  {# Corps "collapsible" (sur desktop: aucun effet) #}
+  <div class="filters-mobile-body">
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+
+      <div class="me-auto d-flex flex-wrap gap-2 align-items-center">
+
+        {# Période (mêmes ids => ton JS continue) #}
+        <span class="chip">
+          <i class="bi bi-calendar3"></i>
+
+          <select id="periodType" class="form-select form-select-sm ms-2" style="width:auto">
+            <option value="all">Tout</option>
+            <option value="year" selected>Année</option>
+            <option value="quarter">Trimestre</option>
+            <option value="month">Mois</option>
+          </select>
+
+          <select id="periodYear" class="form-select form-select-sm ms-2" style="width:auto"></select>
+
+          <select id="periodQuarter" class="form-select form-select-sm ms-2" style="width:auto; display:none">
+            <option value="1">T1</option>
+            <option value="2">T2</option>
+            <option value="3">T3</option>
+            <option value="4">T4</option>
+          </select>
+
+          <select id="periodMonth" class="form-select form-select-sm ms-2" style="width:auto; display:none"></select>
+
+          <button type="button" class="btn btn-sm btn-light ms-2" id="btnPeriodClear" title="Réinitialiser la période">
+            <i class="bi bi-eraser"></i>
+          </button>
+        </span>
+
+        {# Fournisseurs (multi) #}
+        <span class="chip">
+          <i class="bi bi-truck"></i>
+          Four.
+          <button class="btn btn-sm btn-light ms-2 dropdown-toggle"
+                  type="button"
+                  data-bs-toggle="dropdown"
+                  data-bs-auto-close="outside"
+                  aria-expanded="false">
+            <span id="provSelectedCount">Tous</span>
+          </button>
+
+          <div class="dropdown-menu" style="min-width:340px;">
+            <input type="text" class="form-control form-control-sm mb-2" placeholder="Rechercher..." data-filter="prov">
+            <div class="d-flex gap-2 mb-2">
+              <button class="btn btn-sm btn-outline-secondary" type="button" data-check-all="prov">Tout</button>
+              <button class="btn btn-sm btn-outline-secondary" type="button" data-uncheck-all="prov">Aucun</button>
+            </div>
+
+            <div id="provList" class="dropdown-list">
+              {% set provs = ['ALX','TOTAL','EDENRED','NOTE'] %}
+              {% for p in provs %}
+                <label class="dropdown-item d-flex align-items-center gap-2" style="white-space:normal;">
+                  <input class="form-check-input m-0 fuel-filter-prov" type="checkbox" value="{{ p }}" checked>
+                  <span>{{ p }}</span>
+                </label>
+              {% endfor %}
+            </div>
+          </div>
+        </span>
+
+        {# Engins (multi) #}
+        <span class="chip">
+          <i class="bi bi-truck-front"></i>
+          Eng.
+          <button class="btn btn-sm btn-light ms-2 dropdown-toggle"
+                  type="button"
+                  data-bs-toggle="dropdown"
+                  data-bs-auto-close="outside"
+                  aria-expanded="false">
+            <span id="enginSelectedCount">Tous</span>
+          </button>
+
+          <div class="dropdown-menu" style="min-width:360px;">
+            <input type="text" class="form-control form-control-sm mb-2" placeholder="Rechercher..." data-filter="engin">
+            <div class="d-flex gap-2 mb-2">
+              <button class="btn btn-sm btn-outline-secondary" type="button" data-check-all="engin">Tout</button>
+              <button class="btn btn-sm btn-outline-secondary" type="button" data-uncheck-all="engin">Aucun</button>
+            </div>
+
+            <div id="enginList" class="dropdown-list">
+
+              {# ✅ Option spéciale : cochée par défaut #}
+              <label class="dropdown-item d-flex align-items-center gap-2" style="white-space:normal;">
+                <input class="form-check-input m-0 fuel-filter-engin" type="checkbox" value="__NULL__" checked>
+                <span><i class="bi bi-slash-circle me-1"></i> Non catégorisé</span>
+              </label>
+
+              {% for e in engins %}
+                <label class="dropdown-item d-flex align-items-center gap-2" style="white-space:normal;">
+                  <input class="form-check-input m-0 fuel-filter-engin" type="checkbox" value="{{ e.id }}" checked>
+                  <span>{{ e.nom }}</span>
+                </label>
+              {% endfor %}
+            </div>
+          </div>
+        </span>
+
+        {# Employés (multi) #}
+        <span class="chip">
+          <i class="bi bi-people"></i>
+          Emp.
+
+          <button class="btn btn-sm btn-light ms-2 dropdown-toggle"
+                  type="button"
+                  data-bs-toggle="dropdown"
+                  data-bs-auto-close="outside"
+                  aria-expanded="false">
+            <span id="empSelectedCount">Tous</span>
+          </button>
+
+          <div class="dropdown-menu" style="min-width:380px;">
+            <input type="text" class="form-control form-control-sm mb-2" placeholder="Rechercher..." data-filter="emp">
+            <div class="d-flex gap-2 mb-2">
+              <button class="btn btn-sm btn-outline-secondary" type="button" data-check-all="emp">Tout</button>
+              <button class="btn btn-sm btn-outline-secondary" type="button" data-uncheck-all="emp">Aucun</button>
+            </div>
+
+            <div id="empList" class="dropdown-list">
+
+              {# ✅ Option spéciale : cochée par défaut #}
+              <label class="dropdown-item d-flex align-items-center gap-2" style="white-space:normal;">
+                <input class="form-check-input m-0 fuel-filter-emp" type="checkbox" value="__NULL__" checked>
+                <span><i class="bi bi-slash-circle me-1"></i> Non catégorisé</span>
+              </label>
+
+              {% for u in employes %}
+                <label class="dropdown-item d-flex align-items-center gap-2" style="white-space:normal;">
+                  <input class="form-check-input m-0 fuel-filter-emp" type="checkbox" value="{{ u.id }}" checked>
+                  <span>{{ u.prenom }} {{ u.nom }}</span>
+                </label>
+              {% endfor %}
+            </div>
+          </div>
+        </span>
+
+        {# Catégories produit (multi) - style Engin/Emp #}
+        <span class="chip">
+          <i class="bi bi-grid-3x3-gap"></i>
+          Cat.
+          <button class="btn btn-sm btn-light ms-2 dropdown-toggle"
+                  type="button"
+                  data-bs-toggle="dropdown"
+                  data-bs-auto-close="outside"
+                  aria-expanded="false">
+            <span id="catSelectedCount">Tous</span>
+          </button>
+
+          <div class="dropdown-menu" style="min-width:380px;">
+            <input type="text" class="form-control form-control-sm mb-2" placeholder="Rechercher..." data-filter="cat">
+            <div class="d-flex gap-2 mb-2">
+              <button class="btn btn-sm btn-outline-secondary" type="button" data-check-all="cat">Tout</button>
+              <button class="btn btn-sm btn-outline-secondary" type="button" data-uncheck-all="cat">Aucun</button>
+            </div>
+
+            <div id="catList" class="dropdown-list">
+
+              {# ✅ Option spéciale : doit être COCHÉE par défaut pour garder l'état "Tous" #}
+              <label class="dropdown-item d-flex align-items-center gap-2" style="white-space:normal;">
+                <input class="form-check-input m-0 fuel-filter-cat" type="checkbox" value="__NULL__" checked>
+                <span><i class="bi bi-slash-circle me-1"></i> Non catégorisé</span>
+              </label>
+
+              {% for c in categorieProduits %}
+                <label class="dropdown-item d-flex align-items-center gap-2" style="white-space:normal;">
+                  <input class="form-check-input m-0 fuel-filter-cat" type="checkbox" value="{{ c.value }}" checked>
+                  {# ✅ label lisible depuis l'enum #}
+                  <span>{{ c.label() }}</span>
+                </label>
+              {% endfor %}
+            </div>
+          </div>
+        </span>
+
+        {# Sous-catégories produit (multi) - style Engin/Emp #}
+        <span class="chip">
+          <i class="bi bi-diagram-3"></i>
+          Ss-cat.
+          <button class="btn btn-sm btn-light ms-2 dropdown-toggle"
+                  type="button"
+                  data-bs-toggle="dropdown"
+                  data-bs-auto-close="outside"
+                  aria-expanded="false">
+            <span id="sousSelectedCount">Tous</span>
+          </button>
+
+          <div class="dropdown-menu" style="min-width:420px;">
+            <input type="text" class="form-control form-control-sm mb-2" placeholder="Rechercher..." data-filter="sous">
+            <div class="d-flex gap-2 mb-2">
+              <button class="btn btn-sm btn-outline-secondary" type="button" data-check-all="sous">Tout</button>
+              <button class="btn btn-sm btn-outline-secondary" type="button" data-uncheck-all="sous">Aucun</button>
+            </div>
+
+            <div id="sousList" class="dropdown-list">
+
+              {# ✅ Option spéciale : cochée par défaut #}
+              <label class="dropdown-item d-flex align-items-center gap-2" style="white-space:normal;">
+                <input class="form-check-input m-0 fuel-filter-sous" type="checkbox" value="__NULL__" checked>
+                <span><i class="bi bi-slash-circle me-1"></i> Non catégorisé</span>
+              </label>
+
+              {% for s in sousCategorieProduits %}
+                <label class="dropdown-item d-flex align-items-center gap-2" style="white-space:normal;">
+                  <input class="form-check-input m-0 fuel-filter-sous" type="checkbox" value="{{ s.value }}" checked>
+                  <span>{{ s.label() }}</span>
+                </label>
+              {% endfor %}
+            </div>
+          </div>
+        </span>
+
+      </div>
+
+      {# Actions à droite (like dépense) #}
+      <div class="d-flex gap-2 align-items-center">
+        <button id="btnReset" class="btn btn-outline-secondary btn-sm fw-semibold" type="button">
+          <i class="bi bi-arrow-counterclockwise"></i> Reset
+        </button>
+      </div>
+
+    </div>
+
+    {# champs cachés conservés pour ton JS getFilters() #}
+    <input type="hidden" id="fStart" value="{{ start }}">
+    <input type="hidden" id="fEnd" value="{{ end }}">
+    <input type="text" class="d-none" id="fRange" />
+  </div>
+</div>
+
+  {# KPI #}
+  <div class="cardx mb-4">
+    <div class="cardx-h">
+      <h5 class="cardx-title"><i class="bi bi-speedometer2 text-warning"></i> Indicateurs</h5>
+      <span class="chip">Auto</span>
+    </div>
+    <div class="p-3 p-md-4">
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="kpi-top">
+            <div class="d-flex align-items-center gap-2">
+              <span class="ico"><i class="bi bi-cash-stack"></i></span>
+              <div class="label">Montant TTC</div>
+            </div>
+          </div>
+          <div class="value" id="kpiAmount">-</div>
+          <div class="sub" id="kpiCount">-</div>
+        </div>
+
+        <div class="kpi">
+          <div class="kpi-top">
+            <div class="d-flex align-items-center gap-2">
+              <span class="ico"><i class="bi bi-droplet"></i></span>
+              <div class="label">Quantité totale</div>
+            </div>
+          </div>
+          <div class="value" id="kpiQty">-</div>
+          <div class="sub">Litres / unités</div>
+        </div>
+
+        <div class="kpi">
+          <div class="kpi-top">
+            <div class="d-flex align-items-center gap-2">
+              <span class="ico"><i class="bi bi-link-45deg"></i></span>
+              <div class="label">Transactions non rattachées</div>
+            </div>
+          </div>
+          <div class="value" id="kpiUnmatchedEngin">-</div>
+          <div class="sub" id="kpiUnmatchedEmploye">-</div>
+        </div>
+
+        <div class="kpi">
+          <div class="kpi-top">
+            <div class="d-flex align-items-center gap-2">
+              <span class="ico"><i class="bi bi-receipt"></i></span>
+              <div class="label">Ticket moyen</div>
+            </div>
+          </div>
+          <div class="value" id="kpiAvg">-</div>
+          <div class="sub">Montant / transaction</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+    {# Charts employés #}
+  <div class="row g-4 mb-4">
+    <div class="col-lg-6">
+      <div class="cardx">
+        <div class="cardx-h">
+          <h5 class="cardx-title"><i class="bi bi-people-fill text-warning"></i> Top employés (TTC)</h5>
+          <span class="chip">Top</span>
+        </div>
+        <div class="p-3 p-md-4">
+          <div class="chart-box sm"><canvas id="chEmp"></canvas></div>
+          <div class="small text-muted mt-2">Montant TTC cumulé sur la période (filtrable).</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="cardx">
+        <div class="cardx-h">
+          <h5 class="cardx-title"><i class="bi bi-stack text-warning"></i> Dépenses par employé</h5>
+          <span class="chip">Empilé</span>
+        </div>
+        <div class="p-3 p-md-4">
+          <div class="chart-box sm"><canvas id="chEmpProvAmount"></canvas></div>
+          <div class="small text-muted mt-2">Barres empilées TTC par fournisseur.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-12">
+      <div class="cardx">
+        <div class="cardx-h">
+          <h5 class="cardx-title"><i class="bi bi-droplet-fill text-warning"></i> Quantités par employé</h5>
+          <span class="chip">Empilé</span>
+        </div>
+        <div class="p-3 p-md-4">
+          <div class="chart-box"><canvas id="chEmpProvQty"></canvas></div>
+          <div class="small text-muted mt-2">Litres / unités (selon la source) - utile pour repérer les gros consommateurs.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# Charts #}
+  <div class="row g-4 mb-4">
+    <div class="col-lg-12">
+      <div class="cardx">
+        <div class="cardx-h">
+          <h5 class="cardx-title"><i class="bi bi-activity text-warning"></i> Tendance mensuelle (TTC)</h5>
+          <span class="chip">Analyse mensuelle</span>
+        </div>
+        <div class="p-3 p-md-4">
+          <div class="chart-box"><canvas id="chTrend"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="cardx">
+        <div class="cardx-h">
+          <h5 class="cardx-title"><i class="bi bi-pie-chart-fill text-warning"></i> Par fournisseur</h5>
+          <span class="chip">Top</span>
+        </div>
+        <div class="p-3 p-md-4">
+          <div class="chart-box sm"><canvas id="chProv"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="cardx">
+        <div class="cardx-h">
+          <h5 class="cardx-title"><i class="bi bi-truck-front-fill text-warning"></i> Top engins</h5>
+          <span class="chip">Top 10</span>
+        </div>
+        <div class="p-3 p-md-4">
+          <div class="chart-box sm"><canvas id="chEng"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# DataTable #}
+  <div class="cardx mb-5">
+    <div class="cardx-h">
+      <h5 class="cardx-title"><i class="bi bi-table text-warning"></i> Transactions carburant</h5>
+      <span class="chip">TOTAL, ALX, EDENRED & NOTE</span>
+    </div>
+
+    <div class="p-3 p-md-4">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle w-100" id="dtFuel">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Fournisseur</th>
+              <th>Engin</th>
+              <th>Employé</th>
+              <th>Libellé</th>
+              <th>Catégorie</th>
+              <th>Sous-catégorie</th>
+
+              <th class="text-end">Quantité</th>
+              <th class="text-end">Montant (TTC)</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="small text-muted mt-2">Unification ALX/TOTAL/EDENRED/NOTE - filtre période + fournisseur + engin + employé.</div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  if (window.flatpickr && window.flatpickr.l10ns?.fr) flatpickr.localize(flatpickr.l10ns.fr);
+    // =========================
+    // AUTO RELOAD (FULL AUTO) - DOIT ÊTRE DÉFINI AVANT flatpickr/setDate
+    // =========================
+    var autoTimer = null;              // var => pas de TDZ
+    var isRefreshing = false;
+    var pendingRefresh = false;
+
+    function scheduleRefresh(delay = 350){
+      clearTimeout(autoTimer);
+      autoTimer = setTimeout(() => runRefresh(), delay);
+    }
+
+    async function runRefresh(){
+      if (isRefreshing) { pendingRefresh = true; return; }
+      isRefreshing = true;
+
+      try{
+        await refresh();
+      } finally {
+        isRefreshing = false;
+        if (pendingRefresh){
+          pendingRefresh = false;
+          scheduleRefresh(120);
+        }
+      }
+    }
+
+  const $start = document.getElementById('fStart');
+  const $end   = document.getElementById('fEnd');
+  const $range = document.getElementById('fRange');
+
+  function isoLocal(d){
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  }
+  function dateFromIso(isoStr){
+    if (!isoStr) return null;
+    const [y,m,d] = isoStr.split('-').map(Number);
+    if (!y||!m||!d) return null;
+    return new Date(y, m-1, d);
+  }
+
+  let fp = flatpickr($range, {
+    locale: { ...flatpickr.l10ns.fr, rangeSeparator: " → " },
+    mode: "range",
+    dateFormat: "d/m/Y",
+    allowInput: true,
+    disableMobile: true,
+    defaultDate: [dateFromIso($start.value), dateFromIso($end.value)].filter(Boolean),
+    onChange: function(sd){
+      const from = sd[0] ? isoLocal(sd[0]) : '';
+      const to   = sd[1] ? isoLocal(sd[1]) : from;
+      $start.value = from;
+      $end.value = to;
+
+      scheduleRefresh(250); // ✅ auto
+    }
+  });
+
+
+  // ===== Quick Date Selector (année / trimestre / mois) =====
+    // ===== Période type Dépenses (Année / Trimestre / Mois) =====
+  const $periodType    = document.getElementById('periodType');
+  const $periodYear    = document.getElementById('periodYear');
+  const $periodQuarter = document.getElementById('periodQuarter');
+  const $periodMonth   = document.getElementById('periodMonth');
+  const $btnPeriodClear= document.getElementById('btnPeriodClear');
+
+  function pad2(n){ return String(n).padStart(2,'0'); }
+
+  function lastDayOfMonth(year, month1to12){
+    return new Date(year, month1to12, 0).getDate();
+  }
+
+  function setRangeIso(isoStart, isoEnd){
+    $start.value = isoStart;
+    $end.value   = isoEnd;
+
+    // synchro UI flatpickr + input
+    fp.setDate([dateFromIso(isoStart), dateFromIso(isoEnd)], true);
+  }
+    // Auto refresh dès qu'on change la plage via setRangeIso()
+  const _setRangeIso = setRangeIso;
+  setRangeIso = function(isoStart, isoEnd){
+    _setRangeIso(isoStart, isoEnd);
+    scheduleRefresh(250);
+  }
+
+  function updatePeriodUi(){
+    const t = $periodType.value;
+    $periodQuarter.style.display = (t === 'quarter') ? '' : 'none';
+    $periodMonth.style.display   = (t === 'month')   ? '' : 'none';
+    $periodYear.style.display    = (t === 'all')     ? 'none' : '';
+  }
+
+  function applyPeriodToRange(){
+    const t = $periodType.value;
+
+    // Tout = "open range" => on remet la plage courante start/end serveur
+    if (t === 'all') {
+      setRangeIso("{{ start }}", "{{ end }}");
+      return;
+    }
+
+    const y = parseInt($periodYear.value || '0', 10);
+    if (!Number.isFinite(y) || y <= 0) return;
+
+    if (t === 'year') {
+      setRangeIso(`${y}-01-01`, `${y}-12-31`);
+      return;
+    }
+
+    if (t === 'quarter') {
+      const q = parseInt($periodQuarter.value || '0', 10);
+      if (!Number.isFinite(q) || q < 1 || q > 4) return;
+
+      const sm = (q - 1) * 3 + 1;
+      const em = sm + 2;
+      const endDay = pad2(lastDayOfMonth(y, em));
+
+      setRangeIso(`${y}-${pad2(sm)}-01`, `${y}-${pad2(em)}-${endDay}`);
+      return;
+    }
+
+    if (t === 'month') {
+      const m = parseInt($periodMonth.value || '0', 10);
+      if (!Number.isFinite(m) || m < 1 || m > 12) return;
+
+      const endDay = pad2(lastDayOfMonth(y, m));
+      setRangeIso(`${y}-${pad2(m)}-01`, `${y}-${pad2(m)}-${endDay}`);
+      return;
+    }
+  }
+
+  function initPeriodSelectors(){
+    const now = new Date();
+    const curY = now.getFullYear();
+    const curM = now.getMonth() + 1;
+    const curQ = Math.floor((curM - 1) / 3) + 1;
+
+    // années: curY-4 .. curY+1 (comme ton ancien)
+    $periodYear.innerHTML = '';
+    for(let y = curY - 4; y <= curY + 1; y++){
+      const opt = document.createElement('option');
+      opt.value = String(y);
+      opt.textContent = String(y);
+      $periodYear.appendChild(opt);
+    }
+    $periodYear.value = String(curY);
+
+    // mois
+    $periodMonth.innerHTML = '';
+    for(let m = 1; m <= 12; m++){
+      const opt = document.createElement('option');
+      opt.value = String(m);
+      opt.textContent = pad2(m);
+      $periodMonth.appendChild(opt);
+    }
+    $periodMonth.value = String(curM);
+
+    // trimestre
+    $periodQuarter.value = String(curQ);
+
+    // ✅ défaut: année courante
+    $periodType.value = 'year';
+    updatePeriodUi();
+    applyPeriodToRange();
+  }
+
+  initPeriodSelectors();
+
+  // listeners
+  $periodType?.addEventListener('change', () => {
+    updatePeriodUi();
+    applyPeriodToRange();
+  });
+  $periodYear?.addEventListener('change', applyPeriodToRange);
+  $periodQuarter?.addEventListener('change', applyPeriodToRange);
+  $periodMonth?.addEventListener('change', applyPeriodToRange);
+
+  // clear -> revient à "année courante"
+  $btnPeriodClear?.addEventListener('click', () => {
+    initPeriodSelectors();
+  });
+
+
+  // TomSelect
+  // TomSelect (safe)
+  function initTomSelect(selector, options){
+    const el = document.querySelector(selector);
+    if (!el) return;
+    if (el.tomselect) return; // déjà initialisé
+    new TomSelect(el, options);
+  }
+
+
+  const money = (cents) => {
+    const n = Number(cents||0)/100;
+    try { return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(n); }
+    catch(e){ return n.toFixed(2).replace('.',',')+' €'; }
+  };
+
+  const numFR = (value, digits = 0) => {
+    const n = Number(value || 0);
+    try {
+      return new Intl.NumberFormat('fr-FR', {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits
+      }).format(n);
+    } catch (e) {
+      // fallback
+      return n.toFixed(digits).replace('.', ',');
+    }
+  };
+
+  let chTrend=null, chProv=null, chEng=null, chEmp=null, chEmpProvAmount=null, chEmpProvQty=null;
+
+  function ensureChart(ref, ctx, cfg){ if(ref) ref.destroy(); return new Chart(ctx, cfg); }
+
+
+
+  function getChecked(selector){
+    return Array.from(document.querySelectorAll(selector + ':checked'))
+      .map(i => i.value)
+      .filter(v => v !== null && v !== undefined && String(v).trim() !== '');
+  }
+
+  function setAll(selector, checked){
+    document.querySelectorAll(selector).forEach((cb) => {
+      // ne coche/décoche que si l'item est visible
+      const item = cb.closest('label');
+      const hidden = item?.classList.contains('d-none');
+      if (!hidden) cb.checked = checked;
+    });
+  }
+
+  function updateCounts(){
+    const provAll = document.querySelectorAll('.fuel-filter-prov').length;
+    const engAll  = document.querySelectorAll('.fuel-filter-engin').length;
+    const empAll  = document.querySelectorAll('.fuel-filter-emp').length;
+    const catAll  = document.querySelectorAll('.fuel-filter-cat').length;
+    const sousAll = document.querySelectorAll('.fuel-filter-sous').length;
+
+    const prov = getChecked('.fuel-filter-prov').length;
+    const eng  = getChecked('.fuel-filter-engin').length;
+    const emp  = getChecked('.fuel-filter-emp').length;
+    const cat  = getChecked('.fuel-filter-cat').length;
+    const sous = getChecked('.fuel-filter-sous').length;
+
+    document.getElementById('provSelectedCount').textContent =
+      (prov === 0) ? 'Aucun' : (prov === provAll ? 'Tous' : (prov + ' sel.'));
+
+    document.getElementById('enginSelectedCount').textContent =
+      (eng === 0) ? 'Aucun' : (eng === engAll ? 'Tous' : (eng + ' sel.'));
+
+    document.getElementById('empSelectedCount').textContent =
+      (emp === 0) ? 'Aucun' : (emp === empAll ? 'Tous' : (emp + ' sel.'));
+
+    document.getElementById('catSelectedCount').textContent =
+      (cat === 0) ? 'Aucun' : (cat === catAll ? 'Tous' : (cat + ' sel.'));
+
+    document.getElementById('sousSelectedCount').textContent =
+      (sous === 0) ? 'Aucun' : (sous === sousAll ? 'Tous' : (sous + ' sel.'));
+  }
+
+  function filterDropdown(listSelector, query){
+    const q = (query || '').trim().toLowerCase();
+
+    document.querySelectorAll(listSelector + ' label').forEach((item) => {
+      const txt = (item.textContent || '').toLowerCase();
+      const match = (q === '') || txt.includes(q);
+
+      // show/hide
+      item.classList.toggle('d-none', !match);
+
+      // ✅ Excel-like : si ça ne matche pas -> on décoche
+      if (!match) {
+        const cb = item.querySelector('input[type="checkbox"]');
+        if (cb && cb.checked) cb.checked = false;
+      }
+    });
+
+    // ✅ met à jour les compteurs après filtrage/décochage
+    updateCounts();
+  }
+
+  $(document).on('input', 'input[data-filter="prov"]', function(){
+    filterDropdown('#provList', this.value);
+  });
+
+  $(document).on('input', 'input[data-filter="engin"]', function(){
+    filterDropdown('#enginList', this.value);
+  });
+
+  $(document).on('input', 'input[data-filter="emp"]', function(){
+    filterDropdown('#empList', this.value);
+  });
+
+
+  $(document).on('input', 'input[data-filter="cat"]', function(){
+    filterDropdown('#catList', this.value);
+    scheduleRefresh(350);
+  });
+
+  $(document).on('input', 'input[data-filter="sous"]', function(){
+    filterDropdown('#sousList', this.value);
+    scheduleRefresh(350);
+  });
+
+  // Tout/Aucun
+  // Tout/Aucun (bootstrap dropdown) => empêcher fermeture + appliquer
+  $(document).on('click', '[data-check-all="prov"]', function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    setAll('.fuel-filter-prov', true);
+    updateCounts();
+    scheduleRefresh(250);
+  });
+  $(document).on('click', '[data-uncheck-all="prov"]', function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    setAll('.fuel-filter-prov', false);
+    updateCounts();
+    scheduleRefresh(250);
+  });
+
+  $(document).on('click', '[data-check-all="engin"]', function(e){
+    e.preventDefault(); e.stopPropagation();
+    setAll('.fuel-filter-engin', true);
+    updateCounts(); scheduleRefresh(250);
+  });
+  $(document).on('click', '[data-uncheck-all="engin"]', function(e){
+    e.preventDefault(); e.stopPropagation();
+    setAll('.fuel-filter-engin', false);
+    updateCounts(); scheduleRefresh(250);
+  });
+
+  $(document).on('click', '[data-check-all="emp"]', function(e){
+    e.preventDefault(); e.stopPropagation();
+    setAll('.fuel-filter-emp', true);
+    updateCounts(); scheduleRefresh(250);
+  });
+  $(document).on('click', '[data-uncheck-all="emp"]', function(e){
+    e.preventDefault(); e.stopPropagation();
+    setAll('.fuel-filter-emp', false);
+    updateCounts(); scheduleRefresh(250);
+  });
+
+  $(document).on('click', '[data-check-all="cat"]', function(e){
+    e.preventDefault(); e.stopPropagation();
+    setAll('.fuel-filter-cat', true);
+    updateCounts(); scheduleRefresh(250);
+  });
+  $(document).on('click', '[data-uncheck-all="cat"]', function(e){
+    e.preventDefault(); e.stopPropagation();
+    setAll('.fuel-filter-cat', false);
+    updateCounts(); scheduleRefresh(250);
+  });
+
+  $(document).on('click', '[data-check-all="sous"]', function(e){
+    e.preventDefault(); e.stopPropagation();
+    setAll('.fuel-filter-sous', true);
+    updateCounts(); scheduleRefresh(250);
+  });
+  $(document).on('click', '[data-uncheck-all="sous"]', function(e){
+    e.preventDefault(); e.stopPropagation();
+    setAll('.fuel-filter-sous', false);
+    updateCounts(); scheduleRefresh(250);
+  });
+
+  // au changement d’une case → met à jour les compteurs
+  $(document).on('change', '.fuel-filter-prov, .fuel-filter-engin, .fuel-filter-emp, .fuel-filter-cat, .fuel-filter-sous', function(){
+    updateCounts();
+    scheduleRefresh(250);
+  });
+
+  // init au chargement
+  updateCounts();
+
+
+
+
+  function getFilters(){
+    const provAll = document.querySelectorAll('.fuel-filter-prov').length;
+    const engAll  = document.querySelectorAll('.fuel-filter-engin').length;
+    const empAll  = document.querySelectorAll('.fuel-filter-emp').length;
+    const catAll  = document.querySelectorAll('.fuel-filter-cat').length;
+    const sousAll = document.querySelectorAll('.fuel-filter-sous').length;
+
+    const prov = getChecked('.fuel-filter-prov');
+
+    // Engins
+    const engRaw = getChecked('.fuel-filter-engin');
+    const engNull = engRaw.includes('__NULL__');
+    const engIds  = engRaw
+      .filter(v => v !== '__NULL__')
+      .map(v => parseInt(v,10))
+      .filter(Number.isFinite);
+
+    // Employés
+    const empRaw = getChecked('.fuel-filter-emp');
+    const empNull = empRaw.includes('__NULL__');
+    const empIds  = empRaw
+      .filter(v => v !== '__NULL__')
+      .map(v => parseInt(v,10))
+      .filter(Number.isFinite);
+
+    // Catégories
+    const catRaw  = getChecked('.fuel-filter-cat');
+    const catNull = catRaw.includes('__NULL__');
+    const catVals = catRaw.filter(v => v !== '__NULL__');
+
+    // Sous-catégories
+    const sousRaw  = getChecked('.fuel-filter-sous');
+    const sousNull = sousRaw.includes('__NULL__');
+    const sousVals = sousRaw.filter(v => v !== '__NULL__');
+
+    const providersNone = (prov.length === 0);
+    const providers = (prov.length === provAll) ? [] : prov;
+
+    const enginNone = (engRaw.length === 0);
+    const enginAllSelected = (engRaw.length === engAll);
+
+    const employeNone = (empRaw.length === 0);
+    const employeAllSelected = (empRaw.length === empAll);
+
+    const categorieNone = (catRaw.length === 0);
+    const categorieAllSelected = (catRaw.length === catAll);
+
+    const sousCategorieNone = (sousRaw.length === 0);
+    const sousCategorieAllSelected = (sousRaw.length === sousAll);
+
+    return {
+      dateStart: $start.value,
+      dateEnd: $end.value,
+
+      providersNone,
+      providers,
+
+      enginNone,
+      enginIds: enginAllSelected ? [] : engIds,
+      enginUncategorized: (!enginAllSelected && engNull) ? 1 : 0,
+
+      employeNone,
+      employeIds: employeAllSelected ? [] : empIds,
+      employeUncategorized: (!employeAllSelected && empNull) ? 1 : 0,
+
+      categorieNone,
+      categorieProduits: categorieAllSelected ? [] : catVals,
+      categorieUncategorized: (!categorieAllSelected && catNull) ? 1 : 0,
+
+      sousCategorieNone,
+      sousCategorieProduits: sousCategorieAllSelected ? [] : sousVals,
+      sousUncategorized: (!sousCategorieAllSelected && sousNull) ? 1 : 0
+    };
+  }
+
+  function qs(filters){
+    const p = new URLSearchParams();
+    p.set('dateStart', filters.dateStart);
+    p.set('dateEnd', filters.dateEnd);
+
+    if (filters.providersNone) p.set('providersNone', '1');
+    if (filters.enginNone) p.set('enginNone', '1');
+    if (filters.employeNone) p.set('employeNone', '1');
+    if (filters.categorieNone) p.set('categorieNone', '1');
+    if (filters.sousCategorieNone) p.set('sousCategorieNone', '1');
+    if (filters.enginUncategorized) p.set('enginUncategorized', '1');
+    if (filters.employeUncategorized) p.set('employeUncategorized', '1');
+    if (filters.categorieUncategorized) p.set('categorieUncategorized', '1');
+    if (filters.sousUncategorized) p.set('sousUncategorized', '1');
+
+    (filters.providers||[]).forEach(v => p.append('providers[]', v));
+    (filters.enginIds||[]).forEach(id => p.append('enginIds[]', String(id)));
+    (filters.employeIds||[]).forEach(id => p.append('employeIds[]', String(id)));
+    (filters.categorieProduits||[]).forEach(v => p.append('categorieProduits[]', v));
+    (filters.sousCategorieProduits||[]).forEach(v => p.append('sousCategorieProduits[]', v));
+
+    return p.toString();
+  }
+
+  async function loadSummary(){
+    const url = "{{ path('app_administrateur_fuel_api_summary', {entite: entite.id}) }}?" + qs(getFilters());
+    const r = await fetch(url, { headers: {'Accept':'application/json'} });
+    if(!r.ok) throw new Error('Erreur dashboard carburant');
+    return r.json();
+  }
+
+  function applyKpis(k){
+    document.getElementById('kpiAmount').textContent = money(k.amount_cents);
+
+    // ✅ quantité avec milliers + 2 décimales
+    document.getElementById('kpiQty').textContent = numFR(k.qty || 0, 2);
+
+    // ✅ compteur avec milliers
+    document.getElementById('kpiCount').textContent = `${numFR(k.cnt || 0, 0)} transaction(s)`;
+
+    // ✅ non rattachées avec milliers
+    document.getElementById('kpiUnmatchedEngin').textContent = numFR(k.cnt_unmatched_engin || 0, 0);
+    document.getElementById('kpiUnmatchedEmploye').textContent = `${numFR(k.cnt_unmatched_employe || 0, 0)} sans employé`;
+
+    const avg = (k.cnt ? Math.round((k.amount_cents||0)/k.cnt) : 0);
+    document.getElementById('kpiAvg').textContent = money(avg);
+  }
+
+  function applyCharts(c){
+    const trendLabels = (c.trendMonthly||[]).map(x=>x.ym);
+    const trendVals   = (c.trendMonthly||[]).map(x=>Number(x.amount_cents||0));
+
+    chTrend = ensureChart(chTrend, document.getElementById('chTrend'), {
+      type:'line',
+      data:{ labels: trendLabels, datasets:[{ label:'Carburant TTC', data: trendVals }]},
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{position:'bottom'}, tooltip:{ callbacks:{ label:(ctx)=> money(ctx.parsed.y||0) } } },
+        scales:{ y:{ ticks:{ callback:(v)=> money(v) } } }
+      }
+    });
+
+    chProv = ensureChart(chProv, document.getElementById('chProv'), {
+      type:'polarArea',
+      data:{
+        labels:(c.byProvider||[]).map(x=>x.label),
+        datasets:[{ data:(c.byProvider||[]).map(x=>Number(x.v||0)) }]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{position:'bottom'}, tooltip:{ callbacks:{ label:(ctx)=> money(ctx.raw||0) } } }
+      }
+    });
+
+    chEng = ensureChart(chEng, document.getElementById('chEng'), {
+      type:'bar',
+      data:{
+        labels:(c.topEngins||[]).map(x=>x.label),
+        datasets:[{ label:'Top engins TTC', data:(c.topEngins||[]).map(x=>Number(x.v||0)) }]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:(ctx)=> money(ctx.parsed.y||0) } } },
+        scales:{ y:{ ticks:{ callback:(v)=> money(v) } } }
+      }
+    });
+
+        // ===== 1) Top employés (TTC) =====
+    const empLabels = (c.byEmployee || []).map(x => x.label);
+    const empVals   = (c.byEmployee || []).map(x => Number(x.v || 0));
+
+    chEmp = ensureChart(chEmp, document.getElementById('chEmp'), {
+      type: 'bar',
+      data: { labels: empLabels, datasets: [{ label: 'TTC', data: empVals }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: (ctx) => money(ctx.parsed.y || 0) } }
+        },
+        scales: { y: { ticks: { callback: (v) => money(v) } } }
+      }
+    });
+
+    // ===== 2) Dépenses empilées par employé (ALX/TOTAL/EDENRED) =====
+    const rowsA = (c.byEmployeeProviderAmount || []);
+    const labelsA = rowsA.map(r => r.label);
+
+    const dsAlxA = rowsA.map(r => Number(r.alx || 0));
+    const dsTotA = rowsA.map(r => Number(r.total || 0));
+    const dsEdeA = rowsA.map(r => Number(r.edenred || 0));
+    const dsNotA = rowsA.map(r => Number(r.note || 0));
+
+    chEmpProvAmount = ensureChart(chEmpProvAmount, document.getElementById('chEmpProvAmount'), {
+      type: 'bar',
+      data: {
+        labels: labelsA,
+        datasets: [
+          { label: 'ALX', data: dsAlxA, stack: 'amount' },
+          { label: 'TOTAL', data: dsTotA, stack: 'amount' },
+          { label: 'EDENRED', data: dsEdeA, stack: 'amount' },
+          { label: 'NOTE', data: dsNotA, stack: 'amount' },
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom' },
+          tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label} : ${money(ctx.parsed.y || 0)}` } }
+        },
+        scales: {
+          x: { stacked: true },
+          y: { stacked: true, ticks: { callback: (v) => money(v) } }
+        }
+      }
+    });
+
+    // ===== 3) Quantités empilées par employé (ALX/TOTAL/EDENRED) =====
+    const rowsQ = (c.byEmployeeProviderQty || []);
+    const labelsQ = rowsQ.map(r => r.label);
+
+    const dsAlxQ = rowsQ.map(r => Number(r.alx || 0));
+    const dsTotQ = rowsQ.map(r => Number(r.total || 0));
+    const dsEdeQ = rowsQ.map(r => Number(r.edenred || 0));
+    const dsNotQ = rowsQ.map(r => Number(r.note || 0));
+
+    chEmpProvQty = ensureChart(chEmpProvQty, document.getElementById('chEmpProvQty'), {
+      type: 'bar',
+      data: {
+        labels: labelsQ,
+        datasets: [
+          { label: 'ALX', data: dsAlxQ, stack: 'qty' },
+          { label: 'TOTAL', data: dsTotQ, stack: 'qty' },
+          { label: 'EDENRED', data: dsEdeQ, stack: 'qty' },
+          { label: 'NOTE', data: dsNotQ, stack: 'qty' },
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom' } },
+        scales: {
+          x: { stacked: true },
+          y: { stacked: true }
+        }
+      }
+    });
+  }
+
+  // DataTables
+  let dt = null;
+
+  function dtFilters(d){
+    const f = getFilters();
+    d.dateStart = f.dateStart;
+    d.dateEnd = f.dateEnd;
+
+    if (f.providersNone) d.providersNone = 1;
+    if (f.enginNone) d.enginNone = 1;
+    if (f.employeNone) d.employeNone = 1;
+    if (f.categorieNone) d.categorieNone = 1;
+    if (f.sousCategorieNone) d.sousCategorieNone = 1;
+    if (f.enginUncategorized) d.enginUncategorized = 1;
+    if (f.employeUncategorized) d.employeUncategorized = 1;
+    if (f.categorieUncategorized) d.categorieUncategorized = 1;
+    if (f.sousUncategorized) d.sousUncategorized = 1;
+
+    (f.providers||[]).forEach(v => (d['providers[]'] ??= []).push(v));
+    (f.enginIds||[]).forEach(v => (d['enginIds[]'] ??= []).push(v));
+    (f.employeIds||[]).forEach(v => (d['employeIds[]'] ??= []).push(v));
+    (f.categorieProduits||[]).forEach(v => (d['categorieProduits[]'] ??= []).push(v));
+    (f.sousCategorieProduits||[]).forEach(v => (d['sousCategorieProduits[]'] ??= []).push(v));
+  }
+
+
+  function escapeHtml(str){
+    return String(str ?? '').replace(/[&<>"']/g, s => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+    }[s]));
+  }
+
+  function providerChip(provider){
+    const p = String(provider || '').toUpperCase();
+    if(!p) return '<span class="text-muted">-</span>';
+
+    const meta = {
+      'ALX':     { cls:'alx',     icon:'bi-upc-scan' },
+      'TOTAL':   { cls:'total',   icon:'bi-fuel-pump' },
+      'EDENRED': { cls:'edenred', icon:'bi-credit-card' },
+      'NOTE':  { cls:'note',  icon:'bi-pencil-square' },
+    }[p] || { cls:'', icon:'bi-tag' };
+
+    const label = escapeHtml(p);
+
+    // ✅ data-copy pour copier au clic
+    return `
+      <span class="provider-chip ${meta.cls}" role="button" tabindex="0"
+            data-copy="${label}" title="Cliquer pour copier">
+        <i class="bi ${meta.icon}"></i> ${label}
+      </span>`;
+  }
+
+  // ✅ click-to-copy (souris + clavier)
+  $(document).on('click keydown', '[data-copy]', async function(e){
+    if(e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+    e.preventDefault();
+
+    const v = this.getAttribute('data-copy') || '';
+    try{
+      await navigator.clipboard.writeText(v);
+    } catch(_) {
+      // fallback si clipboard bloqué
+      const ta = document.createElement('textarea');
+      ta.value = v; document.body.appendChild(ta);
+      ta.select(); document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+
+    this.classList.add('is-copied');
+    setTimeout(() => this.classList.remove('is-copied'), 450);
+  });
+
+  function initDt(){
+    if (dt) return;
+    dt = $('#dtFuel').DataTable({
+      processing:true,
+      serverSide:true,
+      pageLength:25,
+      lengthMenu:[[10,25,50,100],[10,25,50,100]],
+      language:{ url:"https://cdn.datatables.net/plug-ins/1.13.8/i18n/fr-FR.json" },
+      ajax:{
+        url: "{{ path('app_administrateur_fuel_dt_transactions', {entite: entite.id}) }}",
+        type:"GET",
+        data: dtFilters
+      },
+      columns:[
+        { data:'date' },
+        { data:'provider', render:(d, t)=> (t === 'display' ? providerChip(d) : (d || '')) },
+        { data:'engin', render:(d)=> d || '-' },
+        { data:'employe', render:(d)=> d || '-' },
+        { data:'label' },
+        // ✅ NEW
+        {
+          data:'categorie',
+          render:(d, type)=>{
+            if(type !== 'display') return d || '';
+            if(!d) return '<span class="text-muted">-</span>';
+            return `<span class="badge-soft"><i class="bi bi-grid-3x3-gap me-1"></i>${escapeHtml(d)}</span>`;
+          }
+        },
+        {
+          data:'sousCategorie',
+          render:(d, type)=>{
+            if(type !== 'display') return d || '';
+            if(!d) return '<span class="text-muted">-</span>';
+            return `<span class="badge-soft"><i class="bi bi-diagram-3 me-1"></i>${escapeHtml(d)}</span>`;
+          }
+        },
+
+        { data:'qty', className:'text-end',
+          render:(d)=> `<span class="money">${numFR(d || 0, 2)}</span>`
+        },
+        { data:'amount_cents', className:'text-end',
+          render:(d)=> `<span class="money">${money(d)}</span>`
+        },
+        
+      ],
+      order:[[0,'desc']]
+    });
+  }
+
+
+  // ✅ Flatpickr : quand l'utilisateur change à la souris/clavier
+  // (ajoute juste scheduleRefresh dans ton onChange existant)
+  // -> tu modifies ton onChange flatpickr comme ci-dessous (voir section B)
+
+  // ✅ Période (year/quarter/month)
+  $periodType?.addEventListener('change', () => scheduleRefresh(200));
+  $periodYear?.addEventListener('change', () => scheduleRefresh(200));
+  $periodQuarter?.addEventListener('change', () => scheduleRefresh(200));
+  $periodMonth?.addEventListener('change', () => scheduleRefresh(200));
+  $btnPeriodClear?.addEventListener('click', () => scheduleRefresh(200));
+
+  // ✅ Checkboxes
+  $(document).on('change', '.fuel-filter-prov, .fuel-filter-engin, .fuel-filter-emp', function(){
+    scheduleRefresh(250);
+  });
+
+  // ✅ Recherche dropdown (debounced)
+  $(document).on('input', 'input[data-filter="prov"], input[data-filter="engin"], input[data-filter="emp"]', function(){
+    scheduleRefresh(450);
+  });
+
+  // ✅ Boutons => forcent un refresh immédiat
+  document.getElementById('btnRefreshTop')?.addEventListener('click', (e)=>{ e.preventDefault(); runRefresh(); });
+
+  // ✅ Optionnel: tu peux carrément cacher Appliquer (si tu veux)
+  // document.getElementById('btnApply')?.classList.add('d-none');
+
+  async function refresh(){
+    const btnRefresh = document.getElementById('btnRefreshTop');
+    const btnReset   = document.getElementById('btnReset');
+
+    try{
+      btnRefresh && (btnRefresh.disabled = true);
+      btnReset   && (btnReset.disabled = true);
+
+      const data = await loadSummary();
+      applyKpis(data.kpis);
+      applyCharts(data.charts);
+
+      initDt();
+      dt?.ajax.reload(null,false);
+    } finally {
+      btnRefresh && (btnRefresh.disabled = false);
+      btnReset   && (btnReset.disabled = false);
+    }
+  }
+
+
+    document.getElementById('btnReset').addEventListener('click', () => {
+      // dates
+      $start.value = "{{ start }}";
+      $end.value = "{{ end }}";
+      fp.setDate([dateFromIso("{{ start }}"), dateFromIso("{{ end }}")], true);
+
+      // tout coché
+      setAll('.fuel-filter-prov', true);
+      setAll('.fuel-filter-engin', true);
+      setAll('.fuel-filter-emp', true);
+      setAll('.fuel-filter-cat', true);
+      setAll('.fuel-filter-sous', true);
+
+      // clear search inputs
+      $('input[data-filter]').val('').trigger('input');
+
+      updateCounts();
+      refresh();
+    });
+
+
+
+     const toolbar = document.getElementById('fuelToolbar');
+    const btn = document.getElementById('btnFiltersMobile');
+    const count = document.getElementById('filtersMobileCount');
+
+    if(!toolbar || !btn || !count) return;
+
+    // ✅ IMPORTANT: ne jamais fermer si on interagit avec un input/select/button dans la toolbar
+    toolbar.addEventListener('click', function(e){
+      // Ne rien faire : on ne bloque pas les events
+    }, true);
+
+    toolbar.addEventListener('keydown', function(e){
+      // si on tape dans un champ => on bloque toute logique de toggle
+      const isInteractive = e.target.closest('input, textarea, select');
+    }, true);
+
+    // afficher le bouton uniquement en mobile (CSS fait le reste, ici on force le display)
+    function isMobile(){ return window.matchMedia && window.matchMedia('(max-width: 576px)').matches; }
+
+    function updateMobileCount(){
+      const prov = getChecked('.fuel-filter-prov').length;
+      const eng  = getChecked('.fuel-filter-engin').length;
+      const emp  = getChecked('.fuel-filter-emp').length;
+
+      const catCount = getChecked('.fuel-filter-cat').length;
+      const sousCount = getChecked('.fuel-filter-sous').length;
+      const parts = [];
+      if (prov) parts.push(`F: ${prov}`);
+      if (eng)  parts.push(`Eng: ${eng}`);
+      if (emp)  parts.push(`Emp: ${emp}`);
+      if (catCount) parts.push(`Cat: ${catCount}`);
+      if (sousCount) parts.push(`Ss: ${sousCount}`);
+
+      count.textContent = parts.length ? parts.join(' · ') : 'Tous';
+
+    }
+
+    function hasFocusInside(){
+      return !!toolbar.querySelector('input:focus, textarea:focus, select:focus');
+    }
+
+    // si un champ prend le focus en mobile => on force l'ouverture
+    toolbar.addEventListener('focusin', () => {
+      if (!isMobile()) return;
+      toolbar.classList.add('is-open');
+    });
+
+    // si on sort du focus => on ne ferme pas automatiquement (on laisse l’utilisateur décider)
+    toolbar.addEventListener('focusout', () => {
+      // rien : volontaire
+    });
+
+    function syncBtnVisibility(){
+      if (isMobile()){
+        btn.classList.remove('d-none');
+      } else {
+        btn.classList.add('d-none');
+        toolbar.classList.add('is-open'); // sur desktop, toujours "ouvert"
+      }
+    }
+
+    function toggle(){
+      if (!isMobile()) return;
+      if (hasFocusInside()) return; // ✅ ne replie pas pendant la saisie
+      toolbar.classList.toggle('is-open');
+    }
+
+    // état par défaut en mobile: fermé
+    if (isMobile()) toolbar.classList.remove('is-open');
+    else toolbar.classList.add('is-open');
+
+    btn.addEventListener('click', toggle);
+    btn.addEventListener('keydown', (e)=>{ if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+
+    let wasMobile = isMobile();
+
+    window.addEventListener('resize', () => {
+      const nowMobile = isMobile();
+
+      // ✅ les resize causés par le clavier (mobile->mobile) ne doivent rien fermer
+      if (nowMobile === wasMobile) {
+        syncBtnVisibility();
+        return;
+      }
+
+      // ✅ on a vraiment changé de mode (breakpoint)
+      wasMobile = nowMobile;
+      syncBtnVisibility();
+
+      if (nowMobile) {
+        toolbar.classList.remove('is-open'); // mobile: fermé par défaut
+      } else {
+        toolbar.classList.add('is-open');    // desktop: ouvert
+      }
+    });
+
+    // met à jour le badge quand les filtres changent
+    $(document).on('change input',
+      '.fuel-filter-prov, .fuel-filter-engin, .fuel-filter-emp, .fuel-filter-cat, .fuel-filter-sous',
+      updateMobileCount
+    );
+    // init
+    syncBtnVisibility();
+    updateMobileCount();
+
+
+
+
+  refresh();
+})();
+
+</script>
+{% endblock %}

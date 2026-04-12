@@ -1,0 +1,381 @@
+{% extends 'base_admin.html.twig' %}
+{% block title %}Connexions externes (utilisateurs){% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('dist/css/style.css') }}">
+  <style>
+    :root{
+      --theme-color-principal: {{ themeColorPrimaire|default(entite.couleurPrincipal|default('#233342')) }};
+      --theme-color-secondaire: {{ themeColorSecondaire|default(entite.couleurSecondaire|default('#ffc107')) }};
+      --theme-color-tertiaire: {{ themeColorTertiaire|default(entite.couleurTertiaire|default('#F0F0F0')) }};
+      --theme-color-quaternaire: {{ couleurQuaternaire|default(entite.couleurQuaternaire|default('#000000')) }};
+    }
+
+    /* ===== HERO premium (reprise) ===== */
+    .hero{
+      border-radius: 22px;
+      position: relative;
+      overflow: hidden;
+      color: #fff;
+      box-shadow: 0 18px 50px rgba(0,0,0,.14);
+      background:
+        radial-gradient(1200px 420px at 12% -10%,
+          color-mix(in srgb, var(--theme-color-tertiaire) 35%, transparent),
+          transparent 58%
+        ),
+        radial-gradient(900px 380px at 92% 0%,
+          color-mix(in srgb, var(--theme-color-secondaire) 32%, transparent),
+          transparent 60%
+        ),
+        radial-gradient(700px 260px at 55% 115%,
+          color-mix(in srgb, var(--theme-color-quaternaire) 18%, transparent),
+          transparent 62%
+        ),
+        linear-gradient(135deg,
+          color-mix(in srgb, var(--theme-color-principal) 92%, #000 8%),
+          color-mix(in srgb, var(--theme-color-principal) 70%, #fff 30%)
+        );
+    }
+    .hero::after{
+      content:"";
+      position:absolute; inset:0; pointer-events:none;
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,0) 55%);
+      opacity:.85;
+    }
+    .hero .accent{
+      width: 12px; border-radius: 999px;
+      background: var(--theme-color-secondaire);
+      box-shadow: 0 0 0 6px color-mix(in srgb, var(--theme-color-secondaire) 18%, transparent);
+    }
+    .chip{
+      display:inline-flex; align-items:center; gap:.45rem;
+      padding:.28rem .65rem; border-radius:999px; font-size:.82rem;
+      background: rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.14);
+      color: rgba(255,255,255,.92);
+      white-space: nowrap;
+    }
+    .chip i{ color: var(--theme-color-secondaire); }
+
+    /* ===== Filterbar premium ===== */
+    .filterbar{
+      background:#fff;
+      border-radius:18px;
+      border:1px solid rgba(0,0,0,.06);
+      box-shadow:0 10px 24px rgba(0,0,0,.05);
+      overflow: visible;
+    }
+    .filterbar__top{
+      padding: .9rem 1rem;
+      border-bottom:1px solid rgba(0,0,0,.06);
+      background: linear-gradient(180deg, rgba(0,0,0,.015), transparent);
+      display:flex; align-items:center; gap:.75rem;
+      flex-wrap:wrap;
+    }
+    .filter-icon{
+      width:38px; height:38px;
+      border-radius:14px;
+      display:grid; place-items:center;
+      background: color-mix(in srgb, var(--theme-color-principal) 10%, transparent);
+      border: 1px solid color-mix(in srgb, var(--theme-color-principal) 18%, transparent);
+      color: color-mix(in srgb, var(--theme-color-principal) 75%, #000 25%);
+      flex: 0 0 auto;
+    }
+    .filterbox{
+      border:1px solid rgba(0,0,0,.08);
+      border-radius:14px;
+      padding:.55rem .6rem;
+      background:#fff;
+      box-shadow: 0 8px 18px rgba(0,0,0,.04);
+    }
+    .filterbox:focus-within{
+      border-color: rgba(255,193,7,.55);
+      box-shadow: 0 0 0 .2rem rgba(255,193,7,.18), 0 10px 18px rgba(0,0,0,.06);
+    }
+    .filterbox .form-control{ border:0!important; box-shadow:none!important; background:transparent!important; padding-left:0!important; }
+
+    .toggle-chip{
+      display:inline-flex; align-items:center; gap:.45rem;
+      padding:.45rem .7rem;
+      border-radius:999px;
+      border:1px solid rgba(0,0,0,.10);
+      background: rgba(0,0,0,.03);
+      cursor:pointer;
+      user-select:none;
+      font-weight:800;
+      font-size:.85rem;
+      transition: all .14s ease;
+    }
+    .toggle-chip.is-on{
+      border-color: rgba(255,193,7,.35);
+      background: rgba(255,193,7,.14);
+    }
+
+    /* ===== Grid ===== */
+    .cards-grid{
+      display:grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: .9rem;
+    }
+    @media (max-width: 1400px){ .cards-grid{ grid-template-columns: repeat(12, minmax(0, 1fr)); } }
+    @media (max-width: 1200px){ .cards-grid{ gap:.8rem; } }
+    @media (max-width: 992px){ .cards-grid{ gap:.75rem; } }
+    @media (max-width: 768px){ .cards-grid{ gap:.7rem; } }
+
+    .user-card{
+      grid-column: span 4;
+      background:#fff;
+      border-radius:18px;
+      border:1px solid rgba(0,0,0,.06);
+      box-shadow:0 12px 30px rgba(0,0,0,.06);
+      overflow:hidden;
+      transition: transform .16s ease, box-shadow .16s ease;
+      position: relative;
+    }
+    @media (max-width: 1200px){ .user-card{ grid-column: span 6; } }
+    @media (max-width: 768px){ .user-card{ grid-column: span 12; border-radius:16px; } }
+
+    .user-card:hover{
+      transform: translateY(-2px);
+      box-shadow:0 18px 50px rgba(0,0,0,.10);
+    }
+    .user-card__top{
+      padding: .95rem 1rem .85rem 1rem;
+      display:flex; gap:.8rem; align-items:center;
+      background: linear-gradient(180deg, rgba(0,0,0,.018), transparent);
+      border-bottom:1px solid rgba(0,0,0,.06);
+    }
+    .avatar{
+      width:46px; height:46px;
+      border-radius: 16px;
+      overflow:hidden;
+      background: color-mix(in srgb, var(--theme-color-principal) 12%, transparent);
+      border:1px solid color-mix(in srgb, var(--theme-color-principal) 18%, transparent);
+      display:grid; place-items:center;
+      flex: 0 0 auto;
+    }
+    .avatar img{ width:100%; height:100%; object-fit:cover; display:block; }
+    .avatar .ini{ font-weight:900; color: color-mix(in srgb, var(--theme-color-principal) 78%, #000 22%); }
+
+    .u-name{ font-weight:900; letter-spacing:-.01em; margin:0; line-height:1.15; }
+    .u-meta{ color: rgba(0,0,0,.55); font-size:.86rem; margin-top:.1rem; }
+
+    .user-card__body{ padding: .85rem 1rem 1rem 1rem; }
+
+    .provider-row{
+      display:flex; align-items:flex-start; justify-content:space-between;
+      gap:.65rem;
+      padding:.55rem .65rem;
+      border:1px solid rgba(0,0,0,.06);
+      border-radius:14px;
+      background: rgba(0,0,0,.02);
+      margin-top:.55rem;
+    }
+    .provider-row:first-child{ margin-top:0; }
+    .p-left{ display:flex; gap:.55rem; align-items:center; }
+    .p-ico{
+      width:34px; height:34px; border-radius:12px;
+      display:grid; place-items:center;
+      background: rgba(255,193,7,.14);
+      border:1px solid rgba(255,193,7,.25);
+    }
+    .p-title{ font-weight:900; font-size:.88rem; margin:0; }
+    .badges{
+      display:flex; gap:.35rem;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      max-width: 64%;
+    }
+    .b{
+      display:inline-flex; align-items:center;
+      border-radius:999px;
+      padding:.22rem .55rem;
+      font-size:.78rem;
+      font-weight:900;
+      border:1px solid rgba(0,0,0,.10);
+      background:#fff;
+      white-space:nowrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    .b.is-empty{
+      opacity:.55;
+      font-family: inherit;
+      font-weight:800;
+    }
+
+    .skeleton{
+      border-radius:18px;
+      border:1px solid rgba(0,0,0,.06);
+      background: linear-gradient(90deg, rgba(0,0,0,.03), rgba(0,0,0,.06), rgba(0,0,0,.03));
+      background-size: 240% 100%;
+      animation: shimmer 1.05s ease-in-out infinite;
+      height: 160px;
+    }
+    @keyframes shimmer{
+      0%{ background-position: 0% 0; }
+      100%{ background-position: 120% 0; }
+    }
+  </style>
+{% endblock %}
+
+{% block body %}
+  <div class="hero p-3 mb-4 d-flex gap-3">
+    <div class="accent"></div>
+    <div class="flex-grow-1">
+      <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+        <div>
+          <h2 class="m-0 fw-bold">
+            <i class="bi bi-person-vcard-fill me-2" style="color:var(--theme-color-secondaire)"></i>
+            Connexions externes - Utilisateurs
+          </h2>
+          <div class="opacity-75 mt-1">
+            Vue “cards” ultra premium : photo + correspondances Total / Edenred / ALX.
+          </div>
+          <div class="d-flex gap-2 flex-wrap mt-3">
+            <span class="chip"><i class="bi bi-building"></i> {{ entite.nom }}</span>
+            <span class="chip"><i class="bi bi-lightning-charge"></i> Filtrage instantané</span>
+            <span class="chip"><i class="bi bi-clock-history"></i> <span id="hero-last-refresh">-</span></span>
+            <span class="chip"><i class="bi bi-people"></i> <span id="hero-count">-</span></span>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <a class="btn btn-light btn-sm fw-semibold"
+             href="{{ path('app_administrateur_utilisateur_index', { entite: entite.id }) }}">
+            <i class="bi bi-people me-1"></i> Utilisateurs
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% include 'flagMessage.html.twig' %}
+
+  <div class="filterbar mb-3">
+    <div class="filterbar__top">
+      <div class="filter-icon"><i class="bi bi-funnel"></i></div>
+
+      <div class="flex-grow-1">
+        <div class="filterbox">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-search" style="opacity:.6"></i>
+            <input id="q" class="form-control form-control-sm" placeholder="Nom, prénom, email, correspondance (value/note) …">
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2 flex-wrap">
+        <span class="toggle-chip is-on" data-prov="total"><i class="bi bi-fuel-pump"></i> TOTAL</span>
+        <span class="toggle-chip is-on" data-prov="edenred"><i class="bi bi-credit-card-2-front"></i> EDENRED</span>
+        <span class="toggle-chip is-on" data-prov="alx"><i class="bi bi-truck"></i> ALX</span>
+
+        <span class="toggle-chip is-on" id="onlyActive">
+          <i class="bi bi-check2-circle"></i> Actifs uniquement
+        </span>
+
+        <button class="btn btn-outline-secondary btn-sm fw-semibold" id="btnReset">
+          <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="cardsWrap" class="cards-grid">
+    {# skeleton initial #}
+    {% for i in 1..9 %}
+      <div class="skeleton"></div>
+    {% endfor %}
+  </div>
+
+  <script>
+    (function(){
+      const wrap = document.getElementById('cardsWrap');
+      const qEl = document.getElementById('q');
+      const heroRefresh = document.getElementById('hero-last-refresh');
+      const heroCount = document.getElementById('hero-count');
+      const btnReset = document.getElementById('btnReset');
+      const onlyActive = document.getElementById('onlyActive');
+
+      const provChips = Array.from(document.querySelectorAll('.toggle-chip[data-prov]'));
+
+      function nowLabel(){
+        const d = new Date();
+        return d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+      }
+
+      function selectedProviders(){
+        return provChips
+          .filter(c => c.classList.contains('is-on'))
+          .map(c => c.getAttribute('data-prov'));
+      }
+
+      let t = null;
+      let ctrl = null;
+
+      async function load(){
+        if(ctrl) ctrl.abort();
+        ctrl = new AbortController();
+
+        const params = new URLSearchParams();
+        const q = (qEl.value || '').trim();
+        if(q) params.set('q', q);
+
+        const prov = selectedProviders();
+        prov.forEach(p => params.append('providers[]', p));
+
+        const oa = onlyActive.classList.contains('is-on') ? 1 : 0;
+        params.set('onlyActive', String(oa));
+
+        const url = "{{ path('app_administrateur_utilisateur_external_id_cards_ajax', { entite: entite.id }) }}" + "?" + params.toString();
+
+        try{
+          const res = await fetch(url, { headers: {'X-Requested-With': 'XMLHttpRequest'}, signal: ctrl.signal });
+          if(!res.ok) throw new Error('Erreur de chargement');
+          const j = await res.json();
+
+          wrap.innerHTML = j.html || '';
+          heroRefresh.textContent = 'Maj : ' + nowLabel();
+          heroCount.textContent = (j.count ?? '-') + ' utilisateurs';
+        }catch(e){
+          if(e.name === 'AbortError') return;
+          wrap.innerHTML = '<div class="alert alert-danger">Impossible de charger les cards.</div>';
+        }
+      }
+
+      function debounceLoad(){
+        clearTimeout(t);
+        t = setTimeout(load, 200);
+      }
+
+      // toggles providers
+      provChips.forEach(chip => {
+        chip.addEventListener('click', () => {
+          chip.classList.toggle('is-on');
+          debounceLoad();
+        });
+      });
+
+      // toggle active
+      onlyActive.addEventListener('click', () => {
+        onlyActive.classList.toggle('is-on');
+        debounceLoad();
+      });
+
+      // search
+      qEl.addEventListener('input', debounceLoad);
+
+      // reset
+      btnReset.addEventListener('click', () => {
+        qEl.value = '';
+        provChips.forEach(c => c.classList.add('is-on'));
+        onlyActive.classList.add('is-on');
+        load();
+      });
+
+      // init
+      heroRefresh.textContent = 'Maj : ' + nowLabel();
+      load();
+    })();
+  </script>
+{% endblock %}

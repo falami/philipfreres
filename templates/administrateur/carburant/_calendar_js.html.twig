@@ -1,0 +1,702 @@
+{# templates/administrateur/carburant/_calendar_js.html.twig #}
+<script>
+(function(){
+  if (window.flatpickr && window.flatpickr.l10ns?.fr) flatpickr.localize(flatpickr.l10ns.fr);
+
+  const MODE = {{ mode|json_encode|raw }}; // 'global'|'engin'|'employe'
+
+  const $start = document.getElementById('fStart');
+  const $end   = document.getElementById('fEnd');
+  const $range = document.getElementById('fRange');
+
+  const $sumAmount = document.getElementById('sumAmount');
+  const $sumCnt    = document.getElementById('sumCnt');
+  const $sumQty    = document.getElementById('sumQty');
+
+  const $scopeSelect =
+    document.getElementById('scopeSelect')
+    || document.getElementById('scopeEnginId')
+    || document.getElementById('scopeEmployeId');
+
+
+
+
+    // ---------------------------
+  // TomSelect (scope)
+  // ---------------------------
+  let scopeTom = null;
+
+  if ($scopeSelect && window.TomSelect) {
+    // évite double init si partial reload
+    if (!$scopeSelect.tomselect) {
+      scopeTom = new TomSelect($scopeSelect, {
+        placeholder: $scopeSelect.dataset.placeholder || '- Choisir -',
+        allowEmptyOption: true,
+        create: false,
+        maxItems: 1,
+        closeAfterSelect: true,
+        plugins: ['clear_button'],
+        render: {
+          no_results: function(data, escape) {
+            return `<div class="no-results px-2 py-2 text-muted">Aucun résultat pour “${escape(data.input)}”</div>`;
+          }
+        }
+      });
+    } else {
+      scopeTom = $scopeSelect.tomselect;
+    }
+  }
+
+  // ---------------------------
+  // Utils
+  // ---------------------------
+  function isoLocal(d){
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  }
+  function dateFromIso(isoStr){
+    if (!isoStr) return null;
+    const [y,m,d] = isoStr.split('-').map(Number);
+    if (!y||!m||!d) return null;
+    return new Date(y, m-1, d);
+  }
+  function money(cents){
+    const n = (Number(cents||0) / 100);
+    try { return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(n); }
+    catch(e){ return n.toFixed(2).replace('.',',')+' €'; }
+  }
+  function numFR(value, digits=0){
+    const n = Number(value||0);
+    try { return new Intl.NumberFormat('fr-FR', { minimumFractionDigits:digits, maximumFractionDigits:digits }).format(n); }
+    catch(e){ return n.toFixed(digits).replace('.',','); }
+  }
+  function esc(s){
+    return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+  }
+
+  // ✅ parse sûr pour dates SQL/ISO (YYYY-MM-DD HH:mm:ss / ISO / Date)
+  function parseAnyDate(v){
+    if (!v) return null;
+
+    if (v instanceof Date) return isNaN(v.getTime()) ? null : v;
+
+    // timestamp (ms)
+    if (typeof v === 'number') {
+      const d = new Date(v);
+      return isNaN(d.getTime()) ? null : d;
+    }
+
+    const s = String(v).trim();
+    if (!s) return null;
+
+    // "YYYY-MM-DD HH:mm:ss" -> "YYYY-MM-DDTHH:mm:ss"
+    const s2 = s.includes(' ') && !s.includes('T') ? s.replace(' ', 'T') : s;
+    const d1 = new Date(s2);
+    if (!isNaN(d1.getTime())) return d1;
+
+    // "YYYY-MM-DD"
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+      const [y,m,dd] = s.split('-').map(Number);
+      const d2 = new Date(y, m-1, dd);
+      return isNaN(d2.getTime()) ? null : d2;
+    }
+
+    return null;
+  }
+
+  // ---------------------------
+  // Debounce refresh (robuste)
+  // ---------------------------
+  let autoTimer = null;
+  let isRefreshing = false;
+  let pendingRefresh = false;
+
+  function scheduleRefresh(delay=250){
+    clearTimeout(autoTimer);
+    autoTimer = setTimeout(() => runRefresh(), delay);
+  }
+
+  async function runRefresh(){
+    if (isRefreshing) { pendingRefresh = true; return; }
+    isRefreshing = true;
+
+    try{
+      await refresh();
+    } finally {
+      isRefreshing = false;
+      if (pendingRefresh){
+        pendingRefresh = false;
+        scheduleRefresh(120);
+      }
+    }
+  }
+
+  // ---------------------------
+  // Flatpickr range
+  // ---------------------------
+  let fp = flatpickr($range, {
+    locale: { ...flatpickr.l10ns.fr, rangeSeparator: " → " },
+    mode: "range",
+    dateFormat: "d/m/Y",
+    allowInput: true,
+    disableMobile: true,
+    defaultDate: [dateFromIso($start.value), dateFromIso($end.value)].filter(Boolean),
+    onChange: function(sd){
+      const from = sd[0] ? isoLocal(sd[0]) : '';
+      const to   = sd[1] ? isoLocal(sd[1]) : from;
+      $start.value = from;
+      $end.value = to;
+      scheduleRefresh(250);
+    }
+  });
+
+  // ---------------------------
+  // Période type (Année/Trimestre/Mois)
+  // ---------------------------
+  const $periodType     = document.getElementById('periodType');
+  const $periodYear     = document.getElementById('periodYear');
+  const $periodQuarter  = document.getElementById('periodQuarter');
+  const $periodMonth    = document.getElementById('periodMonth');
+  const $btnPeriodClear = document.getElementById('btnPeriodClear');
+
+  function pad2(n){ return String(n).padStart(2,'0'); }
+  function lastDayOfMonth(year, month1to12){ return new Date(year, month1to12, 0).getDate(); }
+
+  function setRangeIso(isoStart, isoEnd){
+    $start.value = isoStart;
+    $end.value   = isoEnd;
+    fp.setDate([dateFromIso(isoStart), dateFromIso(isoEnd)], true);
+  }
+  const _setRangeIso = setRangeIso;
+  setRangeIso = function(a,b){ _setRangeIso(a,b); scheduleRefresh(250); };
+
+  function updatePeriodUi(){
+    if (!$periodType || !$periodYear || !$periodQuarter || !$periodMonth) return;
+    const t = $periodType.value;
+    $periodQuarter.style.display = (t === 'quarter') ? '' : 'none';
+    $periodMonth.style.display   = (t === 'month')   ? '' : 'none';
+    $periodYear.style.display    = (t === 'all')     ? 'none' : '';
+  }
+
+  function applyPeriodToRange(){
+    if (!$periodType || !$periodYear) return;
+    const t = $periodType.value;
+    if (t === 'all') {
+      setRangeIso("{{ start }}", "{{ end }}");
+      return;
+    }
+
+    const y = parseInt($periodYear.value || '0', 10);
+    if (!Number.isFinite(y) || y <= 0) return;
+
+    if (t === 'year') { setRangeIso(`${y}-01-01`, `${y}-12-31`); return; }
+
+    if (t === 'quarter') {
+      const q = parseInt($periodQuarter?.value || '0', 10);
+      if (!Number.isFinite(q) || q < 1 || q > 4) return;
+      const sm = (q - 1) * 3 + 1;
+      const em = sm + 2;
+      const endDay = pad2(lastDayOfMonth(y, em));
+      setRangeIso(`${y}-${pad2(sm)}-01`, `${y}-${pad2(em)}-${endDay}`);
+      return;
+    }
+
+    if (t === 'month') {
+      const m = parseInt($periodMonth?.value || '0', 10);
+      if (!Number.isFinite(m) || m < 1 || m > 12) return;
+      const endDay = pad2(lastDayOfMonth(y, m));
+      setRangeIso(`${y}-${pad2(m)}-01`, `${y}-${pad2(m)}-${endDay}`);
+      return;
+    }
+  }
+
+  function initPeriodSelectors(){
+    if (!$periodType || !$periodYear || !$periodQuarter || !$periodMonth) return;
+
+    const now = new Date();
+    const curY = now.getFullYear();
+    const curM = now.getMonth() + 1;
+    const curQ = Math.floor((curM - 1) / 3) + 1;
+
+    $periodYear.innerHTML = '';
+    for(let y = curY - 4; y <= curY + 1; y++){
+      const opt = document.createElement('option');
+      opt.value = String(y);
+      opt.textContent = String(y);
+      $periodYear.appendChild(opt);
+    }
+    $periodYear.value = String(curY);
+
+    $periodMonth.innerHTML = '';
+    for(let m = 1; m <= 12; m++){
+      const opt = document.createElement('option');
+      opt.value = String(m);
+      opt.textContent = pad2(m);
+      $periodMonth.appendChild(opt);
+    }
+    $periodMonth.value = String(curM);
+
+    $periodQuarter.value = String(curQ);
+
+    $periodType.value = 'year';
+    updatePeriodUi();
+    applyPeriodToRange();
+  }
+
+  initPeriodSelectors();
+
+  $periodType?.addEventListener('change', () => { updatePeriodUi(); applyPeriodToRange(); });
+  $periodYear?.addEventListener('change', applyPeriodToRange);
+  $periodQuarter?.addEventListener('change', applyPeriodToRange);
+  $periodMonth?.addEventListener('change', applyPeriodToRange);
+  $btnPeriodClear?.addEventListener('click', () => initPeriodSelectors());
+
+  // ---------------------------
+  // Dropdown multi (fournisseur/engin/employé)
+  // ---------------------------
+  function getChecked(selector){
+    return Array.from(document.querySelectorAll(selector + ':checked'))
+      .map(i => i.value)
+      .filter(v => String(v).trim() !== '');
+  }
+
+  function setAll(selector, checked){
+    document.querySelectorAll(selector).forEach((cb) => {
+      const item = cb.closest('label');
+      const hidden = item?.classList.contains('d-none');
+      if (!hidden) cb.checked = checked;
+    });
+  }
+
+  function updateCounts(){
+    const prov = getChecked('.fuel-filter-prov').length;
+    const eng  = getChecked('.fuel-filter-engin').length;
+    const emp  = getChecked('.fuel-filter-emp').length;
+
+    document.getElementById('provSelectedCount')?.replaceChildren(document.createTextNode(prov ? (prov + ' sel.') : 'Tous'));
+    document.getElementById('enginSelectedCount')?.replaceChildren(document.createTextNode(eng ? (eng + ' sel.') : 'Tous'));
+    document.getElementById('empSelectedCount')?.replaceChildren(document.createTextNode(emp ? (emp + ' sel.') : 'Tous'));
+  }
+
+  function filterDropdown(listSelector, query){
+    const q = (query || '').trim().toLowerCase();
+    document.querySelectorAll(listSelector + ' label').forEach((item) => {
+      const txt = (item.textContent || '').toLowerCase();
+      const match = (q === '') || txt.includes(q);
+      item.classList.toggle('d-none', !match);
+      if (!match) {
+        const cb = item.querySelector('input[type="checkbox"]');
+        if (cb && cb.checked) cb.checked = false;
+      }
+    });
+    updateCounts();
+  }
+
+  $(document).on('input', 'input[data-filter="prov"]', function(){ filterDropdown('#provList', this.value); scheduleRefresh(450); });
+  $(document).on('input', 'input[data-filter="engin"]', function(){ filterDropdown('#enginList', this.value); scheduleRefresh(450); });
+  $(document).on('input', 'input[data-filter="emp"]', function(){ filterDropdown('#empList', this.value); scheduleRefresh(450); });
+
+  $(document).on('click', '[data-check-all="prov"]', function(){ setAll('.fuel-filter-prov', true); updateCounts(); scheduleRefresh(200); });
+  $(document).on('click', '[data-uncheck-all="prov"]', function(){ setAll('.fuel-filter-prov', false); updateCounts(); scheduleRefresh(200); });
+
+  $(document).on('click', '[data-check-all="engin"]', function(){ setAll('.fuel-filter-engin', true); updateCounts(); scheduleRefresh(200); });
+  $(document).on('click', '[data-uncheck-all="engin"]', function(){ setAll('.fuel-filter-engin', false); updateCounts(); scheduleRefresh(200); });
+
+  $(document).on('click', '[data-check-all="emp"]', function(){ setAll('.fuel-filter-emp', true); updateCounts(); scheduleRefresh(200); });
+  $(document).on('click', '[data-uncheck-all="emp"]', function(){ setAll('.fuel-filter-emp', false); updateCounts(); scheduleRefresh(200); });
+
+  $(document).on('change', '.fuel-filter-prov, .fuel-filter-engin, .fuel-filter-emp', function(){
+    updateCounts(); scheduleRefresh(250);
+  });
+
+  updateCounts();
+
+  document.getElementById('fLabel')?.addEventListener('input', () => scheduleRefresh(450));
+  document.getElementById('btnLabelClear')?.addEventListener('click', (e)=>{
+    e.preventDefault();
+    const el = document.getElementById('fLabel');
+    if (el) el.value = '';
+    scheduleRefresh(150);
+  });
+
+  // scope (engin / employe) => refresh
+  $scopeSelect?.addEventListener('change', () => scheduleRefresh(150));
+
+  // ---------------------------
+  // Filters builder (IMPORTANT: always send MODE + scope)
+  // ---------------------------
+  function getFilters(){
+    const provAll = document.querySelectorAll('.fuel-filter-prov').length;
+    const engAll  = document.querySelectorAll('.fuel-filter-engin').length;
+    const empAll  = document.querySelectorAll('.fuel-filter-emp').length;
+
+    const prov = getChecked('.fuel-filter-prov');
+    let eng  = getChecked('.fuel-filter-engin').map(v => parseInt(v,10)).filter(Number.isFinite);
+    let emp  = getChecked('.fuel-filter-emp').map(v => parseInt(v,10)).filter(Number.isFinite);
+
+    const label = (document.getElementById('fLabel')?.value || '').trim();
+    const scopeId = $scopeSelect ? parseInt($scopeSelect.value || '0', 10) : 0;
+
+    const scopeEnginId   = (MODE === 'engin'   && scopeId > 0) ? scopeId : 0;
+    const scopeEmployeId = (MODE === 'employe' && scopeId > 0) ? scopeId : 0;
+
+    // ✅ NORMALISATION "Tous" => []
+    const providers = (provAll && prov.length === provAll) ? [] : prov;
+    eng = (engAll && eng.length === engAll) ? [] : eng;
+    emp = (empAll && emp.length === empAll) ? [] : emp;
+
+    // ✅ PRIORITÉ AU SCOPE
+    // Mode engin => on force enginIds = [scopeEnginId]
+    if (MODE === 'engin' && scopeEnginId > 0){
+      eng = [scopeEnginId];
+    }
+
+    // Mode employe => on force employeIds = [scopeEmployeId]
+    if (MODE === 'employe' && scopeEmployeId > 0){
+      emp = [scopeEmployeId];
+    }
+
+    return {
+      dateStart: $start.value,
+      dateEnd: $end.value,
+      providers,
+      enginIds: eng,
+      employeIds: emp,
+      label,
+      mode: MODE,
+      scopeEnginId,
+      scopeEmployeId,
+      hasScopeSelected: (MODE === 'global') ? true : (scopeId > 0),
+    };
+  }
+
+  function applySumBadges(t){
+    if(!$sumAmount || !$sumCnt || !$sumQty) return;
+    $sumAmount.textContent = money(t.amount_cents || 0);
+    $sumCnt.textContent    = `${numFR(t.cnt || 0, 0)} tx`;
+    $sumQty.textContent    = `${numFR(t.qty || 0, 2)} L`;
+  }
+
+  // ---------------------------
+  // FullCalendar
+  // ---------------------------
+  const calendarEl = document.getElementById('calendar');
+  const modalEl = document.getElementById('fuelDayModal');
+  const modalSub = document.getElementById('fuelDayModalSub');
+  const modalBody = document.getElementById('fuelDayModalBody');
+  const modal = modalEl ? new bootstrap.Modal(modalEl) : null;
+
+  function buildEventsUrl(fetchInfo){
+    const f = getFilters();
+    const base = "{{ path('app_administrateur_fuel_calendar_api_events', { entite: entite.id }) }}";
+    const url = new URL(base, window.location.href);
+
+    // FullCalendar visible range
+    url.searchParams.set('start', fetchInfo.startStr);
+    url.searchParams.set('end', fetchInfo.endStr);
+
+    // toolbar filters (ton format)
+    url.searchParams.set('dateStart', f.dateStart);
+    url.searchParams.set('dateEnd', f.dateEnd);
+    (f.providers||[]).forEach(v => url.searchParams.append('providers[]', v));
+    (f.enginIds||[]).forEach(v => url.searchParams.append('enginIds[]', String(v)));
+    (f.employeIds||[]).forEach(v => url.searchParams.append('employeIds[]', String(v)));
+    if (f.label) url.searchParams.set('label', f.label);
+
+    // scope page (CRUCIAL)
+    url.searchParams.set('mode', f.mode);
+    if (f.scopeEnginId) url.searchParams.set('scopeEnginId', String(f.scopeEnginId));
+    if (f.scopeEmployeId) url.searchParams.set('scopeEmployeId', String(f.scopeEmployeId));
+
+    return url.toString();
+  }
+
+  function renderEventContent(arg){
+    const cents = arg.event.extendedProps?.amount_cents || 0;
+    const cnt = arg.event.extendedProps?.cnt || 0;
+
+    const html = `
+      <div style="display:flex; flex-direction:column; gap:.2rem;">
+        <div style="font-weight:950;">${esc(money(cents))}</div>
+        <div style="opacity:.9; font-weight:900; font-size:.82rem;">${esc(numFR(cnt,0))} tx</div>
+      </div>
+    `;
+    return { html };
+  }
+
+  async function loadDayDetails(dayIso){
+    const f = getFilters();
+    const base = "{{ path('app_administrateur_fuel_calendar_api_day_details', { entite: entite.id }) }}";
+    const url = new URL(base, window.location.href);
+
+    url.searchParams.set('day', dayIso);
+
+    url.searchParams.set('dateStart', f.dateStart);
+    url.searchParams.set('dateEnd', f.dateEnd);
+    (f.providers||[]).forEach(v => url.searchParams.append('providers[]', v));
+    (f.enginIds||[]).forEach(v => url.searchParams.append('enginIds[]', String(v)));
+    (f.employeIds||[]).forEach(v => url.searchParams.append('employeIds[]', String(v)));
+    if (f.label) url.searchParams.set('label', f.label);
+
+    url.searchParams.set('mode', f.mode);
+    if (f.scopeEnginId) url.searchParams.set('scopeEnginId', String(f.scopeEnginId));
+    if (f.scopeEmployeId) url.searchParams.set('scopeEmployeId', String(f.scopeEmployeId));
+
+    const r = await fetch(url.toString(), { headers: { 'Accept':'application/json' } });
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  }
+
+  function providerBadge(p){
+    const up = String(p||'').toUpperCase();
+    const cls = up === 'ALX' ? 'alx' : (up === 'TOTAL' ? 'total' : (up === 'EDENRED' ? 'edenred' : ''));
+    const icon = up === 'ALX' ? 'bi-upc-scan' : (up === 'TOTAL' ? 'bi-fuel-pump' : (up === 'EDENRED' ? 'bi-credit-card' : 'bi-tag'));
+    return `<span class="provider-chip ${cls}"><i class="bi ${icon}"></i> ${esc(up)}</span>`;
+  }
+
+  function renderModal(payload){
+    const s = payload.summary || {};
+    const byP = Array.isArray(payload.byProvider) ? payload.byProvider : [];
+    const rows = Array.isArray(payload.rows) ? payload.rows : [];
+
+    modalSub.textContent = payload.day || '—';
+
+    const chips = byP.length ? byP.map(r => `
+      <div class="d-flex align-items-center gap-2 flex-wrap"
+           style="border:1px solid var(--stroke); background:rgba(255,255,255,.7); border-radius:16px; padding:.6rem .7rem;">
+        ${providerBadge(r.provider)}
+        <span class="badge-soft"><i class="bi bi-cash-stack me-1"></i> ${esc(money(r.amount_cents||0))}</span>
+        <span class="badge-soft"><i class="bi bi-receipt me-1"></i> ${esc(numFR(r.cnt||0,0))} tx</span>
+        <span class="badge-soft"><i class="bi bi-droplet me-1"></i> ${esc(numFR(r.qty||0,2))} L</span>
+      </div>
+    `).join('') : `<div class="text-muted">Aucun détail fournisseur.</div>`;
+
+    const table = rows.length ? `
+      <div class="table-responsive">
+        <table class="table table-sm align-middle">
+          <thead>
+            <tr>
+              <th>Date/Heure</th>
+              <th>Four.</th>
+              <th>Engin</th>
+              <th>Employé</th>
+              <th class="text-end">Qté</th>
+              <th class="text-end">TTC</th>
+              <th>Libellé</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(r => {
+              const d = parseAnyDate(r.date_tx);
+              const dt = d ? d.toLocaleString('fr-FR', { dateStyle:'short', timeStyle:'short' }) : '—';
+              return `
+              <tr>
+                <td class="text-nowrap">${esc(dt)}</td>
+                <td>${providerBadge(r.provider)}</td>
+                <td>${esc(r.engin_label || '—')}</td>
+                <td>${esc(r.employe_label || '—')}</td>
+                <td class="text-end"><span class="money">${esc(numFR(r.qty||0,2))}</span></td>
+                <td class="text-end"><span class="money">${esc(money(r.amount_cents||0))}</span></td>
+                <td>${esc(r.label || '—')}</td>
+              </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div class="text-muted small mt-2">Affichage limité (sécurité perf). Affine tes filtres si besoin.</div>
+    ` : `<div class="text-muted">Aucune ligne.</div>`;
+
+    modalBody.innerHTML = `
+      <div class="row g-3">
+        <div class="col-12">
+          <div class="p-3 rounded-4 border" style="background: var(--panel); border-color: var(--stroke)!important;">
+            <div class="d-flex flex-wrap gap-2">
+              <span class="badge-soft"><i class="bi bi-cash-stack me-1"></i> Total: ${esc(money(s.amount_cents||0))}</span>
+              <span class="badge-soft"><i class="bi bi-receipt me-1"></i> ${esc(numFR(s.cnt||0,0))} tx</span>
+              <span class="badge-soft"><i class="bi bi-droplet me-1"></i> ${esc(numFR(s.qty||0,2))} L</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="p-3 rounded-4 border" style="background: var(--panel); border-color: var(--stroke)!important;">
+            <div class="fw-bold mb-2"><i class="bi bi-diagram-3"></i> Breakdown fournisseurs</div>
+            <div class="d-flex flex-column gap-2">
+              ${chips}
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="p-3 rounded-4 border" style="background: var(--panel); border-color: var(--stroke)!important;">
+            <div class="fw-bold mb-2"><i class="bi bi-list-check"></i> Lignes</div>
+            ${table}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  const calendar = new FullCalendar.Calendar(calendarEl, {
+    locale: 'fr',
+    initialView: window.matchMedia('(max-width:576px)').matches ? 'listWeek' : 'dayGridMonth',
+    headerToolbar: window.matchMedia('(max-width:576px)').matches
+      ? { left: 'prev,next today', center: 'title', right: 'listWeek,dayGridMonth' }
+      : { left: 'prev,next today', center: 'title', right: 'dayGridMonth,dayGridWeek,listWeek' },
+    height: 'auto',
+    expandRows: true,
+    nowIndicator: true,
+
+    eventContent: renderEventContent,
+
+    events: async function(fetchInfo, success, failure){
+      try{
+        // ✅ En mode engin/employe : tant que rien n'est choisi, on vide + badges à 0
+        const f = getFilters();
+        if ((MODE === 'engin' || MODE === 'employe') && !f.hasScopeSelected){
+          applySumBadges({ amount_cents: 0, cnt: 0, qty: 0 });
+          success([]);
+          return;
+        }
+
+        const url = buildEventsUrl(fetchInfo);
+        const r = await fetch(url, { headers: { 'Accept':'application/json' } });
+        if(!r.ok) throw new Error('HTTP ' + r.status);
+        const payload = await r.json();
+
+        const events = Array.isArray(payload.events) ? payload.events : [];
+        success(events);
+
+        applySumBadges(payload.totals || {});
+      } catch(e){
+        console.error(e);
+        failure(e);
+      }
+    },
+
+    eventClick: async function(info){
+      info.jsEvent.preventDefault();
+      const day = info.event.extendedProps?.day || info.event.startStr;
+      if(!modal || !day) return;
+
+      // ✅ si pas de scope sélectionné, on ne tente pas
+      const f = getFilters();
+      if ((MODE === 'engin' || MODE === 'employe') && !f.hasScopeSelected) return;
+
+      modalSub.textContent = day;
+      modalBody.innerHTML = `<div class="text-muted small">Chargement…</div>`;
+      modal.show();
+
+      try{
+        const payload = await loadDayDetails(day);
+        if(!payload || !payload.ok){
+          modalBody.innerHTML = `<div class="alert alert-danger mb-0">Impossible de charger les détails.</div>`;
+          return;
+        }
+        renderModal(payload);
+      } catch(e){
+        console.error(e);
+        modalBody.innerHTML = `<div class="alert alert-danger mb-0">Erreur réseau.</div>`;
+      }
+    },
+  });
+
+  calendar.render();
+
+  // responsive toolbar
+  document.getElementById('btnRefresh')?.addEventListener('click', (e)=>{ e.preventDefault(); runRefresh(); });
+  document.getElementById('btnApply')?.addEventListener('click', (e)=>{ e.preventDefault(); runRefresh(); });
+  document.getElementById('btnReset')?.addEventListener('click', ()=>{
+    $start.value = "{{ start }}";
+    $end.value = "{{ end }}";
+    fp.setDate([dateFromIso("{{ start }}"), dateFromIso("{{ end }}")], true);
+
+    setAll('.fuel-filter-prov', true);
+    setAll('.fuel-filter-engin', true);
+    setAll('.fuel-filter-emp', true);
+    const lbl = document.getElementById('fLabel');
+    if (lbl) lbl.value = '';
+
+    $('input[data-filter]').val('').trigger('input');
+
+    if (scopeTom) scopeTom.clear(true);
+    else if ($scopeSelect) $scopeSelect.value = '';
+
+    updateCounts();
+    runRefresh();
+  });
+
+  // calendrier : refresh = refetch events
+  async function refresh(){
+    calendar.refetchEvents();
+  }
+
+  // auto refresh sur navigation calendrier
+  calendar.on('datesSet', () => scheduleRefresh(120));
+
+  // mobile collapse identique à ton dashboard (reprise)
+  const toolbar = document.getElementById('fuelToolbar');
+  const btn = document.getElementById('btnFiltersMobile');
+  const count = document.getElementById('filtersMobileCount');
+  if(toolbar && btn && count){
+    toolbar.addEventListener('click', function(e){
+      const isInteractive = e.target.closest('input, textarea, select, button, .dropdown-menu, .dropdown-toggle, label');
+      if (isInteractive) e.stopPropagation();
+    }, true);
+
+    function isMobile(){ return window.matchMedia && window.matchMedia('(max-width: 576px)').matches; }
+
+    function updateMobileCount(){
+      const prov = getChecked('.fuel-filter-prov').length;
+      const eng  = getChecked('.fuel-filter-engin').length;
+      const emp  = getChecked('.fuel-filter-emp').length;
+      const label = (document.getElementById('fLabel')?.value || '').trim();
+      const parts = [];
+
+      if (prov) parts.push(`Four: ${prov}`);
+      if (eng)  parts.push(`Eng: ${eng}`);
+      if (emp)  parts.push(`Emp: ${emp}`);
+      if (label) parts.push('Lib');
+
+      if ((MODE === 'engin' || MODE === 'employe') && $scopeSelect && ($scopeSelect.value||'').trim() !== '') parts.push('Scope');
+
+      count.textContent = parts.length ? parts.join(' · ') : 'Tous';
+    }
+
+    function syncBtnVisibility(){
+      if (isMobile()){
+        btn.classList.remove('d-none');
+      } else {
+        btn.classList.add('d-none');
+        toolbar.classList.add('is-open');
+      }
+    }
+
+    function toggle(){
+      if (!isMobile()) return;
+      toolbar.classList.toggle('is-open');
+    }
+
+    if (isMobile()) toolbar.classList.remove('is-open');
+    else toolbar.classList.add('is-open');
+
+    btn.addEventListener('click', toggle);
+    btn.addEventListener('keydown', (e)=>{ if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+
+    window.addEventListener('resize', () => syncBtnVisibility());
+    $(document).on(
+      'change input',
+      '.fuel-filter-prov, .fuel-filter-engin, .fuel-filter-emp, #fLabel, #scopeSelect, #scopeEnginId, #scopeEmployeId',
+      updateMobileCount
+    );
+    syncBtnVisibility();
+    updateMobileCount();
+  }
+
+  // init
+  runRefresh();
+})();
+</script>

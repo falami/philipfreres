@@ -1,0 +1,53 @@
+{% extends 'base_admin.html.twig' %}
+{% block title %}Calendrier carburant — Engins{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('dist/css/style.css') }}">
+  <style>
+    .cardx{ background:#fff;border:1px solid rgba(15,23,42,.10);border-radius:18px;box-shadow:0 18px 55px rgba(15,23,42,.10); }
+    .searchbox{ border-radius:999px;border:1px solid rgba(15,23,42,.12);padding:.55rem .85rem; }
+  </style>
+{% endblock %}
+
+{% block body %}
+  <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap mb-3">
+    <h2 class="m-0 fw-bold"><i class="bi bi-truck-front me-2"></i> Calendrier par engin</h2>
+    <a class="btn btn-outline-secondary" href="{{ path('app_administrateur_fuel_calendar', {entite: entite.id}) }}">
+      <i class="bi bi-calendar-week me-1"></i> Général
+    </a>
+  </div>
+
+  <div class="cardx p-3 mb-3">
+    <input id="q" class="form-control searchbox" placeholder="Rechercher un engin…" autocomplete="off">
+  </div>
+
+  <div class="row g-3" id="grid">
+    {% for e in engins %}
+      <div class="col-md-6 col-lg-4 item" data-name="{{ (e.nom)|lower }}">
+        <a class="cardx p-3 d-block text-decoration-none text-dark"
+           href="{{ path('app_administrateur_fuel_calendar_engin_show', {entite: entite.id, engin: e.id}) }}">
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="fw-bold"><i class="bi bi-truck-front me-2"></i>{{ e.nom }}</div>
+            <i class="bi bi-chevron-right"></i>
+          </div>
+          <div class="text-muted small mt-1">Ouvrir le calendrier de cet engin</div>
+        </a>
+      </div>
+    {% endfor %}
+  </div>
+
+<script>
+(function(){
+  const q = document.getElementById('q');
+  const items = Array.from(document.querySelectorAll('#grid .item'));
+  q?.addEventListener('input', () => {
+    const v = (q.value||'').trim().toLowerCase();
+    items.forEach(it => {
+      const ok = !v || (it.getAttribute('data-name')||'').includes(v);
+      it.classList.toggle('d-none', !ok);
+    });
+  });
+})();
+</script>
+{% endblock %}

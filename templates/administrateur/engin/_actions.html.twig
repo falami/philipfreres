@@ -1,0 +1,67 @@
+{# templates/administrateur/engin/_actions.html.twig #}
+
+<div class="btn-group btn-group-sm user-actions" role="group">
+
+  {# ✅ Bouton principal = Modifier #}
+  <a class="btn btn-light user-main"
+     data-bs-toggle="tooltip" title="Modifier"
+     href="{{ path('app_administrateur_engin_modifier', { entite: entite.id, id: engin.id }) }}">
+    <i class="bi bi-pencil"></i>
+  </a>
+
+  {# ✅ Split dropdown #}
+  <button type="button"
+          class="btn btn-light dropdown-toggle dropdown-toggle-split user-split"
+          data-bs-toggle="dropdown"
+          data-bs-auto-close="outside"
+          aria-expanded="false">
+    <span class="visually-hidden">Actions</span>
+  </button>
+
+  <ul class="dropdown-menu dropdown-menu-end user-menu">
+
+    {# ✅ Correspondances (IDs externes) #}
+    <li>
+      <a class="dropdown-item d-flex align-items-center"
+         href="{{ path('app_administrateur_engin_external_id_index', { entite: entite.id, engin: engin.id }) }}">
+        <i class="bi bi-link-45deg me-2"></i> Correspondances
+      </a>
+    </li>
+
+    {# ✅ Afficher #}
+    <li>
+      <a class="dropdown-item d-flex align-items-center"
+         href="{{ path('app_administrateur_engin_show', { entite: entite.id, id: engin.id }) }}">
+        <i class="bi bi-eye me-2"></i> Afficher
+      </a>
+    </li>
+
+    <li><hr class="dropdown-divider"></li>
+
+    {# ✅ Supprimer (modal si tu l'as, sinon confirm) #}
+    {# Option A : si tu as déjà un deleteModal générique (comme utilisateurs) #}
+    <li>
+      <button type="button"
+              class="dropdown-item d-flex align-items-center text-danger delete-btn"
+              data-bs-toggle="modal" data-bs-target="#deleteModal"
+              data-url="{{ path('app_administrateur_engin_supprimer', { entite: entite.id, id: engin.id }) }}"
+              data-token="{{ csrf_token('delete_engin_' ~ engin.id) }}">
+        <i class="bi bi-trash me-2"></i> Supprimer
+      </button>
+    </li>
+
+    {# Option B (si tu n'as PAS de deleteModal) : remplace le bloc ci-dessus par ceci
+    <li>
+      <form method="post"
+            action="{{ path('app_administrateur_engin_supprimer', { entite: entite.id, id: engin.id }) }}"
+            onsubmit="return confirm('Supprimer cet engin ?');">
+        <input type="hidden" name="_token" value="{{ csrf_token('delete_engin_' ~ engin.id) }}">
+        <button class="dropdown-item d-flex align-items-center text-danger" type="submit">
+          <i class="bi bi-trash me-2"></i> Supprimer
+        </button>
+      </form>
+    </li>
+    #}
+
+  </ul>
+</div>

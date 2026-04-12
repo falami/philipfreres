@@ -1,0 +1,686 @@
+{# templates/administrateur/utilisateur_external_id/all.html.twig #}
+{% extends 'base_admin.html.twig' %}
+{% block title %}Connexions externes (utilisateurs){% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('dist/css/style.css') }}">
+  <link rel="stylesheet" href="{{ asset('dist/css/style-table.css') }}">
+  <link rel="stylesheet" href="https://cdn.datatables.net/v/bs5/dt-2.2.2/b-3.0.2/b-html5-3.0.2/b-print-3.0.2/datatables.min.css"/>
+
+
+  <style>
+    :root{
+      --theme-color-principal: {{ themeColorPrimaire|default(entite.couleurPrincipal|default('#233342')) }};
+      --theme-color-secondaire: {{ themeColorSecondaire|default(entite.couleurSecondaire|default('#ffc107')) }};
+      --theme-color-tertiaire: {{ themeColorTertiaire|default(entite.couleurTertiaire|default('#F0F0F0')) }};
+      --theme-color-quaternaire: {{ couleurQuaternaire|default(entite.couleurQuaternaire|default('#000000')) }};
+    }
+
+    /* ===== HERO ===== */
+    .hero{
+      border-radius: 22px;
+      position: relative;
+      overflow: hidden;
+      color: #fff;
+      box-shadow: 0 18px 50px rgba(0,0,0,.14);
+      background:
+        radial-gradient(1200px 420px at 12% -10%,
+          color-mix(in srgb, var(--theme-color-tertiaire) 35%, transparent),
+          transparent 58%
+        ),
+        radial-gradient(900px 380px at 92% 0%,
+          color-mix(in srgb, var(--theme-color-secondaire) 32%, transparent),
+          transparent 60%
+        ),
+        radial-gradient(700px 260px at 55% 115%,
+          color-mix(in srgb, var(--theme-color-quaternaire) 18%, transparent),
+          transparent 62%
+        ),
+        linear-gradient(135deg,
+          color-mix(in srgb, var(--theme-color-principal) 92%, #000 8%),
+          color-mix(in srgb, var(--theme-color-principal) 70%, #fff 30%)
+        );
+    }
+    .hero::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,0) 55%);
+      opacity:.85;
+    }
+    .hero .accent{
+      width: 12px;
+      border-radius: 999px;
+      background: var(--theme-color-secondaire);
+      box-shadow: 0 0 0 6px color-mix(in srgb, var(--theme-color-secondaire) 18%, transparent);
+    }
+    .chip{
+      display:inline-flex; align-items:center; gap:.45rem;
+      padding:.28rem .65rem; border-radius:999px; font-size:.82rem;
+      background: rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.14);
+      color: rgba(255,255,255,.92);
+      white-space: nowrap;
+    }
+    .chip i{ color: var(--theme-color-secondaire); }
+    .hero .btn{ border-radius: 14px; font-weight: 800; }
+    .hero .btn-outline-theme{
+      border-color: rgba(255,255,255,.35);
+      color:#fff;
+    }
+    .hero .btn-outline-theme:hover{
+      background: rgba(255,255,255,.10);
+      border-color: rgba(255,255,255,.55);
+      color:#fff;
+    }
+
+    /* ===== Filterbar ===== */
+    .filterbar{
+      background:#fff;
+      border-radius:18px;
+      border:1px solid rgba(0,0,0,.06);
+      box-shadow:0 10px 24px rgba(0,0,0,.05);
+      overflow: visible;
+    }
+    .filterbar__top{
+      padding: .9rem 1rem;
+      border-bottom:1px solid rgba(0,0,0,.06);
+      background: linear-gradient(180deg, rgba(0,0,0,.015), transparent);
+      display:flex;
+      align-items:center;
+      gap:.75rem;
+    }
+    .filterbar__title{ font-weight:800; letter-spacing:-.01em; margin:0; font-size:1rem; }
+    .filterbar__hint{ color: rgba(0,0,0,.55); font-size:.85rem; margin-left:.25rem; }
+    .filterbar__body{ padding: 1rem; }
+
+    .filtergrid{
+      display:grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: .75rem;
+      align-items:end;
+    }
+    .fcol-provider{ grid-column: span 3; }
+    .fcol-active  { grid-column: span 3; }
+    .fcol-search  { grid-column: span 5; }
+    .fcol-actions { grid-column: span 1; }
+
+    @media (max-width: 1200px){
+      .fcol-provider{ grid-column: span 6; }
+      .fcol-active  { grid-column: span 6; }
+      .fcol-search  { grid-column: span 12; }
+      .fcol-actions { grid-column: span 12; }
+    }
+    @media (max-width: 768px){
+      .filterbar__body{ padding:.85rem; }
+      .fcol-provider, .fcol-active, .fcol-search, .fcol-actions{ grid-column: span 12; }
+      .hero{ border-radius:16px; }
+    }
+
+    .filter-control .form-label{
+      font-size:.78rem;
+      font-weight:700;
+      color: rgba(0,0,0,.55);
+      text-transform:uppercase;
+      letter-spacing:.06em;
+      margin-bottom:.25rem;
+    }
+    .filterbox{
+      border:1px solid rgba(0,0,0,.08);
+      border-radius:14px;
+      padding:.55rem .6rem;
+      background:#fff;
+      box-shadow: 0 8px 18px rgba(0,0,0,.04);
+    }
+    .filterbox:focus-within{
+      border-color: rgba(255,193,7,.55);
+      box-shadow: 0 0 0 .2rem rgba(255,193,7,.18), 0 10px 18px rgba(0,0,0,.06);
+    }
+    .filterrow{ display:flex; gap:.6rem; align-items:center; }
+    .filter-icon{
+      width:38px; height:38px;
+      border-radius:14px;
+      display:grid; place-items:center;
+      background: color-mix(in srgb, var(--theme-color-principal) 10%, transparent);
+      border: 1px solid color-mix(in srgb, var(--theme-color-principal) 18%, transparent);
+      color: color-mix(in srgb, var(--theme-color-principal) 75%, #000 25%);
+      flex: 0 0 auto;
+    }
+    .filterbox .form-select,
+    .filterbox .form-control{
+      border:0 !important;
+      box-shadow:none !important;
+      padding-left:0 !important;
+      padding-right:0 !important;
+      background:transparent !important;
+    }
+
+    .resetbox{
+      border:1px solid rgba(0,0,0,.08);
+      border-radius:14px;
+      padding:.55rem .6rem;
+      background:#fff;
+      box-shadow:0 8px 18px rgba(0,0,0,.04);
+      cursor:pointer;
+      user-select:none;
+      transition: all .16s ease;
+      width: 100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .resetbox:hover{
+      border-color: rgba(0,0,0,.14);
+      box-shadow: 0 10px 20px rgba(0,0,0,.06);
+      transform: translateY(-1px);
+    }
+    .resetbox:focus,
+    .resetbox:focus-visible{
+      outline: none;
+      border-color: rgba(255,193,7,.55);
+      box-shadow: 0 0 0 .2rem rgba(255,193,7,.18), 0 10px 18px rgba(0,0,0,.06);
+    }
+    .resetbox.is-active{
+      border-color: rgba(255,193,7,.35);
+      background: rgba(255,193,7,.06);
+    }
+    .resetbox:disabled{ cursor: default; opacity: .55; transform:none; }
+    .resetbox__text{ font-size:.9rem; font-weight:800; color: rgba(0,0,0,.65); }
+    .resetbox__badge{
+      min-width: 28px;
+      height: 22px;
+      padding: 0 .5rem;
+      border-radius: 999px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      font-size:.78rem;
+      font-weight:800;
+      background: rgba(0,0,0,.06);
+      color: rgba(0,0,0,.65);
+      border: 1px solid rgba(0,0,0,.08);
+      margin-left:.5rem;
+    }
+    .resetbox.is-active .resetbox__badge{
+      background: rgba(255,193,7,.22);
+      border-color: rgba(255,193,7,.30);
+      color: rgba(0,0,0,.75);
+    }
+
+    .active-filters{
+      padding: .65rem 1rem;
+      border-top:1px solid rgba(0,0,0,.06);
+      background:#fff;
+      display:flex;
+      align-items:center;
+      gap:.5rem;
+      flex-wrap:wrap;
+    }
+    .active-filters .label{
+      font-size:.8rem;
+      color: rgba(0,0,0,.55);
+      font-weight:800;
+      margin-right:.25rem;
+    }
+    .af-badge{
+      display:inline-flex;
+      align-items:center;
+      gap:.35rem;
+      border-radius:999px;
+      padding:.35rem .6rem;
+      border:1px solid rgba(0,0,0,.08);
+      background: rgba(0,0,0,.03);
+      font-size:.82rem;
+      cursor:pointer;
+      user-select:none;
+    }
+    .af-badge:hover{ background: rgba(255,193,7,.12); border-color: rgba(255,193,7,.25); }
+    .af-badge i{ opacity:.7; }
+
+    /* ===== Table card + DataTables ===== */
+    .table-card{
+      background:#fff;
+      border-radius:18px;
+      border:1px solid rgba(0,0,0,.06);
+      box-shadow:0 12px 30px rgba(0,0,0,.06);
+      overflow: visible;
+    }
+
+    table.dataTable{ margin:0 !important; }
+    table.dataTable thead th{
+      background:#f7f8fa!important;
+      border-bottom:1px solid rgba(0,0,0,.08)!important;
+      font-size:.78rem;
+      text-transform:uppercase;
+      letter-spacing:.05em;
+      color: rgba(0,0,0,.55);
+      text-align:center !important;
+      vertical-align: middle;
+    }
+    #dtExt tbody td{
+      padding-top:.65rem!important;
+      padding-bottom:.65rem!important;
+      vertical-align: middle;
+      text-align:center !important;
+    }
+    #dtExt tbody tr:nth-child(even) > *{ background:rgba(35,51,66,.035)!important; }
+    #dtExt tbody tr:hover > *{ background:rgba(255,193,7,.08)!important; }
+
+    #dtExt_wrapper .dataTables_scrollBody{
+      overflow-x:auto !important;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-gutter: stable both-edges;
+    }
+
+    #dtExt td.action-column{
+      overflow: visible !important;
+      white-space: nowrap !important;
+      min-width: 210px;
+      text-align:right !important;
+    }
+
+    @media (max-width: 768px){
+      #dtExt td.action-column,
+      #dtExt th.action-column{
+        position: sticky;
+        right: 0;
+        z-index: 5;
+        background: #fff;
+        box-shadow: -12px 0 18px -14px rgba(0,0,0,.22);
+      }
+      #dtExt tbody tr:nth-child(even) > td.action-column{
+        background: rgba(35,51,66,.035) !important;
+      }
+      #dtExt tbody tr:hover > td.action-column{
+        background: rgba(255,193,7,.08) !important;
+      }
+    }
+
+    /* Toggle */
+    .toggle-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:.4rem;
+      padding:.22rem .55rem;
+      border-radius:999px;
+      font-size:.82rem;
+      font-weight:800;
+      border:1px solid rgba(0,0,0,.10);
+      background: rgba(0,0,0,.03);
+      cursor:pointer;
+      user-select:none;
+      transition: all .14s ease;
+      white-space: nowrap;
+    }
+    .toggle-pill.is-on{
+      background: rgba(25,135,84,.10);
+      border-color: rgba(25,135,84,.22);
+      color: #146c43;
+    }
+    .toggle-pill.is-off{
+      background: rgba(220,53,69,.08);
+      border-color: rgba(220,53,69,.18);
+      color: #b02a37;
+    }
+    .toggle-pill:active{ transform: translateY(1px); }
+    .mini-muted{ color: rgba(0,0,0,.55); font-size:.82rem; }
+
+    .mono{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size:.86rem;
+    }
+
+    body .ext-floating-dropdown{ z-index: 20000 !important; }
+  </style>
+  {# ✅ Tu peux réutiliser exactement le même CSS que ton engin_external_id/all.html.twig #}
+  {# (pour aller vite, je te laisse le CSS identique, tu peux le copier-coller depuis ton fichier existant) #}
+{% endblock %}
+
+{% block javascripts %}
+  {{ parent() }}
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+  <script src="https://cdn.datatables.net/v/bs5/dt-2.2.2/b-3.0.2/b-html5-3.0.2/b-print-3.0.2/datatables.min.js"></script>
+{% endblock %}
+
+{% block body %}
+  <div class="hero p-3 mb-4 d-flex gap-3">
+    <div class="accent"></div>
+
+    <div class="flex-grow-1">
+      <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+        <div>
+          <h2 class="m-0 fw-bold">
+            <i class="bi bi-person-vcard-fill me-2" style="color:var(--theme-color-secondaire)"></i>
+            Connexions externes -Utilisateurs
+          </h2>
+
+          <div class="opacity-75 mt-1">
+            Liste complète des identifiants externes (ALX / TOTAL / EDENRED) avec activation/désactivation rapide.
+          </div>
+
+          <div class="d-flex gap-2 flex-wrap mt-3">
+            <span class="chip"><i class="bi bi-building"></i> {{ entite.nom }}</span>
+            <span class="chip"><i class="bi bi-shield-check"></i> Sécurisé (CSRF)</span>
+            <span class="chip"><i class="bi bi-clock-history"></i> <span id="hero-last-refresh">-</span></span>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <a class="btn btn-light btn-sm fw-semibold"
+             href="{{ path('app_administrateur_utilisateur_index', { entite: entite.id }) }}">
+            <i class="bi bi-people me-1"></i> Utilisateurs
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% include 'flagMessage.html.twig' %}
+
+  <div class="filterbar mb-3">
+    <div class="filterbar__top">
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <div class="filter-icon"><i class="bi bi-funnel"></i></div>
+        <div>
+          <div class="filterbar__title">Filtres</div>
+          <div class="filterbar__hint">Fournisseur, état actif, recherche…</div>
+        </div>
+      </div>
+
+      <div class="ms-auto d-flex gap-2 align-items-center">
+        <button class="btn btn-outline-secondary btn-sm fw-semibold d-md-none"
+                type="button" data-bs-toggle="collapse" data-bs-target="#filtersCollapse">
+          <i class="bi bi-sliders"></i> Filtres
+        </button>
+
+        <div class="dropdown">
+          <button class="btn btn-warning btn-sm fw-semibold dropdown-toggle" data-bs-toggle="dropdown">
+            <i class="bi bi-download"></i> Export
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end" id="exportMenu"></ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="collapse d-md-block" id="filtersCollapse">
+      <div class="filterbar__body">
+        <div class="filtergrid">
+          <div class="filter-control fcol-provider">
+            <div class="form-label">Fournisseur</div>
+            <div class="filterbox">
+              <div class="filterrow">
+                <div class="filter-icon"><i class="bi bi-credit-card-2-front"></i></div>
+                <select id="providerFilter" class="form-select form-select-sm">
+                  <option value="all">Tous</option>
+                  {% for p in providers|default([]) %}
+                    <option value="{{ p.value|default(p) }}">{{ p.value|default(p) }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="filter-control fcol-active">
+            <div class="form-label">État</div>
+            <div class="filterbox">
+              <div class="filterrow">
+                <div class="filter-icon"><i class="bi bi-toggle2-on"></i></div>
+                <select id="activeFilter" class="form-select form-select-sm">
+                  <option value="all">Tous</option>
+                  <option value="1">Actifs</option>
+                  <option value="0">Désactivés</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="filter-control fcol-search">
+            <div class="form-label">Recherche</div>
+            <div class="filterbox">
+              <div class="filterrow">
+                <div class="filter-icon"><i class="bi bi-search"></i></div>
+                <input type="text" id="searchAny" class="form-control form-control-sm" placeholder="nom, email, valeur, note…" />
+              </div>
+            </div>
+          </div>
+
+          <div class="filter-control fcol-actions">
+            <div class="form-label">&nbsp;</div>
+            <button id="btnReset" type="button" class="resetbox" title="Réinitialiser">
+              <i class="bi bi-arrow-counterclockwise me-2"></i>
+              <span class="resetbox__text">Reset</span>
+              <span class="resetbox__badge" id="resetCount" style="display:none;">0</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="active-filters" id="activeFilters">
+        <span class="label"><i class="bi bi-lightning-charge"></i> Actifs :</span>
+        <span class="text-muted small" id="activeFiltersEmpty">Aucun</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-card mb-4 p-3">
+    <table id="dtUserExt" class="table table-hover align-middle mb-0 w-100">
+      <thead>
+        <tr>
+          <th style="width:80px">#</th>
+          <th>Utilisateur</th>
+          <th>Fournisseur</th>
+          <th>Valeur</th>
+          <th>État</th>
+          <th>Créé</th>
+          <th>Désactivé</th>
+          <th>Note</th>
+          <th class="action-column text-end" style="width:230px"></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+  $(function(){
+    const $provider = $('#providerFilter');
+    const $active   = $('#activeFilter');
+    const $search   = $('#searchAny');
+
+    function nowLabel(){
+      const d = new Date();
+      return d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+    }
+    function escapeHtml(str){
+      return String(str ?? '').replace(/[&<>"']/g, s => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+      }[s]));
+    }
+
+    // Toggle AJAX
+    async function toggleActive(id, willEnable, note, csrfToken){
+      const url = willEnable
+        ? "{{ path('app_administrateur_utilisateur_external_id_all_enable', { entite: entite.id, id: '___ID___' }) }}"
+        : "{{ path('app_administrateur_utilisateur_external_id_all_disable', { entite: entite.id, id: '___ID___' }) }}";
+
+      const realUrl = url.replace('___ID___', String(id));
+
+      const form = new FormData();
+      form.append('_token', csrfToken);
+      if(!willEnable && note) form.append('note', note);
+
+      const res = await fetch(realUrl, {
+        method: 'POST',
+        body: form,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
+
+      if(!res.ok){
+        let msg = 'Erreur lors de la mise à jour.';
+        try{ const j = await res.json(); msg = j.message || msg; }catch(e){}
+        throw new Error(msg);
+      }
+      return await res.json();
+    }
+
+    const table = $('#dtUserExt').DataTable({
+      serverSide:true,
+      processing:true,
+      autoWidth: false,
+      scrollX: true,
+      scrollCollapse: true,
+      responsive: false,
+
+      ajax:{
+        url:"{{ path('app_administrateur_utilisateur_external_id_all_ajax', { entite: entite.id }) }}",
+        type:"POST",
+        data: d => {
+          d.providerFilter = $provider.val() || 'all';
+          d.activeFilter   = $active.val() || 'all';
+          d.searchAny      = $search.val() || '';
+        }
+      },
+
+      dom:
+        '<"dt-top d-flex flex-wrap gap-2 align-items-center justify-content-between"'
+          + '<"dt-actions d-flex gap-2 align-items-center"B>'
+          + '<"dt-search"f>'
+        + '>'
+        + 'rt'
+        + '<"dt-bottom-internal d-flex flex-wrap gap-2 align-items-center justify-content-between"lip>',
+
+      buttons:['copy','csv','excel','pdf','print'],
+      lengthMenu:[[10,25,50,100],[10,25,50,100]],
+      pageLength: 25,
+
+      columns:[
+        {data:'id', name:'id'},
+        {data:'utilisateur', name:'utilisateur'},
+        {data:'provider', name:'provider'},
+        {
+          data:'value',
+          name:'value',
+          render:(data, type)=> type === 'display'
+            ? `<span class="mono">${escapeHtml(data)}</span>`
+            : (data || '')
+        },
+        {
+          data:'active',
+          name:'active',
+          render:(data, type, row)=>{
+            if(type !== 'display') return data ? 1 : 0;
+            const isOn = !!data;
+            return `
+              <span class="toggle-pill ${isOn ? 'is-on' : 'is-off'}"
+                    data-id="${row.id}"
+                    data-active="${isOn ? '1' : '0'}"
+                    title="${isOn ? 'Cliquer pour désactiver' : 'Cliquer pour activer'}">
+                <i class="bi ${isOn ? 'bi-toggle2-on' : 'bi-toggle2-off'}"></i>
+                ${isOn ? 'Actif' : 'Off'}
+              </span>
+            `;
+          }
+        },
+        {data:'createdAt', name:'createdAt'},
+        {
+          data:'disabledAt',
+          name:'disabledAt',
+          render:(d, type)=> {
+            if(type !== 'display') return d || '';
+            return d ? escapeHtml(d) : '<span class="text-muted">-</span>';
+          }
+        },
+        {
+          data:'note',
+          name:'note',
+          render:(d, type)=>{
+            if(type !== 'display') return d || '';
+            return d ? `<span class="mini-muted">${escapeHtml(d)}</span>` : '<span class="text-muted">-</span>';
+          }
+        },
+        {data:'actions', name:'actions'}
+      ],
+
+      columnDefs:[
+        {targets:8, className:'action-column text-end', orderable:false, searchable:false},
+        {targets:[0,1,2,3,4,5,6,7], className:'text-center'}
+      ],
+
+      order:[[0,'desc']],
+      language:{ url:'https://cdn.datatables.net/plug-ins/2.2.2/i18n/fr-FR.json' },
+
+      initComplete:function(){
+        const api = this.api();
+        const $btns = $(api.buttons().container()).find('button');
+
+        $('#exportMenu').empty();
+        $btns.each(function(){
+          const $b=$(this);
+          $('<li><a class="dropdown-item" href="#">'+$b.text()+'</a></li>')
+            .on('click',e=>{e.preventDefault();$b.click();})
+            .appendTo('#exportMenu');
+        });
+        $(api.buttons().container()).hide();
+        api.columns.adjust();
+        $('#hero-last-refresh').text('Maj : ' + nowLabel());
+      }
+    });
+
+    function refreshAll(resetPaging=false){
+      table.ajax.reload(null, !resetPaging ? false : true);
+      $('#hero-last-refresh').text('Maj : ' + nowLabel());
+    }
+
+    $provider.on('change', ()=>refreshAll(true));
+    $active.on('change', ()=>refreshAll(true));
+
+    let tSearch=null;
+    $search.on('input', ()=>{
+      clearTimeout(tSearch);
+      tSearch = setTimeout(()=>refreshAll(true), 250);
+    });
+
+    $('#btnReset').on('click', function(){
+      $provider.val('all');
+      $active.val('all');
+      $search.val('');
+      table.search(''); // reset search[value]
+      refreshAll(true);
+    });
+
+    // click toggle
+    $('#dtUserExt').on('click', '.toggle-pill', async function(){
+      const el = this;
+      const id = el.getAttribute('data-id');
+      const isActive = el.getAttribute('data-active') === '1';
+
+      const tr = el.closest('tr');
+      const rowData = $('#dtUserExt').DataTable().row(tr).data();
+      const csrf = isActive ? (rowData?.csrfDisable || '') : (rowData?.csrfEnable || '');
+
+      el.style.pointerEvents = 'none';
+      el.style.opacity = '.65';
+
+      try{
+        if(isActive){
+          const note = prompt('Note (optionnel) pour la désactivation :', '') || '';
+          await toggleActive(id, false, note.trim(), csrf);
+        } else {
+          await toggleActive(id, true, '', csrf);
+        }
+        $('#dtUserExt').DataTable().ajax.reload(null, false);
+      }catch(err){
+        alert(err?.message || 'Erreur');
+      }finally{
+        el.style.pointerEvents = '';
+        el.style.opacity = '';
+      }
+    });
+  });
+  </script>
+{% endblock %}
