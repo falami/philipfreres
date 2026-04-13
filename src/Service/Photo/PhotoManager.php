@@ -9,7 +9,8 @@ use Imagine\Gd\Imagine;
 use Imagine\Image\Box;
 use Imagine\Image\ImageInterface;
 
-class PhotoManager {
+class PhotoManager
+{
 
     private $logger;
 
@@ -31,7 +32,7 @@ class PhotoManager {
 
 
 
-    public function handleImageUpload($form, string $fieldName, callable $setter, FileUploader $fileUploader, string $uploadPath, int $sizeW, int $sizeH, ?string $oldFilename = null): void 
+    public function handleImageUpload($form, string $fieldName, callable $setter, FileUploader $fileUploader, string $uploadPath, int $sizeW, int $sizeH, ?string $oldFilename = null): void
     {
         $imageFile = $form->get($fieldName)->getData();
         if ($imageFile) {
@@ -42,20 +43,20 @@ class PhotoManager {
                     unlink($oldFilePath);
                 }
             }
-    
+
             // Upload du nouveau fichier
             $fileName = $fileUploader->upload($imageFile, $uploadPath);
-    
+
             // Redimensionnement
             $imagine = new Imagine();
             $imagePath = $uploadPath . '/' . $fileName;
             $size = new Box($sizeW, $sizeH);
             $mode = ImageInterface::THUMBNAIL_OUTBOUND;
-    
+
             $imagine->open($imagePath)
                 ->thumbnail($size, $mode)
                 ->save($imagePath);
-    
+
             $setter($fileName);
         }
     }
@@ -63,10 +64,30 @@ class PhotoManager {
 
     public function deleteIfExists(string $basePath, string $filename): void
     {
-        $path = rtrim($basePath, '/').'/'.$filename;
+        $path = rtrim($basePath, '/') . '/' . $filename;
         if (is_file($path)) @unlink($path);
     }
 
 
 
+    public function handleSingleImageUpload(
+        \Symfony\Component\HttpFoundation\File\UploadedFile $file,
+        callable $setter,
+        \App\Service\FileUploader $fileUploader,
+        string $uploadPath,
+        int $sizeW = 1800,
+        int $sizeH = 1200,
+        ?string $oldFilename = null
+    ): void {
+        $filename = $fileUploader->upload($file, $uploadPath);
+
+        $setter($filename);
+
+        if ($oldFilename) {
+            $oldPath = rtrim($uploadPath, '/') . '/' . $oldFilename;
+            if (is_file($oldPath)) {
+                @unlink($oldPath);
+            }
+        }
+    }
 }

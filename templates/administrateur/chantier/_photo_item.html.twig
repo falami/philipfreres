@@ -1,0 +1,134 @@
+<div class="row g-3 js-photo-item">
+  <div class="col-md-6">{{ form_row(row.titre) }}</div>
+  <div class="col-md-6">{{ form_row(row.ordre) }}</div>
+
+  <div class="col-12">
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <div class="photo-card photo-card--before">
+          <div class="photo-card__head">
+            <div class="photo-card__title">
+              <i class="bi bi-camera me-2"></i> Photo avant
+            </div>
+            <span class="photo-badge">Avant</span>
+          </div>
+
+          <div class="photo-dropzone js-dropzone" data-target-input-id="{{ row.avantFile.vars.id }}">
+            {{ form_widget(row.avantFile) }}
+
+            <div class="photo-dropzone__inner">
+              <div class="photo-dropzone__icon"><i class="bi bi-cloud-arrow-up"></i></div>
+              <div class="photo-dropzone__title">Glisser-déposer la photo avant</div>
+              <div class="photo-dropzone__hint">ou cliquer pour sélectionner un fichier</div>
+            </div>
+
+            <div class="photo-preview d-none js-photo-preview">
+              <img class="photo-preview__img js-photo-preview-img" alt="Prévisualisation photo avant">
+              <div class="photo-preview__overlay">
+                <button type="button" class="btn btn-light btn-sm js-photo-replace">Remplacer</button>
+                <button type="button" class="btn btn-danger btn-sm js-photo-remove">Supprimer</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="photo-location-box mt-3">
+            {{ form_row(row.adresseAvant) }}
+            {{ form_widget(row.latitudeAvant) }}
+            {{ form_widget(row.longitudeAvant) }}
+            {{ form_widget(row.sourceLocalisationAvant) }}
+
+            <div class="row g-2 mt-1">
+              <div class="col-6">
+                <label class="form-label">Latitude</label>
+                <input type="text" class="form-control js-photo-lat-visible-avant" placeholder="Latitude">
+              </div>
+              <div class="col-6">
+                <label class="form-label">Longitude</label>
+                <input type="text" class="form-control js-photo-lng-visible-avant" placeholder="Longitude">
+              </div>
+            </div>
+
+            <div class="d-flex gap-2 mt-2 flex-wrap">
+              <button type="button" class="btn btn-outline-secondary btn-sm js-geocode-photo" data-kind="avant">
+                <i class="bi bi-geo-alt me-1"></i> Localiser
+              </button>
+              <button type="button" class="btn btn-outline-dark btn-sm js-apply-coords" data-kind="avant">
+                <i class="bi bi-crosshair me-1"></i> Appliquer coordonnées
+              </button>
+            </div>
+
+            <div class="photo-location-help mt-2">
+              Clique sur la carte ou déplace le marqueur pour ajuster précisément le point de la photo avant.
+            </div>
+
+            <div class="photo-map js-photo-map" data-kind="avant"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="photo-card photo-card--after">
+          <div class="photo-card__head">
+            <div class="photo-card__title">
+              <i class="bi bi-camera-fill me-2"></i> Photo après
+            </div>
+            <span class="photo-badge photo-badge--after">Après</span>
+          </div>
+
+          <div class="photo-dropzone js-dropzone" data-target-input-id="{{ row.apresFile.vars.id }}">
+            {{ form_widget(row.apresFile) }}
+
+            <div class="photo-dropzone__inner">
+              <div class="photo-dropzone__icon"><i class="bi bi-cloud-arrow-up"></i></div>
+              <div class="photo-dropzone__title">Glisser-déposer la photo après</div>
+              <div class="photo-dropzone__hint">ou cliquer pour sélectionner un fichier</div>
+            </div>
+
+            <div class="photo-preview d-none js-photo-preview">
+              <img class="photo-preview__img js-photo-preview-img" alt="Prévisualisation photo après">
+              <div class="photo-preview__overlay">
+                <button type="button" class="btn btn-light btn-sm js-photo-replace">Remplacer</button>
+                <button type="button" class="btn btn-danger btn-sm js-photo-remove">Supprimer</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="photo-location-box mt-3">
+            {{ form_row(row.adresseApres) }}
+            {{ form_widget(row.latitudeApres) }}
+            {{ form_widget(row.longitudeApres) }}
+            {{ form_widget(row.sourceLocalisationApres) }}
+
+            <div class="row g-2 mt-1">
+              <div class="col-6">
+                <label class="form-label">Latitude</label>
+                <input type="text" class="form-control js-photo-lat-visible-apres" placeholder="Latitude">
+              </div>
+              <div class="col-6">
+                <label class="form-label">Longitude</label>
+                <input type="text" class="form-control js-photo-lng-visible-apres" placeholder="Longitude">
+              </div>
+            </div>
+
+            <div class="d-flex gap-2 mt-2 flex-wrap">
+              <button type="button" class="btn btn-outline-secondary btn-sm js-geocode-photo" data-kind="apres">
+                <i class="bi bi-geo-alt me-1"></i> Localiser
+              </button>
+              <button type="button" class="btn btn-outline-dark btn-sm js-apply-coords" data-kind="apres">
+                <i class="bi bi-crosshair me-1"></i> Appliquer coordonnées
+              </button>
+            </div>
+
+            <div class="photo-location-help mt-2">
+              Clique sur la carte ou déplace le marqueur pour ajuster précisément le point de la photo après.
+            </div>
+
+            <div class="photo-map js-photo-map" data-kind="apres"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12">{{ form_row(row.commentaire) }}</div>
+</div>

@@ -14,6 +14,8 @@ final class TenantPermission
   public const ENGIN_MANAGE = 'ENGIN_MANAGE';
   public const ADMIN_DASHBOARD_MANAGE = 'ENTITE_ADMIN_DASHBOARD_MANAGE';
   public const USERS_MANAGE = 'ENTITE_USERS_MANAGE';
+  public const CHANTIER_MANAGE = 'CHANTIER_MANAGE';
+
 
   /**
    * ✅ Liste exhaustive des permissions "tenant" gérées par TenantVoter.
@@ -27,6 +29,7 @@ final class TenantPermission
     self::EMPLOYE,
 
     self::UTILISATEUR_MANAGE,
+    self::CHANTIER_MANAGE,
     self::ENGIN_MANAGE,
     self::ADMIN_DASHBOARD_MANAGE,
     self::USERS_MANAGE,

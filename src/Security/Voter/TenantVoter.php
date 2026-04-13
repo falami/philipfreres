@@ -61,5 +61,6 @@ final class TenantVoter extends Voter
     TenantPermission::ENGIN_MANAGE,
     TenantPermission::ADMIN_DASHBOARD_MANAGE,
     TenantPermission::USERS_MANAGE,
+    TenantPermission::CHANTIER_MANAGE,
   ];
 }

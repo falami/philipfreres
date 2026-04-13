@@ -1,0 +1,315 @@
+{% set brand = {
+  primary: entite.couleurPrincipal|default('#1e3a5f'),
+  secondary: entite.couleurSecondaire|default('#d4a574'),
+  ink: '#0f2336',
+  line: '#dce4ed',
+  soft: '#f8fafc',
+  paper: '#ffffff',
+  muted: '#5a6b7d'
+} %}
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Chantier {{ chantier.nom }}</title>
+  <style>
+    @page { margin: 12mm 10mm 12mm 10mm; size: A4 portrait; }
+
+    body{
+      font-family: DejaVu Sans, Arial, sans-serif;
+      color: {{ brand.ink }};
+      font-size: 10px;
+      line-height: 1.45;
+    }
+
+    .header{
+      border:1px solid {{ brand.line }};
+      border-radius:12px;
+      padding:12px;
+      margin-bottom:14px;
+      background: {{ brand.paper }};
+    }
+
+    .title{
+      font-size: 18px;
+      font-weight: bold;
+      color: {{ brand.primary }};
+      margin-bottom:4px;
+    }
+
+    .meta{
+      color: {{ brand.muted }};
+      font-size: 9px;
+    }
+
+    .section{
+      margin-bottom: 12px;
+      border:1px solid {{ brand.line }};
+      border-radius:12px;
+      overflow:hidden;
+    }
+
+    .section-title{
+      background: {{ brand.soft }};
+      padding:8px 10px;
+      font-weight:bold;
+      color: {{ brand.primary }};
+      border-bottom:1px solid {{ brand.line }};
+    }
+
+    .section-body{
+      padding:10px;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+    }
+
+    th, td{
+      border:1px solid {{ brand.line }};
+      padding:6px 7px;
+      vertical-align:top;
+    }
+
+    th{
+      background: {{ brand.soft }};
+      text-align:left;
+    }
+
+    .label{
+      color: {{ brand.muted }};
+      font-size: 9px;
+      margin-bottom:2px;
+    }
+
+    .value{
+      font-weight:bold;
+      color: {{ brand.ink }};
+    }
+
+    .photo-grid{
+      width:100%;
+    }
+
+    .photo-cell{
+      width:50%;
+      padding:6px;
+      vertical-align:top;
+    }
+
+    .photo-card{
+      border:1px solid {{ brand.line }};
+      border-radius:10px;
+      padding:8px;
+    }
+
+    .photo-card img{
+      width:100%;
+      height:220px;
+      object-fit:cover;
+      border:1px solid {{ brand.line }};
+      border-radius:8px;
+    }
+
+    .muted{
+      color: {{ brand.muted }};
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="title">Fiche chantier — {{ chantier.nom }}</div>
+    <div class="meta">
+      {{ entite.nom }} • Généré le {{ "now"|date("d/m/Y H:i") }}
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Informations générales</div>
+    <div class="section-body">
+      <table>
+        <tr>
+          <th>Chantier</th>
+          <th>Adresse</th>
+          <th>Ville</th>
+          <th>Semaine</th>
+        </tr>
+        <tr>
+          <td>{{ chantier.nom }}</td>
+          <td>{{ chantier.adresse ?: '-' }} {{ chantier.complement ?: '' }}</td>
+          <td>{{ chantier.codePostal ?: '' }} {{ chantier.ville ?: '-' }}</td>
+          <td>{{ chantier.semainePrevisionnelle ?: '-' }}</td>
+        </tr>
+      </table>
+
+      <div style="margin-top:10px;">
+        <div class="label">Nature de la prestation</div>
+        <div class="value">{{ chantier.naturePrestation ?: '-' }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Intervention</div>
+    <div class="section-body">
+      <table>
+        <tr>
+          <th>Début prévisionnel</th>
+          <th>Fin prévisionnelle</th>
+          <th>Durée prévisionnelle</th>
+          <th>Début réel</th>
+          <th>Fin réelle</th>
+          <th>Durée réelle</th>
+        </tr>
+        <tr>
+          <td>{{ chantier.dateDebutPrevisionnelle ? chantier.dateDebutPrevisionnelle|date('d/m/Y') : '-' }}</td>
+          <td>{{ chantier.dateFinPrevisionnelle ? chantier.dateFinPrevisionnelle|date('d/m/Y') : '-' }}</td>
+          <td>{{ chantier.dureePrevisionnelleJours ?: '-' }} jour(s)</td>
+          <td>{{ chantier.dateDebutReelle ? chantier.dateDebutReelle|date('d/m/Y') : '-' }}</td>
+          <td>{{ chantier.dateFinReelle ? chantier.dateFinReelle|date('d/m/Y') : '-' }}</td>
+          <td>{{ chantier.dureeReelleJours ?: '-' }} jour(s)</td>
+        </tr>
+      </table>
+
+      <table style="margin-top:10px;">
+        <tr>
+          <th>Surface traitée</th>
+          <th>Linéaire traité</th>
+        </tr>
+        <tr>
+          <td>{{ chantier.surfaceTraitee ?: '-' }} m²</td>
+          <td>{{ chantier.lineaireTraite ?: '-' }} ml</td>
+        </tr>
+      </table>
+
+      <div style="margin-top:10px;">
+        <div class="label">Difficultés rencontrées</div>
+        <div class="value">{{ chantier.difficultesRencontrees ?: '-' }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Sous-chantiers / parcelles</div>
+    <div class="section-body">
+      <table>
+        <tr>
+          <th>Ordre</th>
+          <th>Nom</th>
+          <th>Parcelle</th>
+        </tr>
+        {% for z in chantier.zones %}
+          <tr>
+            <td>{{ z.ordre }}</td>
+            <td>{{ z.nom }}</td>
+            <td>{{ z.parcelle ?: '-' }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="3">Aucun sous-chantier</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Ressources</div>
+    <div class="section-body">
+      <table>
+        <tr>
+          <th>Ressources humaines</th>
+          <th>Engins</th>
+          <th>Matériels</th>
+        </tr>
+        <tr>
+          <td>
+            {% for r in chantier.ressourcesHumaines %}
+              <div>{{ r.utilisateur.prenom }} {{ r.utilisateur.nom }}{% if r.fonction %} — {{ r.fonction }}{% endif %}</div>
+            {% else %}
+              -
+            {% endfor %}
+          </td>
+          <td>
+            {% for r in chantier.ressourcesEngins %}
+              <div>{{ r.engin.nom }}{% if r.commentaire %} — {{ r.commentaire }}{% endif %}</div>
+            {% else %}
+              -
+            {% endfor %}
+          </td>
+          <td>
+            {% for r in chantier.ressourcesMateriels %}
+              <div>{{ r.materiel.nom }} × {{ r.quantite ?: 1 }}{% if r.commentaire %} — {{ r.commentaire }}{% endif %}</div>
+            {% else %}
+              -
+            {% endfor %}
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Bilan d'enlèvement d'encombrants / déchets</div>
+    <div class="section-body">
+      <table>
+        <tr>
+          <th>Type de déchet</th>
+          <th>Poids total</th>
+        </tr>
+        {% for d in chantier.dechets %}
+          <tr>
+            <td>{{ d.typeDechet.nom }}</td>
+            <td>{{ d.poidsTotal ?: '0' }} {{ d.typeDechet.unite }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="2">Aucun déchet renseigné</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+
+  {% if chantier.photos|length %}
+    <div class="section">
+      <div class="section-title">Photos avant / après</div>
+      <div class="section-body">
+        {% for p in chantier.photos %}
+          <table class="photo-grid" style="margin-bottom:10px;">
+            <tr>
+              <td colspan="2" style="border:none; padding:0 0 6px 0;">
+                <strong>{{ p.titre ?: 'Photo de chantier' }}</strong>
+                {% if p.commentaire %}
+                  <div class="muted">{{ p.commentaire }}</div>
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td class="photo-cell">
+                <div class="photo-card">
+                  <div style="font-weight:bold; margin-bottom:6px;">Avant</div>
+                  {% if p.photoAvant %}
+                    <img src="{{ absolute_url(asset('uploads/photos/chantiers/' ~ p.photoAvant)) }}" alt="Avant">
+                  {% else %}
+                    <div class="muted">Aucune photo</div>
+                  {% endif %}
+                </div>
+              </td>
+              <td class="photo-cell">
+                <div class="photo-card">
+                  <div style="font-weight:bold; margin-bottom:6px;">Après</div>
+                  {% if p.photoApres %}
+                    <img src="{{ absolute_url(asset('uploads/photos/chantiers/' ~ p.photoApres)) }}" alt="Après">
+                  {% else %}
+                    <div class="muted">Aucune photo</div>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+          </table>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+</body>
+</html>

@@ -176,6 +176,25 @@ class Entite
     private Collection $notes;
 
 
+    /**
+     * @var Collection<int, Chantier>
+     */
+    #[ORM\OneToMany(targetEntity: Chantier::class, mappedBy: 'entite')]
+    private Collection $chantiers;
+
+    /**
+     * @var Collection<int, Materiel>
+     */
+    #[ORM\OneToMany(targetEntity: Materiel::class, mappedBy: 'entite')]
+    private Collection $materiels;
+
+    /**
+     * @var Collection<int, DechetType>
+     */
+    #[ORM\OneToMany(targetEntity: DechetType::class, mappedBy: 'entite')]
+    private Collection $dechetTypes;
+
+
     public function __construct()
     {
         $this->utilisateurEntites = new ArrayCollection();
@@ -186,6 +205,9 @@ class Entite
         $this->transactionCarteEdenreds = new ArrayCollection();
         $this->produits = new ArrayCollection();
         $this->notes = new ArrayCollection();
+        $this->chantiers = new ArrayCollection();
+        $this->materiels = new ArrayCollection();
+        $this->dechetTypes = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -835,6 +857,85 @@ class Entite
             // set the owning side to null (unless already changed)
             if ($note->getEntite() === $this) {
                 $note->setEntite(null);
+            }
+        }
+
+        return $this;
+    }
+
+
+    public function getChantiers(): Collection
+    {
+        return $this->chantiers;
+    }
+
+    public function addChantier(Chantier $chantier): static
+    {
+        if (!$this->chantiers->contains($chantier)) {
+            $this->chantiers->add($chantier);
+            $chantier->setEntite($this);
+        }
+
+        return $this;
+    }
+
+    public function removeChantier(Chantier $chantier): static
+    {
+        if ($this->chantiers->removeElement($chantier)) {
+            if ($chantier->getEntite() === $this) {
+                $chantier->setEntite(null);
+            }
+        }
+
+        return $this;
+    }
+
+    public function getMateriels(): Collection
+    {
+        return $this->materiels;
+    }
+
+    public function addMateriel(Materiel $materiel): static
+    {
+        if (!$this->materiels->contains($materiel)) {
+            $this->materiels->add($materiel);
+            $materiel->setEntite($this);
+        }
+
+        return $this;
+    }
+
+    public function removeMateriel(Materiel $materiel): static
+    {
+        if ($this->materiels->removeElement($materiel)) {
+            if ($materiel->getEntite() === $this) {
+                $materiel->setEntite(null);
+            }
+        }
+
+        return $this;
+    }
+
+    public function getDechetTypes(): Collection
+    {
+        return $this->dechetTypes;
+    }
+
+    public function addDechetType(DechetType $dechetType): static
+    {
+        if (!$this->dechetTypes->contains($dechetType)) {
+            $this->dechetTypes->add($dechetType);
+            $dechetType->setEntite($this);
+        }
+
+        return $this;
+    }
+
+    public function removeDechetType(DechetType $dechetType): static
+    {
+        if ($this->dechetTypes->removeElement($dechetType)) {
+            if ($dechetType->getEntite() === $this) {
+                $dechetType->setEntite(null);
             }
         }
 

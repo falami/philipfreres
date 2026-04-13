@@ -30,6 +30,7 @@ parameters:
   app.base_domain: "%env(APP_BASE_DOMAIN)%"
   insee_client_id: "%env(string:INSEE_CLIENT_ID)%"
   insee_client_secret: "%env(string:INSEE_CLIENT_SECRET)%"
+  chantier_photo_upload_dir: '%kernel.project_dir%/public/uploads/photos/chantiers'
 
 services:
   # default configuration for services in *this* file

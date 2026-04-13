@@ -1,0 +1,188 @@
+{% extends 'base_admin.html.twig' %}
+{% block title %}Chantier #{{ chantier.id }}{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('dist/css/style.css') }}">
+  <style>
+    :root{
+      --theme-color-principal: {{ themeColorPrimaire|default(entite.couleurPrincipal|default('#233342')) }};
+      --theme-color-secondaire: {{ themeColorSecondaire|default(entite.couleurSecondaire|default('#ffc107')) }};
+      --stroke: rgba(15,23,42,.10);
+    }
+    .hero{
+      border-radius:22px; overflow:hidden; color:#fff; box-shadow:0 18px 50px rgba(0,0,0,.14);
+      background:
+        radial-gradient(900px 380px at 92% 0%, color-mix(in srgb, var(--theme-color-secondaire) 28%, transparent), transparent 60%),
+        linear-gradient(135deg, color-mix(in srgb, var(--theme-color-principal) 92%, #000 8%), color-mix(in srgb, var(--theme-color-principal) 70%, #fff 30%));
+    }
+    .cardx{
+      background:#fff; border:1px solid var(--stroke); border-radius:18px;
+      box-shadow:0 10px 28px rgba(15,23,42,.08); overflow:hidden;
+    }
+    .cardx-h{padding:1rem 1.1rem; border-bottom:1px solid var(--stroke); font-weight:800;}
+    .photo-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(240px,1fr)); gap:1rem;}
+    .photo-box img{width:100%; height:220px; object-fit:cover; border-radius:16px; border:1px solid rgba(0,0,0,.08);}
+  </style>
+{% endblock %}
+
+{% block body %}
+  <div class="hero p-3 mb-4">
+    <div class="d-flex justify-content-between gap-3 flex-wrap">
+      <div>
+        <h2 class="m-0 fw-bold"><i class="bi bi-cone-striped me-2" style="color:var(--theme-color-secondaire)"></i> {{ chantier.nom }}</h2>
+        <div class="opacity-75 mt-1">{{ chantier.ville ?: 'Ville non renseignée' }}</div>
+      </div>
+
+      <div class="d-flex gap-2 flex-wrap">
+        <a class="btn btn-outline-light btn-sm fw-semibold" href="{{ path('app_administrateur_chantier_index', {entite: entite.id}) }}">Retour</a>
+        <a class="btn btn-light btn-sm fw-semibold" href="{{ path('app_administrateur_chantier_modifier', {entite: entite.id, id: chantier.id}) }}">Modifier</a>
+        <a class="btn btn-warning btn-sm fw-semibold" target="_blank" href="{{ path('app_administrateur_chantier_pdf', {entite: entite.id, id: chantier.id}) }}">
+          PDF
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {% include 'flagMessage.html.twig' %}
+
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="cardx mb-4">
+        <div class="cardx-h">Informations</div>
+        <div class="p-3 p-md-4">
+          <div class="row g-3">
+            <div class="col-md-6"><div class="text-muted small">Adresse</div><div class="fw-semibold">{{ chantier.adresse ?: '-' }}</div></div>
+            <div class="col-md-6"><div class="text-muted small">Ville</div><div class="fw-semibold">{{ chantier.ville ?: '-' }}</div></div>
+            <div class="col-md-6"><div class="text-muted small">Semaine</div><div class="fw-semibold">{{ chantier.semainePrevisionnelle ?: '-' }}</div></div>
+            <div class="col-md-6"><div class="text-muted small">Durée prévisionnelle</div><div class="fw-semibold">{{ chantier.dureePrevisionnelleJours ?: '-' }} jour(s)</div></div>
+            <div class="col-12"><div class="text-muted small">Nature de la prestation</div><div class="fw-semibold">{{ chantier.naturePrestation ?: '-' }}</div></div>
+            <div class="col-12"><div class="text-muted small">Difficultés rencontrées</div><div class="fw-semibold">{{ chantier.difficultesRencontrees ?: '-' }}</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cardx mb-4">
+        <div class="cardx-h">Sous-chantiers</div>
+        <div class="p-3 p-md-4">
+          {% if chantier.zones|length %}
+            <div class="table-responsive">
+              <table class="table align-middle">
+                <thead><tr><th>Ordre</th><th>Nom</th><th>Parcelle</th></tr></thead>
+                <tbody>
+                  {% for z in chantier.zones %}
+                    <tr>
+                      <td>{{ z.ordre }}</td>
+                      <td>{{ z.nom }}</td>
+                      <td>{{ z.parcelle ?: '-' }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="text-muted">Aucun sous-chantier.</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="cardx mb-4">
+        <div class="cardx-h">Déchets</div>
+        <div class="p-3 p-md-4">
+          {% if chantier.dechets|length %}
+            <div class="table-responsive">
+              <table class="table align-middle">
+                <thead><tr><th>Type</th><th>Poids</th></tr></thead>
+                <tbody>
+                  {% for d in chantier.dechets %}
+                    <tr>
+                      <td>{{ d.typeDechet.nom }}</td>
+                      <td>{{ d.poidsTotal ?: '0' }} {{ d.typeDechet.unite }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="text-muted">Aucun déchet renseigné.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="cardx mb-4">
+        <div class="cardx-h">Ressources</div>
+        <div class="p-3 p-md-4">
+          <div class="mb-3">
+            <div class="fw-bold mb-2">Humaines</div>
+            {% for r in chantier.ressourcesHumaines %}
+              <div>{{ r.utilisateur.prenom }} {{ r.utilisateur.nom }}{% if r.fonction %} — {{ r.fonction }}{% endif %}</div>
+            {% else %}
+              <div class="text-muted">Aucune ressource humaine.</div>
+            {% endfor %}
+          </div>
+
+          <div class="mb-3">
+            <div class="fw-bold mb-2">Engins</div>
+            {% for r in chantier.ressourcesEngins %}
+              <div>{{ r.engin.nom }}{% if r.commentaire %} — {{ r.commentaire }}{% endif %}</div>
+            {% else %}
+              <div class="text-muted">Aucun engin.</div>
+            {% endfor %}
+          </div>
+
+          <div>
+            <div class="fw-bold mb-2">Matériels</div>
+            {% for r in chantier.ressourcesMateriels %}
+              <div>{{ r.materiel.nom }} × {{ r.quantite ?: 1 }}{% if r.commentaire %} — {{ r.commentaire }}{% endif %}</div>
+            {% else %}
+              <div class="text-muted">Aucun matériel.</div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="cardx">
+        <div class="cardx-h">Photos avant / après</div>
+        <div class="p-3 p-md-4">
+          {% if chantier.photos|length %}
+            <div class="photo-grid">
+              {% for p in chantier.photos %}
+                <div class="photo-box">
+                  <div class="fw-bold mb-2">{{ p.titre ?: 'Photo' }}</div>
+                  <div class="small text-muted mb-2">{{ p.commentaire ?: '' }}</div>
+                  {% if p.photoAvant %}
+                    <div class="mb-2">
+                      <div class="small text-muted mb-1">Avant</div>
+                      <img src="{{ asset('uploads/photos/chantiers/' ~ p.photoAvant) }}" alt="Avant">
+                    </div>
+                  {% endif %}
+                  {% if p.photoApres %}
+                    <div>
+                      <div class="small text-muted mb-1">Après</div>
+                      <img src="{{ asset('uploads/photos/chantiers/' ~ p.photoApres) }}" alt="Après">
+                    </div>
+                  {% endif %}
+
+                  {% if p.adresse or (p.latitude and p.longitude) %}
+                    <div class="small text-muted mt-2">
+                      <i class="bi bi-geo-alt me-1"></i>
+                      {{ p.adresse ?: 'Coordonnées enregistrées' }}
+                      {% if p.latitude and p.longitude %}
+                        <br>
+                        <span>{{ p.latitude }}, {{ p.longitude }}</span>
+                      {% endif %}
+                    </div>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="text-muted">Aucune photo.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,1343 @@
+{# templates/administrateur/chantier/form.html.twig #}
+{% extends 'base_admin.html.twig' %}
+{% block title %}{{ modeEdition ? 'Modification' : 'Création' }} d'un chantier{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('dist/css/style.css') }}">
+  <link rel="stylesheet" href="{{ asset('dist/css/formulaire.css') }}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+
+  <style>
+    :root{
+      --theme-color-principal: {{ themeColorPrimaire|default(entite.couleurPrincipal|default('#233342')) }};
+      --theme-color-secondaire: {{ themeColorSecondaire|default(entite.couleurSecondaire|default('#ffc107')) }};
+      --theme-color-tertiaire: {{ themeColorTertiaire|default(entite.couleurTertiaire|default('#F0F0F0')) }};
+      --theme-color-quaternaire: {{ couleurQuaternaire|default(entite.couleurQuaternaire|default('#000000')) }};
+
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --ink: #0f172a;
+      --muted:#64748b;
+      --stroke: rgba(15, 23, 42, .10);
+      --shadow: 0 18px 55px rgba(15, 23, 42, .10);
+      --radius: 18px;
+    }
+
+    body{
+      background: var(--bg);
+    }
+
+    /* =========================
+       HERO
+       ========================= */
+    .hero{
+      border-radius: 22px;
+      position: relative;
+      overflow: hidden;
+      color: #fff;
+      box-shadow: 0 18px 50px rgba(0,0,0,.14);
+      background:
+        radial-gradient(1200px 420px at 12% -10%,
+          color-mix(in srgb, var(--theme-color-tertiaire) 35%, transparent),
+          transparent 58%
+        ),
+        radial-gradient(900px 380px at 92% 0%,
+          color-mix(in srgb, var(--theme-color-secondaire) 32%, transparent),
+          transparent 60%
+        ),
+        radial-gradient(700px 260px at 55% 115%,
+          color-mix(in srgb, var(--theme-color-quaternaire) 18%, transparent),
+          transparent 62%
+        ),
+        linear-gradient(135deg,
+          color-mix(in srgb, var(--theme-color-principal) 92%, #000 8%),
+          color-mix(in srgb, var(--theme-color-principal) 70%, #fff 30%)
+        );
+    }
+
+    .hero::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,0) 55%);
+      opacity:.85;
+    }
+
+    .hero .accent{
+      width: 12px;
+      border-radius: 999px;
+      background: var(--theme-color-secondaire);
+      box-shadow: 0 0 0 6px color-mix(in srgb, var(--theme-color-secondaire) 18%, transparent);
+    }
+
+    .hero .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:.5rem;
+      padding:.32rem .7rem;
+      border-radius: 999px;
+      background: rgba(255,255,255,.10);
+      border: 1px solid rgba(255,255,255,.14);
+      font-size:.82rem;
+      color: rgba(255,255,255,.92);
+      backdrop-filter: blur(6px);
+      white-space: nowrap;
+    }
+
+    .hero .chip i{
+      color: var(--theme-color-secondaire);
+    }
+
+    .hero .chip--pill{
+      background: color-mix(in srgb, var(--theme-color-secondaire) 18%, transparent);
+      border-color: color-mix(in srgb, var(--theme-color-secondaire) 28%, rgba(255,255,255,.14));
+      color:#fff;
+    }
+
+    .hero .btn{
+      border-radius: 14px;
+      font-weight: 800;
+    }
+
+    .hero .btn-outline-theme{
+      border-color: rgba(255,255,255,.35);
+      color:#fff;
+    }
+
+    .hero .btn-outline-theme:hover{
+      background: rgba(255,255,255,.10);
+      border-color: rgba(255,255,255,.55);
+      color:#fff;
+    }
+
+    /* =========================
+       Cards premium
+       ========================= */
+    .cardx{
+      background: var(--panel);
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      box-shadow: 0 10px 28px rgba(15,23,42,.08);
+      overflow: hidden;
+    }
+
+    .cardx-h{
+      padding: .95rem 1.05rem;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:1rem;
+      background: linear-gradient(180deg, rgba(0,0,0,.015), transparent);
+      border-bottom: 1px solid var(--stroke);
+    }
+
+    .cardx-title{
+      margin:0;
+      font-weight:800;
+      letter-spacing:-.01em;
+      color: var(--ink);
+      display:flex;
+      align-items:center;
+      gap:.6rem;
+    }
+
+    .chip{
+      font-size:.78rem;
+      padding:.25rem .55rem;
+      border-radius:999px;
+      background: color-mix(in srgb, var(--theme-color-principal) 10%, transparent);
+      border: 1px solid color-mix(in srgb, var(--theme-color-principal) 18%, var(--stroke));
+      color: var(--muted);
+      white-space:nowrap;
+    }
+
+    /* =========================
+       Form polish
+       ========================= */
+    label.form-label{
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .form-text, .text-muted, .small{
+      color: var(--muted) !important;
+    }
+
+    .form-control,
+    .form-select{
+      border-radius: 14px;
+      border: 1px solid var(--stroke);
+      padding: .65rem .85rem;
+    }
+
+    .form-control:focus,
+    .form-select:focus{
+      border-color: color-mix(in srgb, var(--theme-color-principal) 55%, var(--stroke));
+      box-shadow: 0 0 0 .2rem color-mix(in srgb, var(--theme-color-principal) 18%, transparent);
+    }
+
+    textarea.form-control{
+      min-height: 120px;
+    }
+
+    /* =========================
+       Tom Select
+       ========================= */
+    .ts-wrapper .ts-control{
+      border-radius: 14px !important;
+      padding: .55rem .75rem !important;
+      border-color: var(--stroke) !important;
+      min-height: 46px;
+      box-shadow: none !important;
+    }
+
+    .ts-wrapper.focus .ts-control{
+      box-shadow: 0 0 0 .2rem color-mix(in srgb, var(--theme-color-principal) 18%, transparent) !important;
+      border-color: color-mix(in srgb, var(--theme-color-principal) 55%, var(--stroke)) !important;
+    }
+
+    .ts-dropdown{
+      z-index: 9999 !important;
+      border-radius: 14px !important;
+      border: 1px solid var(--stroke) !important;
+      overflow: hidden;
+    }
+
+    .ts-wrapper.focus,
+    .ts-wrapper.dropdown-active{
+      z-index: 9999;
+    }
+
+    .card,
+    .card-body,
+    .container,
+    .container-fluid,
+    .cardx,
+    .cardx *{
+      overflow: visible;
+    }
+
+    /* =========================
+       Collections
+       ========================= */
+    .collection-holder{
+      display:flex;
+      flex-direction:column;
+      gap:1rem;
+    }
+
+    .collection-item{
+      position: relative;
+      border: 1px solid rgba(15,23,42,.08);
+      border-radius: 18px;
+      background:
+        linear-gradient(180deg,
+          color-mix(in srgb, var(--theme-color-principal) 4%, transparent),
+          transparent
+        ),
+        #fff;
+      box-shadow: 0 8px 22px rgba(15,23,42,.05);
+      padding: 1rem;
+    }
+
+    .collection-item + .collection-item{
+      margin-top: 0;
+    }
+
+    .collection-item .remove-collection-item{
+      position:absolute;
+      top:12px;
+      right:12px;
+      z-index:2;
+      border-radius: 12px;
+    }
+
+    .collection-item .form-row,
+    .collection-item .row{
+      margin-top: 0;
+    }
+
+    .collection-empty{
+      border: 1px dashed rgba(15,23,42,.14);
+      border-radius: 18px;
+      padding: 1rem 1.1rem;
+      color: var(--muted);
+      background: rgba(255,255,255,.75);
+    }
+
+    /* =========================
+       Résumé / sticky
+       ========================= */
+    .sticky-actions{
+      position: sticky;
+      bottom: 14px;
+      z-index: 5;
+      background: color-mix(in srgb, var(--panel) 82%, transparent);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      padding: .75rem;
+      box-shadow: var(--shadow);
+    }
+
+    .resume-box{
+      border-radius: 18px;
+      padding: 1rem;
+      border: 1px solid var(--stroke);
+      background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--theme-color-principal) 8%, transparent),
+        transparent
+      );
+    }
+
+    .resume-line{
+      display:flex;
+      justify-content:space-between;
+      gap:1rem;
+      padding:.42rem 0;
+      border-bottom: 1px dashed rgba(15,23,42,.08);
+    }
+
+    .resume-line:last-child{
+      border-bottom: none;
+    }
+
+    .resume-pill{
+      border:1px solid var(--stroke);
+      background: rgba(255,193,7,.15);
+      color: var(--ink);
+      border-radius: 999px;
+      padding: .45rem .8rem;
+      font-weight: 700;
+      font-size: .84rem;
+    }
+
+    @media (max-width: 991.98px){
+      .sticky-actions{
+        position: static;
+      }
+    }
+
+    @media (max-width:768px){
+      .hero{ border-radius:16px; }
+      .cardx{ border-radius:16px; }
+      .collection-item{ border-radius:16px; }
+    }
+
+    .photo-location-box{
+      margin-top: 1rem;
+      padding: 1rem;
+      border: 1px dashed rgba(15,23,42,.12);
+      border-radius: 16px;
+      background: rgba(248,250,252,.85);
+    }
+
+    .photo-map{
+      width: 100%;
+      height: 260px;
+      border-radius: 16px;
+      border: 1px solid rgba(15,23,42,.10);
+      overflow: hidden;
+      margin-top: .75rem;
+    }
+
+    .photo-location-help{
+      font-size: .86rem;
+      color: var(--muted);
+    }
+
+
+    .photo-card{
+      border:1px solid rgba(15,23,42,.08);
+      border-radius:20px;
+      background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(248,250,252,.96));
+      box-shadow:0 16px 34px rgba(15,23,42,.08);
+      padding:1rem;
+      height:100%;
+    }
+
+    .photo-card__head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:1rem;
+      margin-bottom:.85rem;
+    }
+
+    .photo-card__title{
+      font-weight:800;
+      color:var(--ink);
+      display:flex;
+      align-items:center;
+    }
+
+    .photo-badge{
+      display:inline-flex;
+      align-items:center;
+      padding:.32rem .7rem;
+      border-radius:999px;
+      font-size:.78rem;
+      font-weight:700;
+      background:rgba(13,110,253,.10);
+      color:#0d6efd;
+      border:1px solid rgba(13,110,253,.15);
+    }
+
+    .photo-badge--after{
+      background:rgba(25,135,84,.10);
+      color:#198754;
+      border:1px solid rgba(25,135,84,.15);
+    }
+
+    .photo-dropzone{
+      position:relative;
+      border:1.5px dashed rgba(15,23,42,.16);
+      border-radius:18px;
+      background:
+        radial-gradient(700px 120px at 50% -10%, rgba(255,193,7,.10), transparent 60%),
+        linear-gradient(180deg, rgba(255,255,255,.9), rgba(248,250,252,.9));
+      min-height:260px;
+      overflow:hidden;
+      transition:.2s ease;
+      cursor:pointer;
+    }
+
+    .photo-dropzone:hover{
+      border-color: rgba(255,193,7,.45);
+      box-shadow:0 0 0 .25rem rgba(255,193,7,.10);
+    }
+
+    .photo-dropzone.is-dragover{
+      border-color: rgba(25,135,84,.45);
+      box-shadow:0 0 0 .25rem rgba(25,135,84,.10);
+      transform: translateY(-1px);
+    }
+
+    .photo-dropzone__inner{
+      min-height:260px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      padding:1rem;
+    }
+
+    .photo-dropzone__icon{
+      width:68px;
+      height:68px;
+      border-radius:20px;
+      display:grid;
+      place-items:center;
+      margin-bottom:.9rem;
+      font-size:1.7rem;
+      color:var(--theme-color-principal);
+      background:color-mix(in srgb, var(--theme-color-principal) 10%, transparent);
+      border:1px solid color-mix(in srgb, var(--theme-color-principal) 18%, transparent);
+    }
+
+    .photo-dropzone__title{
+      font-weight:800;
+      color:var(--ink);
+    }
+
+    .photo-dropzone__hint{
+      margin-top:.25rem;
+      color:var(--muted);
+      font-size:.9rem;
+    }
+
+    .photo-preview{
+      position:absolute;
+      inset:0;
+    }
+
+    .photo-preview__img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+    }
+
+    .photo-preview__overlay{
+      position:absolute;
+      inset:auto 0 0 0;
+      display:flex;
+      justify-content:center;
+      gap:.5rem;
+      padding:1rem;
+      background:linear-gradient(180deg, transparent, rgba(15,23,42,.72));
+    }
+  </style>
+{% endblock %}
+
+{% block javascripts %}
+  {{ parent() }}
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="{{ asset('dist/vendors/flatpickr/flatpickr.min.js') }}"></script>
+  <script src="https://npmcdn.com/flatpickr/dist/l10n/fr.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+{% endblock %}
+
+{% block body %}
+
+  {% set collections = {
+    'zones': {'label':'Sous-chantiers / parcelles', 'icon':'bi-diagram-3', 'btn':'Ajouter un sous-chantier', 'chip':'Parcelles'},
+    'ressourcesHumaines': {'label':'Ressources humaines', 'icon':'bi-people', 'btn':'Ajouter une ressource humaine', 'chip':'Équipe'},
+    'ressourcesEngins': {'label':'Ressources engins', 'icon':'bi-truck', 'btn':'Ajouter un engin', 'chip':'Engins'},
+    'ressourcesMateriels': {'label':'Ressources matériel', 'icon':'bi-tools', 'btn':'Ajouter un matériel', 'chip':'Matériel'},
+    'dechets': {'label':'Déchets', 'icon':'bi-recycle', 'btn':'Ajouter un déchet', 'chip':'Suivi'},
+    'photos': {'label':'Photos avant / après', 'icon':'bi-images', 'btn':'Ajouter une paire de photos', 'chip':'Photos'}
+  } %}
+
+  <div class="hero p-3 mb-4 d-flex gap-3">
+    <div class="accent"></div>
+
+    <div class="flex-grow-1">
+      <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+        <div>
+          <h2 class="m-0 fw-bold">
+            <i class="bi bi-cone-striped me-2" style="color:var(--theme-color-secondaire)"></i>
+            {{ modeEdition ? 'Modification' : 'Création' }} d’un chantier
+          </h2>
+          <div class="opacity-75 mt-1">Pilotage du chantier, parcelles, ressources, déchets et suivi photo.</div>
+
+          <div class="d-flex flex-wrap gap-2 mt-3">
+            <span class="chip"><i class="bi bi-building"></i> {{ entite.nom }}</span>
+            <span class="chip"><i class="bi bi-kanban"></i> Chantier</span>
+            <span class="chip chip--pill">
+              <i class="bi bi-pencil-square"></i> {{ modeEdition ? 'Modification' : 'Création' }}
+            </span>
+            {% if chantier.id %}
+              <span class="chip"><i class="bi bi-hash"></i> #{{ chantier.id }}</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="d-flex gap-2 flex-wrap">
+          <a class="btn btn-outline-theme btn-sm fw-semibold"
+             href="{{ path('app_administrateur_chantier_index', {entite: entite.id}) }}">
+            <i class="bi bi-arrow-left me-1"></i> Retour
+          </a>
+
+          <button form="{{ form.vars.id }}" type="submit" class="btn btn-light btn-sm fw-semibold" id="btnHeroSubmit">
+            <i class="bi bi-check2 me-1"></i> Enregistrer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% include 'flagMessage.html.twig' %}
+
+  {{ form_start(form, {
+    attr: {
+      id: form.vars.id,
+      novalidate: 'novalidate',
+      name: 'chantier_administrateur'
+    }
+  }) }}
+  {{ form_errors(form) }}
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+
+      <div class="cardx mb-4">
+        <div class="cardx-h">
+          <h5 class="cardx-title"><i class="bi bi-info-circle text-warning"></i> Informations générales</h5>
+          <span class="chip">Étape 1</span>
+        </div>
+
+        <div class="p-3 p-md-4">
+          <div class="row g-3">
+            <div class="col-md-6">{{ form_row(form.nom) }}</div>
+            <div class="col-md-6">{{ form_row(form.statut) }}</div>
+
+            <div class="col-md-6">{{ form_row(form.adresse) }}</div>
+            <div class="col-md-6">{{ form_row(form.complement) }}</div>
+
+            <div class="col-md-4">{{ form_row(form.codePostal) }}</div>
+            <div class="col-md-8">{{ form_row(form.ville) }}</div>
+
+            <div class="col-12">{{ form_row(form.naturePrestation) }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cardx mb-4">
+        <div class="cardx-h">
+          <h5 class="cardx-title"><i class="bi bi-calendar3 text-warning"></i> Intervention</h5>
+          <span class="chip">Étape 2</span>
+        </div>
+
+        <div class="p-3 p-md-4">
+          <div class="row g-3">
+            <div class="col-md-6">{{ form_row(form.dateDebutPrevisionnelle) }}</div>
+            <div class="col-md-6">{{ form_row(form.dateFinPrevisionnelle) }}</div>
+
+            <div class="col-md-6">{{ form_row(form.dateDebutReelle) }}</div>
+            <div class="col-md-6">{{ form_row(form.dateFinReelle) }}</div>
+
+            <div class="col-md-6">{{ form_row(form.surfaceTraitee) }}</div>
+            <div class="col-md-6">{{ form_row(form.lineaireTraite) }}</div>
+
+            <div class="col-12">{{ form_row(form.difficultesRencontrees) }}</div>
+          </div>
+        </div>
+      </div>
+
+      {% for fieldName, meta in collections %}
+        <div class="cardx mb-4">
+          <div class="cardx-h">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <h5 class="cardx-title mb-0">
+                <i class="bi {{ meta.icon }} text-warning"></i> {{ meta.label }}
+              </h5>
+              <span class="chip">{{ meta.chip }}</span>
+            </div>
+
+            <button type="button"
+                    class="btn btn-warning btn-sm add-collection-item"
+                    data-collection-holder="#{{ fieldName }}-holder">
+              <i class="bi bi-plus-circle me-1"></i> {{ meta.btn }}
+            </button>
+          </div>
+
+          <div class="p-3 p-md-4">
+            <div id="{{ fieldName }}-holder"
+                 class="collection-holder"
+                 data-index="{{ attribute(form, fieldName)|length }}"
+                 data-prototype="{% if fieldName == 'photos' %}{{ include('administrateur/chantier/_photo_item.html.twig', { row: attribute(form, fieldName).vars.prototype })|e('html_attr') }}{% else %}{{ form_widget(attribute(form, fieldName).vars.prototype)|e('html_attr') }}{% endif %}">
+              {% for row in attribute(form, fieldName) %}
+                <div class="collection-item">
+                  <button type="button" class="btn btn-outline-danger btn-sm remove-collection-item">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                  {% if fieldName == 'photos' %}
+                    {% include 'administrateur/chantier/_photo_item.html.twig' with { row: row } %}
+                  {% else %}
+                    {{ form_widget(row) }}
+                  {% endif %}
+                </div>
+              {% else %}
+                <div class="collection-empty empty-placeholder">
+                  <i class="bi bi-inbox me-1"></i> Aucun élément ajouté pour le moment.
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+
+      <div class="d-flex justify-content-end gap-2 mt-3 mb-3">
+        <a href="{{ path('app_administrateur_chantier_index', {entite: entite.id}) }}" class="btn btn-secondary">
+          <i class="bi bi-arrow-left"></i> Retour
+        </a>
+        <button type="submit" class="btn btn-gradient" id="btnBottomSubmit">
+          <i class="bi bi-check2"></i> {{ modeEdition ? 'Modifier' : 'Créer & terminer' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+
+      <div class="cardx mb-4">
+        <div class="cardx-h">
+          <h5 class="cardx-title"><i class="bi bi-clipboard2-check text-warning"></i> Résumé</h5>
+          <span class="chip">Contrôle</span>
+        </div>
+
+        <div class="p-3 p-md-4">
+          <div class="small text-muted mb-3">Vérifie les informations essentielles avant enregistrement.</div>
+
+          <div class="resume-box mb-3">
+            <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap mb-2">
+              <div class="fw-bold">Chantier</div>
+              <span id="resume-valid-pill" class="resume-pill">⚠️ Incomplet</span>
+            </div>
+
+            <div class="resume-line">
+              <span class="text-muted">Nom</span>
+              <span class="fw-semibold text-end" id="resume-nom">{{ chantier.nom ?: '-' }}</span>
+            </div>
+            <div class="resume-line">
+              <span class="text-muted">Statut</span>
+              <span class="fw-semibold text-end" id="resume-statut">
+                {{ chantier.statut ? chantier.statut.label() : '-' }}
+              </span>
+            </div>
+            <div class="resume-line">
+              <span class="text-muted">Ville</span>
+              <span class="fw-semibold text-end" id="resume-ville">{{ chantier.ville ?: '-' }}</span>
+            </div>
+            <div class="resume-line">
+              <span class="text-muted">Zones</span>
+              <span class="fw-semibold text-end" id="resume-zones">{{ chantier.zones|length }}</span>
+            </div>
+            <div class="resume-line">
+              <span class="text-muted">Ressources humaines</span>
+              <span class="fw-semibold text-end" id="resume-rh">{{ chantier.ressourcesHumaines|length }}</span>
+            </div>
+            <div class="resume-line">
+              <span class="text-muted">Engins</span>
+              <span class="fw-semibold text-end" id="resume-engins">{{ chantier.ressourcesEngins|length }}</span>
+            </div>
+            <div class="resume-line">
+              <span class="text-muted">Matériel</span>
+              <span class="fw-semibold text-end" id="resume-materiels">{{ chantier.ressourcesMateriels|length }}</span>
+            </div>
+            <div class="resume-line">
+              <span class="text-muted">Déchets</span>
+              <span class="fw-semibold text-end" id="resume-dechets">{{ chantier.dechets|length }}</span>
+            </div>
+            <div class="resume-line">
+              <span class="text-muted">Photos</span>
+              <span class="fw-semibold text-end" id="resume-photos">{{ chantier.photos|length }}</span>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <a class="btn btn-light w-50"
+               href="{{ path('app_administrateur_chantier_index', {entite: entite.id}) }}">
+              Annuler
+            </a>
+
+            <button type="submit" class="btn btn-gradient w-50" id="btnRightSubmit">
+              <i class="bi bi-check2"></i> Enregistrer
+            </button>
+          </div>
+
+          {% if modeEdition and chantier.id %}
+            <div class="d-grid mt-2">
+              <a href="{{ path('app_administrateur_chantier_pdf', {entite: entite.id, id: chantier.id}) }}"
+                 target="_blank"
+                 class="btn btn-outline-secondary">
+                <i class="bi bi-file-earmark-pdf me-1"></i> Générer le PDF
+              </a>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="sticky-actions d-none d-lg-block">
+        <div class="d-flex align-items-center justify-content-between gap-2">
+          <div class="small text-muted">
+            <strong class="text-dark">Astuce :</strong> nom, statut et ville donnent un bon minimum de complétude.
+          </div>
+          <button type="submit" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-check2"></i>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  {{ form_end(form) }}
+
+
+  <script>
+  window.CHANTIER_DEFAULT_LOCATION = {
+    address: {{ [
+      chantier.adresse ?? '',
+      chantier.complement ?? '',
+      chantier.codePostal ?? '',
+      chantier.ville ?? ''
+    ]|filter(v => v is not empty)|join(' ')|json_encode|raw }},
+    lat: null,
+    lng: null
+  };
+</script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (window.flatpickr && window.flatpickr.l10ns && window.flatpickr.l10ns.fr) {
+        flatpickr.localize(flatpickr.l10ns.fr);
+      }
+
+      const formMain = document.querySelector('form[name="chantier_administrateur"]');
+      const submitButtons = formMain ? [...formMain.querySelectorAll('button[type="submit"]')] : [];
+
+      let currentBrowserLocationPromise = null;
+
+      function getBrowserLocation() {
+        if (currentBrowserLocationPromise) {
+          return currentBrowserLocationPromise;
+        }
+
+        currentBrowserLocationPromise = new Promise((resolve) => {
+          if (!navigator.geolocation) {
+            resolve(null);
+            return;
+          }
+
+          navigator.geolocation.getCurrentPosition(
+            async (position) => {
+              const lat = Number(position.coords.latitude).toFixed(7);
+              const lng = Number(position.coords.longitude).toFixed(7);
+
+              let address = null;
+
+              try {
+                const url = new URL("{{ path('app_administrateur_chantier_reverse_geocode', {entite: entite.id}) }}", window.location.origin);
+                url.searchParams.set('lat', lat);
+                url.searchParams.set('lng', lng);
+
+                const response = await fetch(url.toString(), {
+                  headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.ok) {
+                  address = data.display_name || null;
+                }
+              } catch (_) {}
+
+              resolve({
+                lat,
+                lng,
+                address,
+                source: 'browser'
+              });
+            },
+            () => resolve(null),
+            {
+              enableHighAccuracy: true,
+              timeout: 8000,
+              maximumAge: 120000
+            }
+          );
+        });
+
+        return currentBrowserLocationPromise;
+      }
+
+      async function applyDefaultLocationToPhotoItem(item) {
+        if (!item || item.dataset.defaultLocationApplied === '1') {
+          return;
+        }
+
+        item.dataset.defaultLocationApplied = '1';
+
+        const browserLocation = await getBrowserLocation();
+
+        ['avant', 'apres'].forEach(kind => {
+          const latInput = item.querySelector(`.js-photo-lat-${kind}`);
+          const lngInput = item.querySelector(`.js-photo-lng-${kind}`);
+          const sourceInput = item.querySelector(`.js-photo-source-${kind}`);
+          const addressInput = item.querySelector(`.js-photo-address-${kind}`);
+          const latVisible = item.querySelector(`.js-photo-lat-visible-${kind}`);
+          const lngVisible = item.querySelector(`.js-photo-lng-visible-${kind}`);
+
+          if (!latInput || !lngInput) return;
+          if (latInput.value && lngInput.value) return;
+
+          if (browserLocation) {
+            latInput.value = browserLocation.lat;
+            lngInput.value = browserLocation.lng;
+
+            if (latVisible) latVisible.value = browserLocation.lat;
+            if (lngVisible) lngVisible.value = browserLocation.lng;
+            if (sourceInput) sourceInput.value = browserLocation.source;
+            if (addressInput && browserLocation.address && !addressInput.value) {
+              addressInput.value = browserLocation.address;
+            }
+
+            return;
+          }
+
+          const chantierAddress = (window.CHANTIER_DEFAULT_LOCATION?.address || '').trim();
+          if (chantierAddress && addressInput && !addressInput.value) {
+            addressInput.value = chantierAddress;
+          }
+        });
+      }
+
+      function initFlatpickr(scope = document) {
+        if (!window.flatpickr) return;
+
+        const selectors = [
+          'input[type="date"]',
+          '.js-datepicker',
+          '[data-flatpickr]'
+        ];
+
+        scope.querySelectorAll(selectors.join(',')).forEach(el => {
+          if (el._flatpickr) return;
+
+          flatpickr(el, {
+            dateFormat: 'Y-m-d',
+            altInput: true,
+            altFormat: 'd/m/Y',
+            allowInput: true,
+            locale: 'fr'
+          });
+        });
+      }
+
+      function initTomSelectOn(el, options = {}) {
+        if (!el || el.tomselect) return;
+
+        const isMultiple = el.hasAttribute('multiple');
+
+        new TomSelect(el, Object.assign({
+          dropdownParent: 'body',
+          create: false,
+          allowEmptyOption: true,
+          plugins: isMultiple ? ['remove_button'] : [],
+          sortField: { field: 'text', direction: 'asc' },
+          onChange: () => refreshResume()
+        }, options));
+      }
+
+      function initTomSelect(scope = document) {
+        if (!window.TomSelect) return;
+
+        scope.querySelectorAll('select').forEach(select => {
+          if (
+            select.classList.contains('no-tomselect') ||
+            select.dataset.noTomselect === '1'
+          ) {
+            return;
+          }
+
+          initTomSelectOn(select);
+        });
+      }
+
+      function initWidgets(scope = document) {
+        initFlatpickr(scope);
+        initTomSelect(scope);
+      }
+      
+      async function initPhotoMaps(scope = document) {
+        const items = [...scope.querySelectorAll('.js-photo-item')];
+
+        for (const item of items) {
+          if (item.dataset.mapInit === '1') continue;
+
+          await applyDefaultLocationToPhotoItem(item);
+          item.dataset.mapInit = '1';
+
+          const configs = ['avant', 'apres'];
+
+          for (const kind of configs) {
+            const mapEl = item.querySelector(`.js-photo-map[data-kind="${kind}"]`);
+            const addressInput = item.querySelector(`.js-photo-address-${kind}`);
+            const latInput = item.querySelector(`.js-photo-lat-${kind}`);
+            const lngInput = item.querySelector(`.js-photo-lng-${kind}`);
+            const sourceInput = item.querySelector(`.js-photo-source-${kind}`);
+            const latVisible = item.querySelector(`.js-photo-lat-visible-${kind}`);
+            const lngVisible = item.querySelector(`.js-photo-lng-visible-${kind}`);
+            const geocodeBtn = item.querySelector(`.js-geocode-photo[data-kind="${kind}"]`);
+            const applyCoordsBtn = item.querySelector(`.js-apply-coords[data-kind="${kind}"]`);
+
+            if (!mapEl || !latInput || !lngInput) continue;
+            if (mapEl.dataset.mapReady === '1') continue;
+            mapEl.dataset.mapReady = '1';
+
+            const defaultLat = parseFloat(latInput.value || '43.604652');
+            const defaultLng = parseFloat(lngInput.value || '1.444209');
+            const hasCoords = !!(latInput.value && lngInput.value);
+
+            if (latVisible) latVisible.value = latInput.value || '';
+            if (lngVisible) lngVisible.value = lngInput.value || '';
+
+            const map = L.map(mapEl).setView([defaultLat, defaultLng], hasCoords ? 17 : 6);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              maxZoom: 20,
+              attribution: '&copy; OpenStreetMap'
+            }).addTo(map);
+
+            const marker = L.marker([defaultLat, defaultLng], {
+              draggable: true
+            }).addTo(map);
+
+            if (!hasCoords) {
+              marker.setOpacity(0.55);
+            }
+
+            async function setCoords(lat, lng, source = 'manuel', center = true, updateAddress = false) {
+              latInput.value = Number(lat).toFixed(7);
+              lngInput.value = Number(lng).toFixed(7);
+
+              if (latVisible) latVisible.value = latInput.value;
+              if (lngVisible) lngVisible.value = lngInput.value;
+              if (sourceInput) sourceInput.value = source;
+
+              marker.setLatLng([lat, lng]);
+              marker.setOpacity(1);
+
+              if (center) {
+                map.setView([lat, lng], Math.max(map.getZoom(), 17));
+              }
+
+              if (updateAddress && addressInput) {
+                try {
+                  const url = new URL("{{ path('app_administrateur_chantier_reverse_geocode', {entite: entite.id}) }}", window.location.origin);
+                  url.searchParams.set('lat', lat);
+                  url.searchParams.set('lng', lng);
+
+                  const response = await fetch(url.toString(), {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                  });
+
+                  const data = await response.json();
+
+                  if (response.ok && data.ok && data.display_name) {
+                    addressInput.value = data.display_name;
+                  }
+                } catch (_) {}
+              }
+            }
+
+            marker.on('dragend', async () => {
+              const pos = marker.getLatLng();
+              await setCoords(pos.lat, pos.lng, 'manuel', false, true);
+            });
+
+            map.on('click', async (e) => {
+              await setCoords(e.latlng.lat, e.latlng.lng, 'manuel', false, true);
+            });
+
+            applyCoordsBtn?.addEventListener('click', async () => {
+              const lat = parseFloat(latVisible?.value || '');
+              const lng = parseFloat(lngVisible?.value || '');
+
+              if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+                alert('Latitude / longitude invalides.');
+                return;
+              }
+
+              await setCoords(lat, lng, 'manuel', true, true);
+            });
+
+            geocodeBtn?.addEventListener('click', async () => {
+              const address = (addressInput?.value || '').trim();
+              if (!address) {
+                alert('Merci de saisir une adresse.');
+                return;
+              }
+
+              geocodeBtn.disabled = true;
+
+              try {
+                const url = new URL("{{ path('app_administrateur_chantier_geocode', {entite: entite.id}) }}", window.location.origin);
+                url.searchParams.set('q', address);
+
+                const response = await fetch(url.toString(), {
+                  headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.ok) {
+                  throw new Error(data.message || 'Adresse introuvable');
+                }
+
+                const lat = parseFloat(data.latitude);
+                const lng = parseFloat(data.longitude);
+
+                if (addressInput && data.display_name) {
+                  addressInput.value = data.display_name;
+                }
+
+                await setCoords(lat, lng, 'geocodage', true, false);
+                setTimeout(() => map.invalidateSize(), 120);
+              } catch (e) {
+                alert(e.message || 'Erreur lors de la localisation.');
+              } finally {
+                geocodeBtn.disabled = false;
+              }
+            });
+
+            setTimeout(() => map.invalidateSize(), 150);
+          }
+        }
+      }
+
+
+      function initPhotoUploadUI(scope = document) {
+        scope.querySelectorAll('.js-dropzone').forEach(zone => {
+          if (zone.dataset.uploadInit === '1') return;
+          zone.dataset.uploadInit = '1';
+
+          const inputId = zone.dataset.targetInputId;
+          const input = zone.querySelector(`#${CSS.escape(inputId)}`) || document.getElementById(inputId);
+          const preview = zone.querySelector('.js-photo-preview');
+          const previewImg = zone.querySelector('.js-photo-preview-img');
+          const replaceBtn = zone.querySelector('.js-photo-replace');
+          const removeBtn = zone.querySelector('.js-photo-remove');
+          const inner = zone.querySelector('.photo-dropzone__inner');
+
+          if (!input || !preview || !previewImg || !inner) return;
+
+          function showPreview(file) {
+            if (!file || !file.type.startsWith('image/')) return;
+
+            const reader = new FileReader();
+            reader.onload = e => {
+              previewImg.src = e.target.result;
+              preview.classList.remove('d-none');
+              inner.classList.add('d-none');
+            };
+            reader.readAsDataURL(file);
+          }
+
+          function clearPreview() {
+            input.value = '';
+            previewImg.src = '';
+            preview.classList.add('d-none');
+            inner.classList.remove('d-none');
+          }
+
+          zone.addEventListener('click', e => {
+            if (e.target.closest('.js-photo-remove') || e.target.closest('.js-photo-replace')) return;
+            input.click();
+          });
+
+          replaceBtn?.addEventListener('click', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            input.click();
+          });
+
+          removeBtn?.addEventListener('click', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            clearPreview();
+          });
+
+          input.addEventListener('change', () => {
+            const file = input.files?.[0];
+            if (file) {
+              showPreview(file);
+            } else {
+              clearPreview();
+            }
+          });
+
+          ['dragenter', 'dragover'].forEach(eventName => {
+            zone.addEventListener(eventName, e => {
+              e.preventDefault();
+              e.stopPropagation();
+              zone.classList.add('is-dragover');
+            });
+          });
+
+          ['dragleave', 'dragend', 'drop'].forEach(eventName => {
+            zone.addEventListener(eventName, e => {
+              e.preventDefault();
+              e.stopPropagation();
+              zone.classList.remove('is-dragover');
+            });
+          });
+
+          zone.addEventListener('drop', e => {
+            const files = e.dataTransfer?.files;
+            if (!files || !files.length) return;
+
+            const file = files[0];
+            if (!file.type.startsWith('image/')) return;
+
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            input.files = dt.files;
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+          });
+        });
+      }
+
+      function bindRemoveButtons(scope = document) {
+        scope.querySelectorAll('.remove-collection-item').forEach(btn => {
+          if (btn.dataset.bound === '1') return;
+          btn.dataset.bound = '1';
+
+          btn.addEventListener('click', () => {
+            const holder = btn.closest('.collection-holder') || btn.parentElement?.parentElement;
+            btn.closest('.collection-item')?.remove();
+            ensureEmptyPlaceholders();
+            refreshResume();
+          });
+        });
+      }
+
+      function ensureEmptyPlaceholders() {
+        document.querySelectorAll('.collection-holder').forEach(holder => {
+          const items = holder.querySelectorAll('.collection-item');
+          let placeholder = holder.querySelector('.empty-placeholder');
+
+          if (!items.length) {
+            if (!placeholder) {
+              placeholder = document.createElement('div');
+              placeholder.className = 'collection-empty empty-placeholder';
+              placeholder.innerHTML = '<i class="bi bi-inbox me-1"></i> Aucun élément ajouté pour le moment.';
+              holder.appendChild(placeholder);
+            }
+          } else if (placeholder) {
+            placeholder.remove();
+          }
+        });
+      }
+
+      document.querySelectorAll('.add-collection-item').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const holder = document.querySelector(btn.dataset.collectionHolder);
+          if (!holder) return;
+
+          const placeholder = holder.querySelector('.empty-placeholder');
+          if (placeholder) placeholder.remove();
+
+          const index = parseInt(holder.dataset.index || '0', 10);
+          const proto = holder.dataset.prototype.replace(/__name__/g, index);
+
+          const item = document.createElement('div');
+          item.className = 'collection-item';
+          item.innerHTML = `
+            <button type="button" class="btn btn-outline-danger btn-sm remove-collection-item">
+              <i class="bi bi-trash"></i>
+            </button>
+            ${proto}
+          `;
+
+          holder.appendChild(item);
+          holder.dataset.index = String(index + 1);
+
+          bindRemoveButtons(item);
+          initWidgets(item);
+          initPhotoUploadUI(item);
+          await initPhotoMaps(item);
+          refreshResume();
+        });
+      });
+
+      const fields = {
+        nom: document.getElementById('{{ form.nom.vars.id }}'),
+        statut: document.getElementById('{{ form.statut.vars.id }}'),
+        ville: document.getElementById('{{ form.ville.vars.id }}')
+      };
+
+      const resume = {
+        nom: document.getElementById('resume-nom'),
+        statut: document.getElementById('resume-statut'),
+        ville: document.getElementById('resume-ville'),
+        zones: document.getElementById('resume-zones'),
+        rh: document.getElementById('resume-rh'),
+        engins: document.getElementById('resume-engins'),
+        materiels: document.getElementById('resume-materiels'),
+        dechets: document.getElementById('resume-dechets'),
+        photos: document.getElementById('resume-photos'),
+        pill: document.getElementById('resume-valid-pill')
+      };
+
+      function selectedText(selectEl) {
+        if (!selectEl || !selectEl.value) return '';
+        const opt = selectEl.selectedOptions && selectEl.selectedOptions[0];
+        return (opt ? opt.textContent : '').trim();
+      }
+
+      function countItems(selector) {
+        return document.querySelectorAll(selector + ' .collection-item').length;
+      }
+
+      function refreshResume() {
+        if (resume.nom) resume.nom.textContent = (fields.nom?.value || '').trim() || '-';
+        if (resume.statut) resume.statut.textContent = selectedText(fields.statut) || '-';
+        if (resume.ville) resume.ville.textContent = (fields.ville?.value || '').trim() || '-';
+
+        if (resume.zones) resume.zones.textContent = countItems('#zones-holder');
+        if (resume.rh) resume.rh.textContent = countItems('#ressourcesHumaines-holder');
+        if (resume.engins) resume.engins.textContent = countItems('#ressourcesEngins-holder');
+        if (resume.materiels) resume.materiels.textContent = countItems('#ressourcesMateriels-holder');
+        if (resume.dechets) resume.dechets.textContent = countItems('#dechets-holder');
+        if (resume.photos) resume.photos.textContent = countItems('#photos-holder');
+
+        const hasNom = !!((fields.nom?.value || '').trim());
+        const hasStatut = !!((fields.statut?.value || '').trim());
+        const hasVille = !!((fields.ville?.value || '').trim());
+
+        const ok = hasNom && hasStatut && hasVille && (formMain ? formMain.checkValidity() : true);
+
+        submitButtons.forEach(btn => btn.disabled = !ok);
+
+        if (resume.pill) {
+          if (ok) {
+            resume.pill.textContent = '✅ Complet';
+            resume.pill.style.background = 'rgba(25,135,84,.15)';
+            resume.pill.style.borderColor = 'rgba(25,135,84,.35)';
+            resume.pill.style.color = 'var(--ink)';
+          } else {
+            resume.pill.textContent = '⚠️ Incomplet';
+            resume.pill.style.background = 'rgba(255,193,7,.15)';
+            resume.pill.style.borderColor = 'rgba(255,193,7,.35)';
+            resume.pill.style.color = 'var(--ink)';
+          }
+        }
+      }
+
+      function initFormValidation({ formName }) {
+        const form = document.querySelector(`form[name="${formName}"]`);
+        if (!form) return;
+
+        const submitButton = form.querySelector('button[type="submit"]');
+        if (!submitButton) return;
+
+        let errorAlert = document.getElementById('form-error-alert');
+        if (!errorAlert) {
+          errorAlert = document.createElement('div');
+          errorAlert.className = 'alert alert-danger d-none';
+          errorAlert.id = 'form-error-alert';
+          submitButton.parentElement.prepend(errorAlert);
+        }
+
+        form.addEventListener('submit', e => {
+          const messages = new Set();
+          let first = null;
+
+          form.querySelectorAll(':invalid').forEach(el => {
+            el.classList.add('is-invalid');
+            if (!first) first = el;
+
+            const label = form.querySelector(`label[for="${el.id}"]`);
+            if (label) messages.add(`- ${label.textContent.trim()}`);
+          });
+
+          if (messages.size) {
+            e.preventDefault();
+            errorAlert.innerHTML = `<strong>Champs requis manquants :</strong><br>${[...messages].join('<br>')}`;
+            errorAlert.classList.remove('d-none');
+
+            if (first && first.scrollIntoView) {
+              first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            setTimeout(() => errorAlert.classList.add('d-none'), 6000);
+          }
+        });
+      }
+
+      [fields.nom, fields.ville].forEach(el => {
+        el?.addEventListener('input', refreshResume);
+        el?.addEventListener('change', refreshResume);
+      });
+
+      fields.statut?.addEventListener('change', refreshResume);
+
+      initWidgets(document);
+      initPhotoUploadUI(document);
+      bindRemoveButtons(document);
+      ensureEmptyPlaceholders();
+      initFormValidation({ formName: 'chantier_administrateur' });
+      await initPhotoMaps(document);
+      refreshResume();
+    });
+  </script>
+{% endblock %}

@@ -1,0 +1,161 @@
+{% extends 'base_admin.html.twig' %}
+{% block title %}Suivi de chantier{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('dist/css/style.css') }}">
+  <link rel="stylesheet" href="https://cdn.datatables.net/v/bs5/dt-2.2.2/b-3.0.2/b-html5-3.0.2/b-print-3.0.2/datatables.min.css"/>
+  <style>
+    :root{
+      --theme-color-principal: {{ themeColorPrimaire|default(entite.couleurPrincipal|default('#233342')) }};
+      --theme-color-secondaire: {{ themeColorSecondaire|default(entite.couleurSecondaire|default('#ffc107')) }};
+      --theme-color-tertiaire: {{ themeColorTertiaire|default(entite.couleurTertiaire|default('#F0F0F0')) }};
+    }
+    .hero{
+      border-radius:22px; overflow:hidden; color:#fff; box-shadow:0 18px 50px rgba(0,0,0,.14);
+      background:
+        radial-gradient(900px 380px at 92% 0%, color-mix(in srgb, var(--theme-color-secondaire) 28%, transparent), transparent 60%),
+        linear-gradient(135deg, color-mix(in srgb, var(--theme-color-principal) 92%, #000 8%), color-mix(in srgb, var(--theme-color-principal) 70%, #fff 30%));
+    }
+    .hero .chip{
+      display:inline-flex; align-items:center; gap:.5rem; padding:.32rem .7rem; border-radius:999px;
+      background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.15); font-size:.82rem;
+    }
+    .table-card,.filterbar{
+      background:#fff; border-radius:18px; border:1px solid rgba(0,0,0,.06); box-shadow:0 10px 26px rgba(0,0,0,.06);
+    }
+    .filterbar__top{padding:1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;border-bottom:1px solid rgba(0,0,0,.06)}
+    .table-card{padding:1rem}
+    table.dataTable thead th{
+      background:#f7f8fa!important; font-size:.78rem; text-transform:uppercase; letter-spacing:.05em;
+    }
+  </style>
+{% endblock %}
+
+{% block javascripts %}
+  {{ parent() }}
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+  <script src="https://cdn.datatables.net/v/bs5/dt-2.2.2/b-3.0.2/b-html5-3.0.2/b-print-3.0.2/datatables.min.js"></script>
+{% endblock %}
+
+{% block body %}
+  <div class="hero p-3 mb-4">
+    <div class="d-flex justify-content-between gap-3 flex-wrap">
+      <div>
+        <h2 class="m-0 fw-bold"><i class="bi bi-cone-striped me-2" style="color:var(--theme-color-secondaire)"></i> Suivi de chantier</h2>
+        <div class="opacity-75 mt-1">Pilotage terrain, ressources, déchets, photos et export PDF.</div>
+        <div class="d-flex flex-wrap gap-2 mt-3">
+          <span class="chip"><i class="bi bi-building"></i> {{ entite.nom }}</span>
+          <span class="chip"><i class="bi bi-map"></i> Chantiers</span>
+          <span class="chip"><i class="bi bi-file-earmark-pdf"></i> PDF chantier</span>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2 flex-wrap">
+        <a class="btn btn-light btn-sm fw-semibold" href="{{ path('app_administrateur_chantier_ajouter', {entite: entite.id}) }}">
+          <i class="bi bi-plus-circle me-1"></i> Nouveau chantier
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {% include 'flagMessage.html.twig' %}
+
+  <div class="filterbar mb-3">
+    <div class="filterbar__top">
+      <div>
+        <div class="fw-bold">Outils</div>
+        <div class="text-muted small">Recherche, filtrage, export.</div>
+      </div>
+      <div class="dropdown">
+        <button class="btn btn-warning btn-sm fw-semibold dropdown-toggle" data-bs-toggle="dropdown">
+          <i class="bi bi-download"></i> Export
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end" id="exportMenu"></ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <table id="tableauChantiers" class="table table-hover align-middle mb-0 w-100">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Nom</th>
+          <th>Ville</th>
+          <th>Semaine</th>
+          <th>Période</th>
+          <th>Statut</th>
+          <th>Ressources</th>
+          <th class="text-end"></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Confirmer la suppression</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">Cette suppression est définitive.</div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+          <form id="deleteForm" method="post">
+            <input type="hidden" name="_token" id="deleteToken">
+            <button type="submit" class="btn btn-danger">Supprimer</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+$(function(){
+  const table = $('#tableauChantiers').DataTable({
+    serverSide:true,
+    processing:true,
+    ajax:{
+      url:"{{ path('app_administrateur_chantier_ajax', {entite: entite.id}) }}",
+      type:"POST"
+    },
+    buttons:['copy','csv','excel','pdf','print'],
+    dom:'<"d-flex justify-content-between align-items-center gap-2 mb-3"Bf>rt<"d-flex justify-content-between align-items-center gap-2 mt-3"lip>',
+    language:{ url:'https://cdn.datatables.net/plug-ins/2.2.2/i18n/fr-FR.json' },
+    order:[[0,'desc']],
+    columns:[
+      {data:'id'},
+      {data:'nom'},
+      {data:'ville'},
+      {data:'semaine'},
+      {data:'periode'},
+      {data:'statut', orderable:false, searchable:false},
+      {data:'ressources', orderable:false, searchable:false},
+      {data:'actions', orderable:false, searchable:false, className:'text-end'}
+    ],
+    initComplete:function(){
+      const api = this.api();
+      $('#exportMenu').empty();
+      $(api.buttons().container()).find('button').each(function(){
+        const $b = $(this);
+        $('<li><a class="dropdown-item" href="#">'+$b.text()+'</a></li>')
+          .on('click', function(e){ e.preventDefault(); $b.click(); })
+          .appendTo('#exportMenu');
+      });
+      $(api.buttons().container()).hide();
+    }
+  });
+
+  $(document).on('click', '.delete-btn', function(){
+    $('#deleteForm').attr('action', $(this).data('url'));
+    $('#deleteToken').val($(this).data('token'));
+  });
+});
+</script>
+{% endblock %}
