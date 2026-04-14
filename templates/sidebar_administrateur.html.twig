@@ -34,6 +34,35 @@
 		
 
 
+		<li class="nav-item">
+			<a href="{{ path('app_administrateur_fuel_calendar_global', {'entite' : entite.id}) }}">
+				<span class="{% 
+					if app.request.attributes.get('_route') == 'app_administrateur_fuel_calendar_global' or
+					app.request.attributes.get('_route') == 'app_administrateur_fuel_calendar_employe' or
+					app.request.attributes.get('_route') == 'app_administrateur_fuel_calendar_engin'
+				 	%}text-theme-secondaire{% else %}text-white{% endif %}">
+					<i class="bi bi-calendar4-week"></i>
+					{{ 'navbar.calendar.title'|trans }}
+				</span>
+			</a>
+		</li>
+
+
+
+		<li class="nav-item">
+			<a href="{{ path('app_administrateur_calendrier_index', {'entite' : entite.id}) }}">
+				<span class="{% 
+					if app.request.attributes.get('_route') == 'app_administrateur_calendrier_index'
+				 	%}text-theme-secondaire{% else %}text-white{% endif %}">
+					<i class="bi bi-calendar4-week"></i>
+					{{ 'navbar.ressource.title'|trans }}
+				</span>
+			</a>
+		</li>
+
+
+
+
 
 		<li class="nav-item">
 			<a href="{{ path('app_administrateur_fuel_map', {'entite' : entite.id}) }}">
