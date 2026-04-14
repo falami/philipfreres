@@ -47,7 +47,8 @@ final class TransactionCarteTotalExcelImporter
     $reader = IOFactory::createReaderForFile($path);
     $reader->setReadDataOnly(true);
     $reader->setReadEmptyCells(false);
-    $reader->setLoadSheetsOnly(['toutes-les-transactions']);
+
+    $reader->setLoadSheetsOnly(['Toutes-les-transactions']);
 
     // ===== 1) Charge uniquement les 250 premières lignes pour détecter entêtes =====
     $reader->setReadFilter(new ChunkReadFilter(1, 250));
