@@ -288,7 +288,7 @@ final class TransactionCarteTotalExcelImporter
       'evid' => ['evid'],
       'nom_personnalise_imprime_sur_la_carte' => ['nom personnalisé, imprimé sur la carte', 'nom personnalise, imprime sur la carte'],
       'information_complementaire' => ['information complémentaire', 'information complementaire'],
-      'code_conducteur' => ['code conducteur'],
+      'code_conducteur' => ['code chauffeur'],
       'immatriculation_vehicule' => ['immatriculation véhicule', 'immatriculation vehicule'],
       'nom_collaborateur' => ['nom collaborateur'],
       'prenom_collaborateur' => ['prénom collaborateur', 'prenom collaborateur'],
