@@ -2,19 +2,19 @@
 
 namespace App\Entity;
 
-use App\Repository\DechetTypeRepository;
+use App\Repository\DechetRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
-#[ORM\Entity(repositoryClass: DechetTypeRepository::class)]
-class DechetType
+#[ORM\Entity(repositoryClass: DechetRepository::class)]
+class Dechet
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(inversedBy: 'dechetTypes')]
+    #[ORM\ManyToOne(inversedBy: 'dechets')]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?Entite $entite = null;
 

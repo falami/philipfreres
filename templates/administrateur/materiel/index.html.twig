@@ -1,0 +1,495 @@
+{# templates/administrateur/materiel/index.html.twig #}
+{% extends 'base_admin.html.twig' %}
+
+{% block title %}Matériel{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+
+  <link rel="stylesheet" href="{{ asset('dist/css/style.css') }}">
+  <link rel="stylesheet" href="{{ asset('dist/css/style-table.css') }}">
+  <link rel="stylesheet" href="https://cdn.datatables.net/v/bs5/dt-2.2.2/b-3.0.2/b-html5-3.0.2/b-print-3.0.2/datatables.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css">
+
+  <style>
+    :root{
+      --theme-color-principal: {{ themeColorPrimaire|default(entite.couleurPrincipal|default('#233342')) }};
+      --theme-color-secondaire: {{ themeColorSecondaire|default(entite.couleurSecondaire|default('#ffc107')) }};
+      --theme-color-tertiaire: {{ themeColorTertiaire|default(entite.couleurTertiaire|default('#F0F0F0')) }};
+      --theme-color-quaternaire: {{ couleurQuaternaire|default(entite.couleurQuaternaire|default('#000000')) }};
+    }
+
+    .hero{
+      border-radius:22px;
+      position:relative;
+      overflow:hidden;
+      color:#fff;
+      box-shadow:0 18px 50px rgba(0,0,0,.14);
+      background:
+        radial-gradient(1200px 420px at 12% -10%, color-mix(in srgb, var(--theme-color-tertiaire) 35%, transparent), transparent 58%),
+        radial-gradient(900px 380px at 92% 0%, color-mix(in srgb, var(--theme-color-secondaire) 32%, transparent), transparent 60%),
+        radial-gradient(700px 260px at 55% 115%, color-mix(in srgb, var(--theme-color-quaternaire) 18%, transparent), transparent 62%),
+        linear-gradient(135deg,
+          color-mix(in srgb, var(--theme-color-principal) 92%, #000 8%),
+          color-mix(in srgb, var(--theme-color-principal) 70%, #fff 30%)
+        );
+    }
+    .hero::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,0) 55%);
+      opacity:.85;
+    }
+    .hero .accent{
+      width:12px;
+      border-radius:999px;
+      background:var(--theme-color-secondaire);
+      box-shadow:0 0 0 6px color-mix(in srgb, var(--theme-color-secondaire) 18%, transparent);
+    }
+    .chip{
+      display:inline-flex; align-items:center; gap:.45rem;
+      padding:.28rem .65rem; border-radius:999px; font-size:.82rem;
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.14);
+      color:rgba(255,255,255,.92);
+      white-space:nowrap;
+    }
+    .chip i{ color:var(--theme-color-secondaire); }
+
+    .filterbar, .table-card{
+      background:#fff;
+      border-radius:18px;
+      border:1px solid rgba(0,0,0,.06);
+      box-shadow:0 12px 30px rgba(0,0,0,.06);
+    }
+    .filterbar__top{
+      padding:.9rem 1rem;
+      border-bottom:1px solid rgba(0,0,0,.06);
+      background:linear-gradient(180deg, rgba(0,0,0,.015), transparent);
+      display:flex;
+      align-items:center;
+      gap:.75rem;
+    }
+    .filterbar__body{ padding:1rem; }
+
+    .filtergrid{
+      display:grid;
+      grid-template-columns:repeat(12, minmax(0,1fr));
+      gap:.75rem;
+      align-items:end;
+    }
+    .fcol-type{ grid-column:span 4; }
+    .fcol-search{ grid-column:span 7; }
+    .fcol-actions{ grid-column:span 1; }
+
+    @media (max-width: 992px){
+      .fcol-type, .fcol-search{ grid-column:span 6; }
+      .fcol-actions{ grid-column:span 12; }
+    }
+    @media (max-width: 768px){
+      .fcol-type, .fcol-search, .fcol-actions{ grid-column:span 12; }
+      .hero{ border-radius:16px; }
+    }
+
+    .filter-control .form-label{
+      font-size:.78rem;
+      font-weight:700;
+      color:rgba(0,0,0,.55);
+      text-transform:uppercase;
+      letter-spacing:.06em;
+      margin-bottom:.25rem;
+    }
+    .filterbox{
+      border:1px solid rgba(0,0,0,.08);
+      border-radius:14px;
+      padding:.55rem .6rem;
+      background:#fff;
+      box-shadow:0 8px 18px rgba(0,0,0,.04);
+    }
+    .filterbox:focus-within{
+      border-color:rgba(255,193,7,.55);
+      box-shadow:0 0 0 .2rem rgba(255,193,7,.18), 0 10px 18px rgba(0,0,0,.06);
+    }
+    .filterrow{ display:flex; gap:.6rem; align-items:center; }
+    .filter-icon{
+      width:38px; height:38px;
+      border-radius:14px;
+      display:grid; place-items:center;
+      background:color-mix(in srgb, var(--theme-color-principal) 10%, transparent);
+      border:1px solid color-mix(in srgb, var(--theme-color-principal) 18%, transparent);
+      color:color-mix(in srgb, var(--theme-color-principal) 75%, #000 25%);
+      flex:0 0 auto;
+    }
+    .filterbox .form-select,
+    .filterbox .form-control{
+      border:0 !important;
+      box-shadow:none !important;
+      padding-left:0 !important;
+      padding-right:0 !important;
+      background:transparent !important;
+    }
+
+    .resetbox{
+      border:1px solid rgba(0,0,0,.08);
+      border-radius:14px;
+      padding:.55rem .6rem;
+      background:#fff;
+      box-shadow:0 8px 18px rgba(0,0,0,.04);
+      cursor:pointer;
+      width:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    table.dataTable thead th{
+      background:#f7f8fa !important;
+      border-bottom:1px solid rgba(0,0,0,.08) !important;
+      font-size:.78rem;
+      text-transform:uppercase;
+      letter-spacing:.05em;
+      color:rgba(0,0,0,.55);
+      text-align:center !important;
+      vertical-align:middle;
+    }
+    #tableauMateriel tbody td{
+      vertical-align:middle;
+      text-align:center !important;
+    }
+    #tableauMateriel tbody tr:nth-child(even) > *{ background:rgba(35,51,66,.035) !important; }
+    #tableauMateriel tbody tr:hover > *{ background:rgba(255,193,7,.08) !important; }
+
+    #tableauMateriel td.action-column{
+      white-space:nowrap !important;
+      text-align:right !important;
+    }
+
+    .thumb-figure{
+      width:56px;
+      height:56px;
+      border-radius:14px;
+      overflow:hidden;
+      margin:auto;
+      border:1px solid rgba(0,0,0,.08);
+      background:#f8f9fa;
+      display:grid;
+      place-items:center;
+    }
+    .thumb-figure img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+    }
+    .thumb-placeholder{
+      font-size:1.2rem;
+      color:#94a3b8;
+    }
+
+    .materiel-actions .btn{ padding:.32rem .55rem; }
+    .materiel-actions .main-btn,
+    .materiel-actions .split-btn{
+      background:rgba(255,255,255,.85);
+      border-color:rgba(0,0,0,.12);
+      box-shadow:0 10px 22px rgba(0,0,0,.06);
+    }
+    .materiel-actions .menu{
+      border-radius:16px;
+      border:1px solid rgba(0,0,0,.10);
+      box-shadow:0 18px 46px rgba(0,0,0,.18);
+      padding:.55rem;
+    }
+    .materiel-actions .menu .dropdown-item{
+      border-radius:12px;
+      padding:.50rem .60rem;
+      margin:.10rem 0;
+    }
+    .materiel-actions .menu .dropdown-item:hover{
+      background:rgba(255,193,7,.10);
+    }
+  </style>
+{% endblock %}
+
+{% block javascripts %}
+  {{ parent() }}
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+  <script src="https://cdn.datatables.net/v/bs5/dt-2.2.2/b-3.0.2/b-html5-3.0.2/b-print-3.0.2/datatables.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+{% endblock %}
+
+{% block body %}
+  <div class="hero p-3 mb-4 d-flex gap-3">
+    <div class="accent"></div>
+
+    <div class="flex-grow-1">
+      <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+        <div>
+          <h2 class="m-0 fw-bold">
+            <i class="bi bi-tools me-2" style="color:var(--theme-color-secondaire)"></i>
+            Matériel
+          </h2>
+
+          <div class="opacity-75 mt-1">
+            Gestion du matériel rattaché à l’entité.
+          </div>
+
+          <div class="d-flex gap-2 flex-wrap mt-3">
+            <span class="chip"><i class="bi bi-building"></i> {{ entite.nom }}</span>
+            <span class="chip"><i class="bi bi-box-seam"></i> Parc matériel</span>
+            <span class="chip"><i class="bi bi-clock-history"></i> <span id="hero-last-refresh">-</span></span>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <a class="btn btn-light btn-sm fw-semibold"
+             href="{{ path('app_administrateur_materiel_ajouter', { entite: entite.id }) }}">
+            <i class="bi bi-plus-lg me-1"></i> Nouveau matériel
+          </a>
+
+          <button type="button" class="btn btn-outline-light btn-sm fw-semibold"
+                  onclick="document.getElementById('filtersCollapse')?.scrollIntoView({behavior:'smooth'})">
+            <i class="bi bi-funnel me-1"></i> Filtres
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% include 'flagMessage.html.twig' %}
+
+  <div class="filterbar mb-3">
+    <div class="filterbar__top">
+      <div class="d-flex align-items-center gap-2">
+        <div class="filter-icon"><i class="bi bi-funnel"></i></div>
+        <div>
+          <div class="fw-bold">Filtres</div>
+          <div class="small text-muted">Recherche par catégorie, nom, référence ou statut</div>
+        </div>
+      </div>
+
+      <div class="ms-auto d-flex gap-2 align-items-center">
+        <button class="btn btn-outline-secondary btn-sm fw-semibold d-md-none"
+                type="button" data-bs-toggle="collapse" data-bs-target="#filtersCollapse">
+          <i class="bi bi-sliders"></i> Filtres
+        </button>
+
+        <div class="dropdown">
+          <button class="btn btn-warning btn-sm fw-semibold dropdown-toggle" data-bs-toggle="dropdown">
+            <i class="bi bi-download"></i> Export
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end" id="exportMenu"></ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="collapse d-md-block" id="filtersCollapse">
+      <div class="filterbar__body">
+        <div class="filtergrid">
+
+          <div class="filter-control fcol-type">
+            <div class="form-label">Catégorie</div>
+            <div class="filterbox">
+              <div class="filterrow">
+                <div class="filter-icon"><i class="bi bi-tag"></i></div>
+                <select id="categorieFilter" class="form-select form-select-sm">
+                  <option value="">Tous</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="filter-control fcol-search">
+            <div class="form-label">Recherche</div>
+            <div class="filterbox">
+              <div class="filterrow">
+                <div class="filter-icon"><i class="bi bi-search"></i></div>
+                <input type="text" id="searchName" class="form-control form-control-sm" placeholder="Nom / catégorie / numéro de série / statut">
+              </div>
+            </div>
+          </div>
+
+          <div class="filter-control fcol-actions">
+            <div class="form-label">&nbsp;</div>
+            <button id="btnReset" type="button" class="resetbox" title="Réinitialiser">
+              <i class="bi bi-arrow-counterclockwise me-2"></i> Reset
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-card mb-4 p-3">
+    <table id="tableauMateriel" class="table table-hover align-middle mb-0 w-100">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Photo</th>
+          <th>Nom</th>
+          <th>Catégorie</th>
+          <th>Numéro de série</th>
+          <th>Statut</th>
+          <th>Date création</th>
+          <th>Créé par</th>
+          <th class="action-column text-end"></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  {% include 'partials/_modales_index_generiques.html.twig' %}
+<script>
+  $(function(){
+    const $categorieFilter = $('#categorieFilter');
+    const $search = $('#searchName');
+
+    function nowLabel(){
+      const d = new Date();
+      return d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+    }
+
+    let tsCategorie = null;
+    function initTomSelect(){
+      tsCategorie?.destroy();
+      tsCategorie = new TomSelect('#categorieFilter', {
+        create: false,
+        allowEmptyOption: true,
+        maxItems: 1,
+        plugins: ['clear_button']
+      });
+      tsCategorie.on('change', () => refreshAll(true));
+    }
+
+    const table = $('#tableauMateriel').DataTable({
+      serverSide: true,
+      processing: true,
+      autoWidth: false,
+      scrollX: true,
+      ajax: {
+        url: "{{ path('app_administrateur_materiel_ajax', { entite: entite.id }) }}",
+        type: "POST",
+        data: d => {
+          d.categorieFilter = $categorieFilter.val() || '';
+          d.searchName = $search.val() || '';
+        }
+      },
+      dom:
+        '<"dt-top d-flex flex-wrap gap-2 align-items-center justify-content-between"'
+          + '<"dt-actions d-flex gap-2 align-items-center"B>'
+          + '<"dt-search"f>'
+        + '>'
+        + 'rt'
+        + '<"dt-bottom-internal d-flex flex-wrap gap-2 align-items-center justify-content-between"lip>',
+      buttons: ['copy','csv','excel','pdf','print'],
+      lengthMenu: [[10,25,50,100],[10,25,50,100]],
+      pageLength: 25,
+      columns: [
+        { data: 'id' },
+        { data: 'photo', orderable: false, searchable: false },
+        { data: 'nom' },
+        { data: 'categorie' },
+        { data: 'numeroSerie' },
+        {
+          data: 'statut',
+          render: function(data, type, row){
+            if (type !== 'display') {
+              return data;
+            }
+
+            return '<span class="badge ' + (row.statutBadge || '') + '">' + data + '</span>';
+          }
+        },
+        { data: 'dateCreation' },
+        { data: 'createur', orderable: false, searchable: false },
+        { data: 'actions', orderable: false, searchable: false }
+      ],
+      columnDefs: [
+        { targets: [1], className: 'text-center' },
+        { targets: 8, className: 'action-column text-end' }
+      ],
+      order: [[0,'desc']],
+      language: { url:'https://cdn.datatables.net/plug-ins/2.2.2/i18n/fr-FR.json' },
+      initComplete: function(){
+        const api = this.api();
+        const $btns = $(api.buttons().container()).find('button');
+
+        $('#exportMenu').empty();
+        $btns.each(function(){
+          const $b = $(this);
+          $('<li><a class="dropdown-item" href="#">'+$b.text()+'</a></li>')
+            .on('click', function(e){ e.preventDefault(); $b.click(); })
+            .appendTo('#exportMenu');
+        });
+        $(api.buttons().container()).hide();
+        api.columns.adjust();
+
+        loadCategories();
+      }
+    });
+
+    function loadCategories(){
+      $.post("{{ path('app_administrateur_materiel_ajax', { entite: entite.id }) }}", {
+        draw: 1,
+        start: 0,
+        length: 500
+      }).done(function(response){
+        const values = new Set();
+
+        (response.data || []).forEach(row => {
+          const div = document.createElement('div');
+          div.innerHTML = row.categorie || '';
+          const txt = (div.textContent || div.innerText || '').trim();
+          if (txt && txt !== '—') values.add(txt);
+        });
+
+        const currentValue = $categorieFilter.val() || '';
+        $categorieFilter.find('option:not(:first)').remove();
+
+        Array.from(values).sort((a,b) => a.localeCompare(b, 'fr')).forEach(categorie => {
+          $categorieFilter.append(new Option(categorie, categorie.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '_').replace(/[^\w]/g, '')));
+        });
+
+        if (currentValue) {
+          $categorieFilter.val(currentValue);
+        }
+
+        initTomSelect();
+      });
+    }
+
+    function refreshAll(resetPaging = false){
+      table.ajax.reload(null, resetPaging);
+      $('#hero-last-refresh').text('Maj : ' + nowLabel());
+    }
+
+    let tSearch = null;
+    $search.on('input', function(){
+      clearTimeout(tSearch);
+      tSearch = setTimeout(() => refreshAll(true), 300);
+    });
+
+    $('#btnReset').on('click', function(){
+      if (tsCategorie) tsCategorie.setValue('', true);
+      $search.val('');
+      table.search('');
+      refreshAll(true);
+    });
+
+    $(document).on('click', '.delete-btn', function(){
+      const url = $(this).data('url');
+      const token = $(this).data('token');
+
+      $('#deleteForm').attr('action', url);
+      $('#deleteToken').val(token);
+    });
+
+    $('#hero-last-refresh').text('Maj : ' + nowLabel());
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,10 @@
+<div class="thumb-figure">
+  {% if materiel.photoCouverture %}
+    <img src="{{ asset('uploads/photos/materiel/' ~ materiel.photoCouverture) }}"
+         alt="{{ materiel.nom }}">
+  {% else %}
+    <div class="thumb-placeholder">
+      <i class="bi bi-image"></i>
+    </div>
+  {% endif %}
+</div>

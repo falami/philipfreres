@@ -432,6 +432,21 @@ navbar:
     add: "Ajouter"
     externalId: "Correspondance"
 
+  materiel:
+    title: "Matériel"
+    list: "Lister"
+    add: "Ajouter"
+
+  dechet:
+    title: "Déchet"
+    list: "Lister"
+    add: "Ajouter"
+
+  chantier:
+    title: "Chantier"
+    list: "Lister"
+    add: "Ajouter"
+
   produit:
     title: "Produit"
     list: "Lister"

@@ -1,0 +1,207 @@
+{% extends 'base_admin.html.twig' %}
+
+{% block title %}Type de déchet #{{ dechetType.id }} - {{ dechetType.nom }}{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('dist/css/style.css') }}">
+
+  <style>
+    :root{
+      --theme-color-principal: {{ themeColorPrimaire|default(entite.couleurPrincipal|default('#233342')) }};
+      --theme-color-secondaire: {{ themeColorSecondaire|default(entite.couleurSecondaire|default('#ffc107')) }};
+      --stroke: rgba(15,23,42,.10);
+      --radius: 18px;
+    }
+
+    .hero{
+      border-radius:22px;
+      position:relative;
+      overflow:hidden;
+      color:#fff;
+      box-shadow:0 18px 50px rgba(0,0,0,.14);
+      background:
+        radial-gradient(900px 380px at 92% 0%, color-mix(in srgb, var(--theme-color-secondaire) 32%, transparent), transparent 60%),
+        linear-gradient(135deg, color-mix(in srgb, var(--theme-color-principal) 92%, #000 8%), color-mix(in srgb, var(--theme-color-principal) 70%, #fff 30%));
+    }
+
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:.45rem;
+      padding:.28rem .65rem;
+      border-radius:999px;
+      font-size:.82rem;
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.14);
+      color:rgba(255,255,255,.92);
+    }
+
+    .cardx{
+      background:#fff;
+      border:1px solid var(--stroke);
+      border-radius:var(--radius);
+      box-shadow:0 10px 28px rgba(15,23,42,.08);
+      overflow:hidden;
+    }
+
+    .cardx-h{
+      padding:.95rem 1.05rem;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:1rem;
+      background:linear-gradient(180deg,rgba(0,0,0,.015),transparent);
+      border-bottom:1px solid var(--stroke);
+    }
+
+    .cardx-title{
+      margin:0;
+      font-weight:800;
+      letter-spacing:-.01em;
+      display:flex;
+      align-items:center;
+      gap:.6rem;
+    }
+
+    .iconbox{
+      width:88px;
+      height:88px;
+      border-radius:22px;
+      overflow:hidden;
+      flex:0 0 auto;
+      border:1px solid rgba(255,255,255,.28);
+      background:rgba(255,255,255,.12);
+      display:grid;
+      place-items:center;
+      font-size:2rem;
+    }
+
+    .unite-badge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:58px;
+      padding:.45rem .8rem;
+      border-radius:999px;
+      font-size:.9rem;
+      font-weight:800;
+      background:rgba(13,110,253,.10);
+      border:1px solid rgba(13,110,253,.16);
+      color:#0b3b8a;
+    }
+  </style>
+{% endblock %}
+
+{% block body %}
+  <div class="hero p-3 mb-4 d-flex gap-3 align-items-center">
+    <div class="iconbox">
+      <i class="bi bi-recycle"></i>
+    </div>
+
+    <div class="flex-grow-1">
+      <div class="d-flex justify-content-between gap-3 flex-wrap">
+        <div>
+          <h2 class="m-0 fw-bold">
+            <i class="bi bi-trash3 me-2" style="color:var(--theme-color-secondaire)"></i>
+            {{ dechetType.nom }}
+          </h2>
+
+          <div class="d-flex gap-2 flex-wrap mt-3">
+            <span class="chip"><i class="bi bi-building"></i> {{ entite.nom }}</span>
+            <span class="chip"><i class="bi bi-hash"></i> #{{ dechetType.id }}</span>
+            <span class="chip"><i class="bi bi-speedometer2"></i> {{ dechetType.unite == 'm3' ? 'm³' : dechetType.unite }}</span>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2 align-items-start">
+          <a href="{{ path('app_administrateur_dechet_index',{entite:entite.id}) }}" class="btn btn-outline-light btn-sm fw-semibold">
+            <i class="bi bi-arrow-left me-1"></i> Retour
+          </a>
+          <a href="{{ path('app_administrateur_dechet_modifier',{entite:entite.id,id:dechetType.id}) }}" class="btn btn-light btn-sm fw-semibold">
+            <i class="bi bi-pencil me-1"></i> Modifier
+          </a>
+          <form method="post"
+                action="{{ path('app_administrateur_dechet_supprimer',{entite:entite.id,id:dechetType.id}) }}"
+                onsubmit="return confirm('Supprimer ce type de déchet ?');">
+            <input type="hidden" name="_token" value="{{ csrf_token('delete_dechet_type_' ~ dechetType.id) }}">
+            <button class="btn btn-danger btn-sm fw-semibold" type="submit">
+              <i class="bi bi-trash me-1"></i> Supprimer
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% include 'flagMessage.html.twig' %}
+
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="cardx">
+        <div class="cardx-h">
+          <h5 class="cardx-title"><i class="bi bi-info-circle text-warning"></i> Informations</h5>
+        </div>
+
+        <div class="p-3 p-md-4">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="text-muted small">Nom</div>
+              <div class="fw-semibold">{{ dechetType.nom ?: '-' }}</div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="text-muted small">Unité</div>
+              <div class="fw-semibold">
+                <span class="unite-badge">{{ dechetType.unite == 'm3' ? 'm³' : dechetType.unite }}</span>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="text-muted small">Date de création</div>
+              <div class="fw-semibold">
+                {{ dechetType.dateCreation ? dechetType.dateCreation|date('d/m/Y H:i') : '-' }}
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="text-muted small">Créé par</div>
+              <div class="fw-semibold">
+                {% if dechetType.createur %}
+                  {{ dechetType.createur.prenom ?? '' }} {{ dechetType.createur.nom ? dechetType.createur.nom|upper : '' }}
+                {% else %}
+                  -
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="cardx">
+        <div class="cardx-h">
+          <h5 class="cardx-title"><i class="bi bi-clipboard-data text-warning"></i> Synthèse</h5>
+        </div>
+
+        <div class="p-3 p-md-4">
+          <div class="border rounded-4 p-3">
+            <div class="d-flex justify-content-between py-2">
+              <span class="text-muted">Type</span>
+              <span class="fw-semibold">{{ dechetType.nom }}</span>
+            </div>
+            <div class="d-flex justify-content-between py-2">
+              <span class="text-muted">Mesure</span>
+              <span class="fw-semibold">{{ dechetType.unite == 'm3' ? 'm³' : dechetType.unite }}</span>
+            </div>
+            <div class="d-flex justify-content-between py-2">
+              <span class="text-muted">ID</span>
+              <span class="fw-semibold">#{{ dechetType.id }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

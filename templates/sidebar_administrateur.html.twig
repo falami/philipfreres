@@ -311,7 +311,7 @@
 
 
 		<hr class="mt-3 mb-1">
-		<center>VEHICULES</center>
+		<center>RESSOURCES</center>
 		<hr class="mt-1 mb-1">
 
 		<li class="nav-item">
@@ -319,7 +319,7 @@
 					app.request.attributes.get('_route') == 'app_administrateur_engin_index' or
 					app.request.attributes.get('_route') == 'app_administrateur_engin_ajouter' or
 					app.request.attributes.get('_route') == 'app_administrateur_engin_modifier' or
-					app.request.attributes.get('_route') == 'app_administrateur_engin_external_id_all_index' %}text-theme-secondaire{% else %}text-white{% endif %}" data-bs-toggle="collapse" data-bs-target="#submenuBoat" aria-expanded="{% if app.request.attributes.get('_route') in [
+					app.request.attributes.get('_route') == 'app_administrateur_engin_external_id_all_index' %}text-theme-secondaire{% else %}text-white{% endif %}" data-bs-toggle="collapse" data-bs-target="#submenuEngin" aria-expanded="{% if app.request.attributes.get('_route') in [
 										'app_administrateur_engin_index', 'app_administrateur_engin_ajouter', 'app_administrateur_engin_modifier', 'app_administrateur_engin_external_id_all_index'
 										] %}true{% else %}false{% endif %}">
 				<i class="bi bi-car-front"></i>
@@ -330,7 +330,7 @@
 					app.request.attributes.get('_route') == 'app_administrateur_engin_index' or
 					app.request.attributes.get('_route') == 'app_administrateur_engin_ajouter' or
 					app.request.attributes.get('_route') == 'app_administrateur_engin_modifier' or
-					app.request.attributes.get('_route') == 'app_administrateur_engin_external_id_all_index' %}show{% endif %}" id="submenuBoat">
+					app.request.attributes.get('_route') == 'app_administrateur_engin_external_id_all_index' %}show{% endif %}" id="submenuEngin">
 				<ul class="list-unstyled badge fs-6 large fw-normal text-bg-light text-dark w-100">
 					<li>
 						<a href="{{ path('app_administrateur_engin_index', {'entite' : entite.id}) }}">
@@ -346,6 +346,104 @@
 					<li>
 						<a href="{{ path('app_administrateur_engin_external_id_all_index', {'entite' : entite.id}) }}">
 							<span class="{% if app.request.attributes.get('_route') == 'app_administrateur_engin_external_id_all_index' %}text-theme-secondaire{% endif %}">{{ 'navbar.truck.externalId'|trans }}</span>
+						</a>
+					</li>
+				</ul>
+			</div>
+		</li>
+
+
+
+		<li class="nav-item">
+			<button class="nav-link dropdown-toggle {% if
+					app.request.attributes.get('_route') == 'app_administrateur_materiel_index' or
+					app.request.attributes.get('_route') == 'app_administrateur_materiel_ajouter' or
+					app.request.attributes.get('_route') == 'app_administrateur_materiel_modifier' %}text-theme-secondaire{% else %}text-white{% endif %}" data-bs-toggle="collapse" data-bs-target="#submenuMateriel" aria-expanded="{% if app.request.attributes.get('_route') in [
+										'app_administrateur_materiel_index', 'app_administrateur_materiel_ajouter', 'app_administrateur_materiel_modifier', 'app_administrateur_engin_external_id_all_index'
+										] %}true{% else %}false{% endif %}">
+				<i class="bi bi-tools"></i>
+				{{ 'navbar.materiel.title'|trans }}
+			</button>
+
+			<div class="collapse {% if
+					app.request.attributes.get('_route') == 'app_administrateur_materiel_index' or
+					app.request.attributes.get('_route') == 'app_administrateur_materiel_ajouter' or
+					app.request.attributes.get('_route') == 'app_administrateur_materiel_modifier' %}show{% endif %}" id="submenuMateriel">
+				<ul class="list-unstyled badge fs-6 large fw-normal text-bg-light text-dark w-100">
+					<li>
+						<a href="{{ path('app_administrateur_materiel_index', {'entite' : entite.id}) }}">
+							<span class="{% if app.request.attributes.get('_route') == 'app_administrateur_materiel_index' %}text-theme-secondaire{% endif %}">{{ 'navbar.materiel.list'|trans }}</span>
+						</a>
+					</li>
+					<li>
+						<a href="{{ path('app_administrateur_materiel_ajouter', {'entite' : entite.id}) }}">
+							<span class="{% if app.request.attributes.get('_route') == 'app_administrateur_materiel_ajouter' %}text-theme-secondaire{% endif %}">{{ 'navbar.materiel.add'|trans }}</span>
+						</a>
+					</li>
+				</ul>
+			</div>
+		</li>
+
+
+
+
+
+		<li class="nav-item">
+			<button class="nav-link dropdown-toggle {% if
+					app.request.attributes.get('_route') == 'app_administrateur_dechet_index' or
+					app.request.attributes.get('_route') == 'app_administrateur_dechet_ajouter' or
+					app.request.attributes.get('_route') == 'app_administrateur_dechet_modifier' %}text-theme-secondaire{% else %}text-white{% endif %}" data-bs-toggle="collapse" data-bs-target="#submenuDechet" aria-expanded="{% if app.request.attributes.get('_route') in [
+										'app_administrateur_dechet_index', 'app_administrateur_dechet_ajouter', 'app_administrateur_dechet_modifier', 'app_administrateur_engin_external_id_all_index'
+										] %}true{% else %}false{% endif %}">
+				<i class="bi bi-recycle"></i>
+				{{ 'navbar.dechet.title'|trans }}
+			</button>
+
+			<div class="collapse {% if
+					app.request.attributes.get('_route') == 'app_administrateur_dechet_index' or
+					app.request.attributes.get('_route') == 'app_administrateur_dechet_ajouter' or
+					app.request.attributes.get('_route') == 'app_administrateur_dechet_modifier' %}show{% endif %}" id="submenuDechet">
+				<ul class="list-unstyled badge fs-6 large fw-normal text-bg-light text-dark w-100">
+					<li>
+						<a href="{{ path('app_administrateur_dechet_index', {'entite' : entite.id}) }}">
+							<span class="{% if app.request.attributes.get('_route') == 'app_administrateur_dechet_index' %}text-theme-secondaire{% endif %}">{{ 'navbar.dechet.list'|trans }}</span>
+						</a>
+					</li>
+					<li>
+						<a href="{{ path('app_administrateur_dechet_ajouter', {'entite' : entite.id}) }}">
+							<span class="{% if app.request.attributes.get('_route') == 'app_administrateur_dechet_ajouter' %}text-theme-secondaire{% endif %}">{{ 'navbar.dechet.add'|trans }}</span>
+						</a>
+					</li>
+				</ul>
+			</div>
+		</li>
+
+
+
+		<li class="nav-item">
+			<button class="nav-link dropdown-toggle {% if
+					app.request.attributes.get('_route') == 'app_administrateur_chantier_index' or
+					app.request.attributes.get('_route') == 'app_administrateur_chantier_ajouter' or
+					app.request.attributes.get('_route') == 'app_administrateur_chantier_modifier' %}text-theme-secondaire{% else %}text-white{% endif %}" data-bs-toggle="collapse" data-bs-target="#submenuChantier" aria-expanded="{% if app.request.attributes.get('_route') in [
+										'app_administrateur_chantier_index', 'app_administrateur_chantier_ajouter', 'app_administrateur_chantier_modifier', 'app_administrateur_engin_external_id_all_index'
+										] %}true{% else %}false{% endif %}">
+				<i class="bi bi-recycle"></i>
+				{{ 'navbar.chantier.title'|trans }}
+			</button>
+
+			<div class="collapse {% if
+					app.request.attributes.get('_route') == 'app_administrateur_chantier_index' or
+					app.request.attributes.get('_route') == 'app_administrateur_chantier_ajouter' or
+					app.request.attributes.get('_route') == 'app_administrateur_chantier_modifier' %}show{% endif %}" id="submenuChantier">
+				<ul class="list-unstyled badge fs-6 large fw-normal text-bg-light text-dark w-100">
+					<li>
+						<a href="{{ path('app_administrateur_chantier_index', {'entite' : entite.id}) }}">
+							<span class="{% if app.request.attributes.get('_route') == 'app_administrateur_chantier_index' %}text-theme-secondaire{% endif %}">{{ 'navbar.chantier.list'|trans }}</span>
+						</a>
+					</li>
+					<li>
+						<a href="{{ path('app_administrateur_chantier_ajouter', {'entite' : entite.id}) }}">
+							<span class="{% if app.request.attributes.get('_route') == 'app_administrateur_chantier_ajouter' %}text-theme-secondaire{% endif %}">{{ 'navbar.chantier.add'|trans }}</span>
 						</a>
 					</li>
 				</ul>

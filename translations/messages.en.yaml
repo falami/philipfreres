@@ -434,6 +434,25 @@ navbar:
     add: "Add"
     externalId: "External Id"
 
+  materiel:
+    title: "Matériel"
+    list: "List"
+    add: "Add"
+
+  dechet:
+    title: "Déchet"
+    list: "List"
+    add: "Add"
+
+  chantier:
+    title: "Chantier"
+    list: "List"
+    add: "Add"
+
+
+
+    
+
   produit:
     title: "Product"
     list: "List"

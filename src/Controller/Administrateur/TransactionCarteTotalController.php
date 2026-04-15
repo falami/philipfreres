@@ -3,16 +3,17 @@
 namespace App\Controller\Administrateur;
 
 use App\Entity\{Entite, TransactionCarteTotal};
+use App\Form\Administrateur\TransactionCarteTotalImportType;
+use App\Form\Administrateur\TransactionCarteTotalType;
+use App\Security\Permission\TenantPermission;
+use App\Service\Import\TransactionCarteTotalExcelImporter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\{Request, Response, JsonResponse, RedirectResponse};
-use Symfony\Component\Routing\Attribute\Route;
-use App\Security\Permission\TenantPermission;
-use Symfony\Component\Security\Http\Attribute\IsGranted;
-use App\Form\Administrateur\TransactionCarteTotalImportType;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
-use App\Service\Import\TransactionCarteTotalExcelImporter;
-use App\Form\Administrateur\TransactionCarteTotalType;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/administrateur/{entite}/transaction/carte/total', name: 'app_administrateur_tct_')]
 #[IsGranted(TenantPermission::ENGIN_MANAGE, subject: 'entite')] // ⚠️ adapte la permission si tu en as une dédiée
@@ -251,5 +252,84 @@ final class TransactionCarteTotalController extends AbstractController
       'form' => $form->createView(),
       'modeEdition' => true,
     ]);
+  }
+
+
+  #[Route('/export-all', name: 'export_all', methods: ['POST'])]
+  public function exportAll(
+    Entite $entite,
+    Request $request,
+    EntityManagerInterface $em
+  ): Response {
+    $search = trim((string) $request->request->get('search', ''));
+    $orderColumn = (int) $request->request->get('orderColumn', 0);
+    $orderDir = strtolower((string) $request->request->get('orderDir', 'desc')) === 'asc' ? 'ASC' : 'DESC';
+
+    $columns = [
+      0 => 't.id',
+      1 => 't.dateTransaction',
+      2 => 't.heureTransaction',
+      3 => 't.numeroCarte',
+      4 => 't.produit',
+      5 => 't.ville',
+      6 => 't.montantTtcEur',
+    ];
+
+    $sortColumn = $columns[$orderColumn] ?? 't.id';
+
+    $qb = $em->getRepository(\App\Entity\TransactionCarteTotal::class)
+      ->createQueryBuilder('t')
+      ->andWhere('t.entite = :entite')
+      ->setParameter('entite', $entite)
+      ->orderBy($sortColumn, $orderDir);
+
+    if ($search !== '') {
+      $qb
+        ->andWhere('
+                t.numeroCarte LIKE :search
+                OR t.produit LIKE :search
+                OR t.ville LIKE :search
+            ')
+        ->setParameter('search', '%' . $search . '%');
+    }
+
+    $rows = $qb->getQuery()->getResult();
+
+    $response = new StreamedResponse(function () use ($rows) {
+      $handle = fopen('php://output', 'w');
+
+      fprintf($handle, chr(0xEF) . chr(0xBB) . chr(0xBF)); // BOM UTF-8 pour Excel
+
+      fputcsv($handle, [
+        'ID',
+        'Date',
+        'Heure',
+        'Carte',
+        'Produit',
+        'Ville',
+        'TTC (€)',
+      ], ';');
+
+      foreach ($rows as $row) {
+        fputcsv($handle, [
+          $row->getId(),
+          $row->getDateTransaction()?->format('d/m/Y'),
+          $row->getHeureTransaction()?->format('H:i'),
+          $row->getNumeroCarte(),
+          $row->getProduit(),
+          $row->getVille(),
+          number_format((float) ($row->getMontantTtcEur() ?? 0), 2, ',', ' '),
+        ], ';');
+      }
+
+      fclose($handle);
+    });
+
+    $filename = 'transactions_carte_total_' . date('Ymd_His') . '.csv';
+
+    $response->headers->set('Content-Type', 'text/csv; charset=UTF-8');
+    $response->headers->set('Content-Disposition', 'attachment; filename="' . $filename . '"');
+
+    return $response;
   }
 }

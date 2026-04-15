@@ -17,6 +17,11 @@ final class TenantPermission
   public const CHANTIER_MANAGE = 'CHANTIER_MANAGE';
 
 
+  public const MATERIEL_MANAGE = 'MATERIEL_MANAGE';
+
+
+
+
   /**
    * ✅ Liste exhaustive des permissions "tenant" gérées par TenantVoter.
    * Utilise ça dans supports():
@@ -33,5 +38,6 @@ final class TenantPermission
     self::ENGIN_MANAGE,
     self::ADMIN_DASHBOARD_MANAGE,
     self::USERS_MANAGE,
+    self::MATERIEL_MANAGE,
   ];
 }

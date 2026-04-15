@@ -20,7 +20,7 @@ class ChantierDechet
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false, onDelete: 'RESTRICT')]
-    private ?DechetType $typeDechet = null;
+    private ?Dechet $typeDechet = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
     private ?string $poidsTotal = null;
@@ -40,11 +40,11 @@ class ChantierDechet
         return $this;
     }
 
-    public function getTypeDechet(): ?DechetType
+    public function getTypeDechet(): ?Dechet
     {
         return $this->typeDechet;
     }
-    public function setTypeDechet(?DechetType $typeDechet): static
+    public function setTypeDechet(?Dechet $typeDechet): static
     {
         $this->typeDechet = $typeDechet;
         return $this;

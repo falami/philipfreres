@@ -2,16 +2,16 @@
 
 namespace App\Repository;
 
-use App\Entity\DechetType;
+use App\Entity\Dechet;
 use App\Entity\Entite;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
-class DechetTypeRepository extends ServiceEntityRepository
+class DechetRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, DechetType::class);
+        parent::__construct($registry, Dechet::class);
     }
 
     public function findForEntite(Entite $entite): array

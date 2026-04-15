@@ -3,7 +3,7 @@
 namespace App\Form\Administrateur;
 
 use App\Entity\ChantierDechet;
-use App\Entity\DechetType;
+use App\Entity\Dechet;
 use App\Entity\Entite;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
@@ -24,9 +24,9 @@ class ChantierDechetType extends AbstractType
 
     $b
       ->add('typeDechet', EntityType::class, [
-        'class' => DechetType::class,
+        'class' => Dechet::class,
         'label' => 'Type de déchet',
-        'choice_label' => fn(DechetType $d) => $d->getNom() . ' (' . $d->getUnite() . ')',
+        'choice_label' => fn(Dechet $d) => $d->getNom() . ' (' . $d->getUnite() . ')',
         'query_builder' => fn(EntityRepository $er) => $er->createQueryBuilder('d')
           ->andWhere('d.entite = :entite')
           ->setParameter('entite', $entite)
@@ -60,7 +60,7 @@ class ChantierDechetType extends AbstractType
         return;
       }
 
-      $type = new DechetType();
+      $type = new Dechet();
       $type->setNom($nouveauType);
       $type->setUnite('kg');
       $type->setEntite($entite);

@@ -1,0 +1,442 @@
+{# templates/administrateur/materiel/form.html.twig #}
+{% extends 'base_admin.html.twig' %}
+{% set is_edit = modeEdition ?? false %}
+
+{% block title %}{{ is_edit ? 'Modifier' : 'Ajouter' }} un matériel{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('dist/css/style.css') }}">
+  <link rel="stylesheet" href="{{ asset('dist/css/formulaire.css') }}">
+
+  <style>
+    :root{
+      --theme-color-principal: {{ themeColorPrimaire|default(entite.couleurPrincipal|default('#233342')) }};
+      --theme-color-secondaire: {{ themeColorSecondaire|default(entite.couleurSecondaire|default('#ffc107')) }};
+      --theme-color-tertiaire: {{ themeColorTertiaire|default(entite.couleurTertiaire|default('#F0F0F0')) }};
+      --theme-color-quaternaire: {{ couleurQuaternaire|default(entite.couleurQuaternaire|default('#000000')) }};
+
+      --bg:#f5f7fb;
+      --panel:#fff;
+      --ink:#0f172a;
+      --muted:#64748b;
+      --stroke: rgba(15, 23, 42, .10);
+      --shadow: 0 18px 55px rgba(15, 23, 42, .10);
+      --radius: 18px;
+    }
+
+    body{ background: var(--bg); }
+
+    .hero{
+      border-radius:22px;
+      padding:1.2rem;
+      position:relative;
+      overflow:hidden;
+      color:#fff;
+      box-shadow:0 18px 50px rgba(0,0,0,.14);
+      background:
+        radial-gradient(1200px 420px at 12% -10%, color-mix(in srgb, var(--theme-color-tertiaire) 35%, transparent), transparent 58%),
+        radial-gradient(900px 380px at 92% 0%, color-mix(in srgb, var(--theme-color-secondaire) 32%, transparent), transparent 60%),
+        radial-gradient(700px 260px at 55% 115%, color-mix(in srgb, var(--theme-color-quaternaire) 18%, transparent), transparent 62%),
+        linear-gradient(135deg,
+          color-mix(in srgb, var(--theme-color-principal) 92%, #000 8%),
+          color-mix(in srgb, var(--theme-color-principal) 70%, #fff 30%)
+        );
+    }
+    .hero::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,0) 55%);
+      opacity:.85;
+    }
+    .hero .accent{
+      width:12px;
+      border-radius:999px;
+      background:var(--theme-color-secondaire);
+      box-shadow:0 0 0 6px color-mix(in srgb, var(--theme-color-secondaire) 18%, transparent);
+      flex:0 0 auto;
+    }
+    .chip{
+      display:inline-flex; align-items:center; gap:.45rem;
+      padding:.28rem .65rem; border-radius:999px; font-size:.82rem;
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.14);
+      color:rgba(255,255,255,.92);
+    }
+
+    .cardx{
+      background:var(--panel);
+      border:1px solid var(--stroke);
+      border-radius:var(--radius);
+      box-shadow:0 10px 28px rgba(15,23,42,.08);
+      overflow:hidden;
+    }
+    .cardx-h{
+      padding:.95rem 1.05rem;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:1rem;
+      background:linear-gradient(180deg, rgba(0,0,0,.015), transparent);
+      border-bottom:1px solid var(--stroke);
+    }
+    .cardx-title{
+      margin:0;
+      font-weight:800;
+      letter-spacing:-.01em;
+      color:var(--ink);
+      display:flex;
+      align-items:center;
+      gap:.6rem;
+    }
+
+    .form-control, .form-select{
+      border-radius:14px;
+      border:1px solid var(--stroke);
+      padding:.65rem .85rem;
+      min-height:44px;
+    }
+    .form-control:focus, .form-select:focus{
+      border-color:color-mix(in srgb, var(--theme-color-principal) 55%, var(--stroke));
+      box-shadow:0 0 0 .2rem color-mix(in srgb, var(--theme-color-principal) 18%, transparent);
+    }
+
+    .soft-box{
+      border-radius:16px;
+      border:1px dashed rgba(15,35,54,.18);
+      background:rgba(248,251,254,.75);
+      padding:1rem;
+    }
+
+    .profile-dropzone{
+      display:flex;
+      align-items:center;
+      gap:1rem;
+      padding:1rem;
+      border-radius:16px;
+      border:2px dashed rgba(15,35,54,.25);
+      background:rgba(248,251,254,.75);
+      cursor:pointer;
+      transition:.25s ease;
+    }
+    .profile-dropzone:hover{
+      background:rgba(255,193,7,.08);
+      border-color:rgba(255,193,7,.6);
+    }
+    .profile-dropzone.dragover{
+      background:rgba(59,130,246,.10);
+      border-color:#3b82f6;
+    }
+    .profile-preview{
+      width:110px;
+      height:110px;
+      border-radius:18px;
+      overflow:hidden;
+      background:#eef2f6;
+      display:grid;
+      place-items:center;
+      flex-shrink:0;
+      border:1px solid rgba(15,35,54,.15);
+    }
+    .profile-img{ width:100%; height:100%; object-fit:cover; }
+    .profile-placeholder{ font-size:2rem; color:#9aa9b7; }
+
+    .sticky-actions{
+      position:sticky;
+      bottom:14px;
+      z-index:5;
+      background:color-mix(in srgb, var(--panel) 82%, transparent);
+      backdrop-filter:blur(10px);
+      border:1px solid var(--stroke);
+      border-radius:var(--radius);
+      padding:.75rem;
+      box-shadow:var(--shadow);
+    }
+
+    @media (max-width:768px){
+      .hero{ border-radius:16px; }
+    }
+  </style>
+{% endblock %}
+
+{% block body %}
+  <div class="hero p-3 mb-4 d-flex gap-3">
+    <div class="accent"></div>
+
+    <div class="flex-grow-1">
+      <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+        <div>
+          <h2 class="m-0 fw-bold">
+            <i class="bi bi-tools me-2" style="color:var(--theme-color-secondaire)"></i>
+            {{ is_edit ? 'Modifier un matériel' : 'Créer un matériel' }}
+          </h2>
+
+          <div class="opacity-75 mt-1">
+            {{ is_edit ? 'Mettre à jour les informations du matériel.' : 'Ajouter un nouvel équipement au parc matériel.' }}
+          </div>
+
+          <div class="d-flex gap-2 flex-wrap mt-3">
+            <span class="chip"><i class="bi bi-building"></i> {{ entite.nom }}</span>
+            <span class="chip"><i class="bi bi-box-seam"></i> {{ is_edit ? 'Mode édition' : 'Mode création' }}</span>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <a href="{{ path('app_administrateur_materiel_index',{entite:entite.id}) }}" class="btn btn-outline-light btn-sm fw-semibold">
+            <i class="bi bi-arrow-left me-1"></i> Retour
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% include 'flagMessage.html.twig' %}
+
+  {{ form_start(form, { attr: { novalidate: 'novalidate', id: 'materielForm' } }) }}
+  {{ form_errors(form) }}
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+
+      <div class="cardx mb-4">
+        <div class="cardx-h">
+          <h5 class="cardx-title"><i class="bi bi-image text-warning"></i> Photo de couverture</h5>
+          <span class="chip">Optionnel</span>
+        </div>
+
+        <div class="p-3 p-md-4">
+          <div class="profile-dropzone" id="profileDropzone">
+            <input type="file"
+                   id="profileInput"
+                   accept="image/*"
+                   hidden>
+
+            <div class="profile-preview" id="profilePreview">
+              {% if is_edit and materiel.photoCouverture %}
+                <img src="{{ asset('uploads/photos/materiel/' ~ materiel.photoCouverture) }}"
+                     alt="{{ materiel.nom }}"
+                     class="profile-img">
+              {% else %}
+                <div class="profile-placeholder"><i class="bi bi-image"></i></div>
+              {% endif %}
+            </div>
+
+            <div class="flex-grow-1">
+              <div class="fw-semibold">Déposer une image</div>
+              <div class="small text-muted">PNG, JPG, WebP - 8 Mo max</div>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 mt-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="profileBrowseBtn">
+              <i class="bi bi-upload"></i> Parcourir
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger d-none" id="profileRemoveBtn">
+              <i class="bi bi-trash"></i> Supprimer
+            </button>
+          </div>
+
+          {{ form_widget(form.photo, { attr: { class: 'd-none' } }) }}
+          {{ form_errors(form.photo) }}
+        </div>
+      </div>
+
+      <div class="cardx mb-4">
+        <div class="cardx-h">
+          <h5 class="cardx-title"><i class="bi bi-box text-warning"></i> Informations générales</h5>
+          <span class="chip">Étape 1</span>
+        </div>
+
+        <div class="p-3 p-md-4">
+          <div class="row g-3">
+            <div class="col-12">{{ form_row(form.nom) }}</div>
+            <div class="col-12 col-md-6">{{ form_row(form.categorie) }}</div>
+            <div class="col-12 col-md-6">{{ form_row(form.statut) }}</div>
+            <div class="col-12">{{ form_row(form.numeroSerie) }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-end gap-2 mt-3">
+        <a href="{{ path('app_administrateur_materiel_index',{entite:entite.id}) }}" class="btn btn-secondary">
+          <i class="bi bi-arrow-left"></i> Retour
+        </a>
+        <button type="submit" class="btn btn-gradient">
+          <i class="bi bi-check"></i> {{ is_edit ? 'Modifier & Terminer' : 'Créer & Terminer' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="cardx mb-4">
+        <div class="cardx-h">
+          <h5 class="cardx-title"><i class="bi bi-clipboard2-check text-warning"></i> Résumé</h5>
+          <span class="chip">Contrôle</span>
+        </div>
+
+        <div class="p-3 p-md-4">
+          <div class="small text-muted mb-3">Vérifie avant d’enregistrer.</div>
+
+          <div class="border rounded-4 p-3 mb-3"
+               style="border-color: var(--stroke) !important; background: linear-gradient(180deg, color-mix(in srgb, var(--theme-color-principal) 8%, transparent), transparent);">
+            <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+              <div class="fw-bold">Matériel</div>
+              <span id="resume-valid-pill"
+                    class="badge rounded-pill px-3 py-2"
+                    style="border:1px solid var(--stroke); background: rgba(255,193,7,.15); color: var(--ink);">
+                ⚠️ Incomplet
+              </span>
+            </div>
+
+            <div class="mt-2 small">
+              <div class="d-flex justify-content-between gap-3 py-1">
+                <span class="text-muted">Nom</span>
+                <span class="fw-semibold text-end" id="resume-nom">-</span>
+              </div>
+              <div class="d-flex justify-content-between gap-3 py-1">
+                <span class="text-muted">Catégorie</span>
+                <span class="fw-semibold text-end" id="resume-categorie">-</span>
+              </div>
+              <div class="d-flex justify-content-between gap-3 py-1">
+                <span class="text-muted">Statut</span>
+                <span class="fw-semibold text-end" id="resume-statut">-</span>
+              </div>
+              <div class="d-flex justify-content-between gap-3 py-1">
+                <span class="text-muted">Numéro de série</span>
+                <span class="fw-semibold text-end" id="resume-numero-serie">-</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <a class="btn btn-light w-50" href="{{ path('app_administrateur_materiel_index',{entite:entite.id}) }}">Annuler</a>
+            <button type="submit" class="btn btn-gradient w-50">
+              <i class="bi bi-check"></i> Enregistrer
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="sticky-actions d-none d-lg-block">
+        <div class="d-flex align-items-center justify-content-between gap-2">
+          <div class="small text-muted">
+            <strong class="text-dark">Astuce :</strong> le nom est obligatoire.
+          </div>
+          <button type="submit" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-check2"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {{ form_widget(form._token) }}
+  {{ form_end(form, { render_rest: false }) }}
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const realInput = document.getElementById('{{ form.photo.vars.id }}');
+      const fakeInput = document.getElementById('profileInput');
+      const browseBtn = document.getElementById('profileBrowseBtn');
+      const removeBtn = document.getElementById('profileRemoveBtn');
+      const dropzone = document.getElementById('profileDropzone');
+      const preview = document.getElementById('profilePreview');
+
+      const nomEl = document.getElementById('{{ form.nom.vars.id }}');
+      const categorieEl = document.getElementById('{{ form.categorie.vars.id }}');
+      const statutEl = document.getElementById('{{ form.statut.vars.id }}');
+      const numeroSerieEl = document.getElementById('{{ form.numeroSerie.vars.id }}');
+
+      const resumeNom = document.getElementById('resume-nom');
+      const resumeCategorie = document.getElementById('resume-categorie');
+      const resumeStatut = document.getElementById('resume-statut');
+      const resumeNumeroSerie = document.getElementById('resume-numero-serie');
+      const resumePill = document.getElementById('resume-valid-pill');
+
+      function refreshResume(){
+        const nom = (nomEl?.value || '').trim();
+        const numeroSerie = (numeroSerieEl?.value || '').trim();
+
+        const categorie = categorieEl?.selectedOptions?.[0]?.text?.trim() || '';
+        const statut = statutEl?.selectedOptions?.[0]?.text?.trim() || '';
+
+        if (resumeNom) resumeNom.textContent = nom || '-';
+        if (resumeCategorie) resumeCategorie.textContent = categorie || '-';
+        if (resumeStatut) resumeStatut.textContent = statut || '-';
+        if (resumeNumeroSerie) resumeNumeroSerie.textContent = numeroSerie || '-';
+
+        const ok = !!nom;
+
+        if (resumePill) {
+          resumePill.textContent = ok ? '✅ Complet' : '⚠️ Incomplet';
+          resumePill.style.background = ok ? 'rgba(25,135,84,.15)' : 'rgba(255,193,7,.15)';
+          resumePill.style.borderColor = ok ? 'rgba(25,135,84,.35)' : 'rgba(255,193,7,.35)';
+        }
+      }
+
+      function renderPreview(file){
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e){
+          preview.innerHTML = '<img src="' + e.target.result + '" class="profile-img" alt="Aperçu">';
+          removeBtn?.classList.remove('d-none');
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function syncFiles(files){
+        if (!realInput || !files || !files.length) return;
+        const dt = new DataTransfer();
+        dt.items.add(files[0]);
+        realInput.files = dt.files;
+        renderPreview(files[0]);
+      }
+
+      browseBtn?.addEventListener('click', () => realInput?.click());
+      dropzone?.addEventListener('click', () => realInput?.click());
+
+      realInput?.addEventListener('change', function(){
+        if (this.files?.length) {
+          renderPreview(this.files[0]);
+        }
+      });
+
+      removeBtn?.addEventListener('click', function(e){
+        e.stopPropagation();
+        if (realInput) realInput.value = '';
+        preview.innerHTML = '<div class="profile-placeholder"><i class="bi bi-image"></i></div>';
+        removeBtn.classList.add('d-none');
+      });
+
+      dropzone?.addEventListener('dragover', function(e){
+        e.preventDefault();
+        dropzone.classList.add('dragover');
+      });
+
+      dropzone?.addEventListener('dragleave', function(){
+        dropzone.classList.remove('dragover');
+      });
+
+      dropzone?.addEventListener('drop', function(e){
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+        if (e.dataTransfer?.files?.length) {
+          syncFiles(e.dataTransfer.files);
+        }
+      });
+
+      [nomEl, categorieEl, statutEl, numeroSerieEl].forEach(el => {
+        el?.addEventListener('input', refreshResume);
+        el?.addEventListener('change', refreshResume);
+      });
+
+      {% if is_edit and materiel.photoCouverture %}
+        removeBtn?.classList.remove('d-none');
+      {% endif %}
+
+      refreshResume();
+    });
+  </script>
+{% endblock %}

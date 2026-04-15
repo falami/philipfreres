@@ -2,7 +2,7 @@
 
 namespace App\Controller\Administrateur;
 
-use App\Entity\{Chantier, ChantierPhoto, DechetType, Entite, Utilisateur};
+use App\Entity\{Chantier, ChantierPhoto, Dechet, Entite, Utilisateur};
 use App\Form\Administrateur\ChantierType;
 use App\Repository\ChantierRepository;
 use App\Security\Permission\TenantPermission;
@@ -42,8 +42,20 @@ final class ChantierController extends AbstractController
     $draw   = $request->request->getInt('draw', 0);
     $start  = max(0, $request->request->getInt('start', 0));
     $length = $request->request->getInt('length', 25);
-    $search = trim((string) (($request->request->all('search')['value'] ?? '')));
 
+    // 🔎 Recherche globale DataTables
+    $searchDT = trim((string) (($request->request->all('search')['value'] ?? '')));
+
+    // 🔎 Filtres custom
+    $searchCustom  = trim((string) $request->request->get('searchName', ''));
+    $statutFilter  = (string) $request->request->get('statutFilter', 'all');
+    $semaineFilter = trim((string) $request->request->get('semaineFilter', ''));
+    $villeFilter   = trim((string) $request->request->get('villeFilter', ''));
+
+    // 🔀 Fusion recherche DataTables + champ custom
+    $search = trim($searchDT . ' ' . $searchCustom);
+
+    // 🔃 ORDER
     $order = (array) $request->request->all('order');
     $col   = (int) ($order[0]['column'] ?? 0);
     $dir   = strtolower((string) ($order[0]['dir'] ?? 'desc')) === 'asc' ? 'ASC' : 'DESC';
@@ -56,19 +68,68 @@ final class ChantierController extends AbstractController
       4 => 'c.statut',
     ];
 
-    $qb = $repo->createListQb($entite, $search)
-      ->orderBy($orderMap[$col] ?? 'c.id', $dir)
+    // 🔨 QueryBuilder de base
+    $qb = $repo->createListQb($entite, $search);
+
+    // =========================
+    // ✅ FILTRES DYNAMIQUES
+    // =========================
+
+    if ($statutFilter !== 'all') {
+      $qb->andWhere('c.statut = :statut')
+        ->setParameter('statut', $statutFilter);
+    }
+
+    if ($semaineFilter !== '') {
+      $qb->andWhere('c.semainePrevisionnelle = :semaine')
+        ->setParameter('semaine', $semaineFilter);
+    }
+
+    if ($villeFilter !== '') {
+      $qb->andWhere('LOWER(c.ville) LIKE :ville')
+        ->setParameter('ville', '%' . mb_strtolower($villeFilter) . '%');
+    }
+
+    // =========================
+    // PAGINATION + TRI
+    // =========================
+
+    $qb->orderBy($orderMap[$col] ?? 'c.id', $dir)
       ->addOrderBy('c.id', 'DESC')
       ->setFirstResult($start)
       ->setMaxResults($length);
 
     $rows = $qb->getQuery()->getResult();
 
+    // =========================
+    // COUNT
+    // =========================
+
     $recordsTotal = $repo->countForEntite($entite);
-    $recordsFiltered = (int) $repo->createListQb($entite, $search)
-      ->select('COUNT(c.id)')
-      ->getQuery()
-      ->getSingleScalarResult();
+
+    $qbCount = $repo->createListQb($entite, $search)
+      ->select('COUNT(c.id)');
+
+    if ($statutFilter !== 'all') {
+      $qbCount->andWhere('c.statut = :statut')
+        ->setParameter('statut', $statutFilter);
+    }
+
+    if ($semaineFilter !== '') {
+      $qbCount->andWhere('c.semainePrevisionnelle = :semaine')
+        ->setParameter('semaine', $semaineFilter);
+    }
+
+    if ($villeFilter !== '') {
+      $qbCount->andWhere('LOWER(c.ville) LIKE :ville')
+        ->setParameter('ville', '%' . mb_strtolower($villeFilter) . '%');
+    }
+
+    $recordsFiltered = (int) $qbCount->getQuery()->getSingleScalarResult();
+
+    // =========================
+    // FORMAT DATA
+    // =========================
 
     $data = [];
     foreach ($rows as $chantier) {
@@ -79,18 +140,37 @@ final class ChantierController extends AbstractController
         'nom' => $chantier->getNom(),
         'ville' => $chantier->getVille() ?: '—',
         'semaine' => $chantier->getSemainePrevisionnelle() ?: '—',
-        'periode' => $chantier->getDateDebutPrevisionnelle()?->format('d/m/Y') . ($chantier->getDateFinPrevisionnelle() ? ' → ' . $chantier->getDateFinPrevisionnelle()?->format('d/m/Y') : ''),
+        'periode' => ($chantier->getDateDebutPrevisionnelle()?->format('d/m/Y') ?? '—')
+          . ($chantier->getDateFinPrevisionnelle()
+            ? ' → ' . $chantier->getDateFinPrevisionnelle()?->format('d/m/Y')
+            : ''),
+
+        // 🔥 VERSION PREMIUM BADGE
         'statut' => sprintf(
-          '<span class="badge rounded-pill %s">%s</span>',
-          $chantier->getStatut()->badgeClass(),
+          '<span class="badge-soft %s">%s</span>',
+          match ($chantier->getStatut()->value ?? $chantier->getStatut()->name ?? '') {
+            'BROUILLON' => 'badge-soft-dark',
+            'PLANIFIE'  => 'badge-soft-primary',
+            'EN_COURS'  => 'badge-soft-warning',
+            'TERMINE'   => 'badge-soft-success',
+            'ANNULE'    => 'badge-soft-danger',
+            default     => 'badge-soft-dark'
+          },
           $chantier->getStatut()->label()
         ),
+
+        // 🔥 VERSION PREMIUM RESSOURCES
         'ressources' => sprintf(
-          '%d H / %d E / %d M',
+          '<div class="d-flex justify-content-center gap-1">
+          <span class="badge rounded-pill bg-primary-subtle text-primary border border-primary-subtle">%d H</span>
+          <span class="badge rounded-pill bg-warning-subtle text-warning border border-warning-subtle">%d E</span>
+          <span class="badge rounded-pill bg-dark-subtle text-dark border border-dark-subtle">%d M</span>
+        </div>',
           $chantier->getRessourcesHumaines()->count(),
           $chantier->getRessourcesEngins()->count(),
           $chantier->getRessourcesMateriels()->count()
         ),
+
         'actions' => $this->renderView('administrateur/chantier/_actions.html.twig', [
           'chantier' => $chantier,
           'entite' => $entite,
@@ -131,7 +211,7 @@ final class ChantierController extends AbstractController
     if ($form->isSubmitted() && $form->isValid()) {
       foreach ($chantier->getDechets() as $dechet) {
         $type = $dechet->getTypeDechet();
-        if ($type instanceof DechetType && null === $type->getId()) {
+        if ($type instanceof Dechet && null === $type->getId()) {
           $type->setEntite($entite);
           $type->setCreateur($user);
           $em->persist($type);

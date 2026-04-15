@@ -229,7 +229,38 @@
         + 'rt'
         + '<"dt-bottom-internal d-flex flex-wrap gap-2 align-items-center justify-content-between"lip>',
 
-      buttons:['copy','csv','excel','pdf','print'],
+      buttons:[
+        'copy',
+        'csv',
+        'excel',
+        'pdf',
+        'print',
+        {
+          text: 'Exporter tout',
+          action: function (e, dt, node, config) {
+            const params = dt.ajax.params();
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = "{{ path('app_administrateur_tct_export_all', { entite: entite.id }) }}";
+
+            function appendField(name, value) {
+              const input = document.createElement('input');
+              input.type = 'hidden';
+              input.name = name;
+              input.value = value ?? '';
+              form.appendChild(input);
+            }
+
+            appendField('search', params.search?.value || '');
+            appendField('orderColumn', params.order?.[0]?.column ?? 0);
+            appendField('orderDir', params.order?.[0]?.dir ?? 'desc');
+
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+          }
+        }
+      ],
       lengthMenu:[[10,25,50,200],[10,25,50,200]],
       order:[[0,'desc']],
       language:{ url:'https://cdn.datatables.net/plug-ins/2.2.2/i18n/fr-FR.json' },

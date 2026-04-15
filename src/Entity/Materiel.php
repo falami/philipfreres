@@ -2,6 +2,8 @@
 
 namespace App\Entity;
 
+use App\Enum\MaterielCategorie;
+use App\Enum\MaterielStatut;
 use App\Repository\MaterielRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -18,16 +20,26 @@ class Materiel
 
     #[ORM\Column(length: 140)]
     #[Assert\NotBlank]
+    #[Assert\Length(max: 140)]
     private ?string $nom = null;
 
     #[ORM\Column(length: 100, nullable: true)]
+    #[Assert\Length(max: 100)]
     private ?string $type = null;
 
     #[ORM\Column(length: 120, nullable: true)]
-    private ?string $reference = null;
+    #[Assert\Length(max: 120)]
+    private ?string $numeroSerie = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Assert\Length(max: 255)]
     private ?string $photoCouverture = null;
+
+    #[ORM\Column(enumType: MaterielCategorie::class, nullable: true)]
+    private ?MaterielCategorie $categorie = null;
+
+    #[ORM\Column(enumType: MaterielStatut::class)]
+    private MaterielStatut $statut = MaterielStatut::DISPONIBLE;
 
     #[ORM\ManyToOne(inversedBy: 'materiels')]
     #[ORM\JoinColumn(nullable: false, onDelete: 'RESTRICT')]
@@ -43,13 +55,22 @@ class Materiel
     /**
      * @var Collection<int, ChantierRessourceMateriel>
      */
-    #[ORM\OneToMany(mappedBy: 'materiel', targetEntity: ChantierRessourceMateriel::class)]
+    #[ORM\OneToMany(mappedBy: 'materiel', targetEntity: ChantierRessourceMateriel::class, orphanRemoval: false)]
     private Collection $chantierRessources;
 
     public function __construct()
     {
         $this->dateCreation = new \DateTimeImmutable();
         $this->chantierRessources = new ArrayCollection();
+        $this->statut = MaterielStatut::DISPONIBLE;
+    }
+
+    public function __toString(): string
+    {
+        $categorie = $this->categorie?->label() ?? 'Sans catégorie';
+        $nom = $this->nom ?? '';
+
+        return trim($categorie . ' - ' . $nom, ' -');
     }
 
     public function getId(): ?int
@@ -61,9 +82,11 @@ class Materiel
     {
         return $this->nom;
     }
+
     public function setNom(string $nom): static
     {
         $this->nom = trim($nom);
+
         return $this;
     }
 
@@ -71,19 +94,23 @@ class Materiel
     {
         return $this->type;
     }
+
     public function setType(?string $type): static
     {
-        $this->type = $type;
+        $this->type = $type !== null ? trim($type) : null;
+
         return $this;
     }
 
-    public function getReference(): ?string
+    public function getNumeroSerie(): ?string
     {
-        return $this->reference;
+        return $this->numeroSerie;
     }
-    public function setReference(?string $reference): static
+
+    public function setNumeroSerie(?string $numeroSerie): static
     {
-        $this->reference = $reference;
+        $this->numeroSerie = $numeroSerie !== null ? trim($numeroSerie) : null;
+
         return $this;
     }
 
@@ -91,9 +118,35 @@ class Materiel
     {
         return $this->photoCouverture;
     }
+
     public function setPhotoCouverture(?string $photoCouverture): static
     {
-        $this->photoCouverture = $photoCouverture;
+        $this->photoCouverture = $photoCouverture !== null ? trim($photoCouverture) : null;
+
+        return $this;
+    }
+
+    public function getCategorie(): ?MaterielCategorie
+    {
+        return $this->categorie;
+    }
+
+    public function setCategorie(?MaterielCategorie $categorie): static
+    {
+        $this->categorie = $categorie;
+
+        return $this;
+    }
+
+    public function getStatut(): MaterielStatut
+    {
+        return $this->statut;
+    }
+
+    public function setStatut(MaterielStatut $statut): static
+    {
+        $this->statut = $statut;
+
         return $this;
     }
 
@@ -101,9 +154,11 @@ class Materiel
     {
         return $this->entite;
     }
+
     public function setEntite(?Entite $entite): static
     {
         $this->entite = $entite;
+
         return $this;
     }
 
@@ -111,9 +166,11 @@ class Materiel
     {
         return $this->createur;
     }
+
     public function setCreateur(?Utilisateur $createur): static
     {
         $this->createur = $createur;
+
         return $this;
     }
 
@@ -121,9 +178,40 @@ class Materiel
     {
         return $this->dateCreation;
     }
+
     public function setDateCreation(\DateTimeImmutable $dateCreation): static
     {
         $this->dateCreation = $dateCreation;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, ChantierRessourceMateriel>
+     */
+    public function getChantierRessources(): Collection
+    {
+        return $this->chantierRessources;
+    }
+
+    public function addChantierRessource(ChantierRessourceMateriel $chantierRessource): static
+    {
+        if (!$this->chantierRessources->contains($chantierRessource)) {
+            $this->chantierRessources->add($chantierRessource);
+            $chantierRessource->setMateriel($this);
+        }
+
+        return $this;
+    }
+
+    public function removeChantierRessource(ChantierRessourceMateriel $chantierRessource): static
+    {
+        if ($this->chantierRessources->removeElement($chantierRessource)) {
+            if ($chantierRessource->getMateriel() === $this) {
+                $chantierRessource->setMateriel(null);
+            }
+        }
+
         return $this;
     }
 }

@@ -189,10 +189,10 @@ class Entite
     private Collection $materiels;
 
     /**
-     * @var Collection<int, DechetType>
+     * @var Collection<int, Dechet>
      */
-    #[ORM\OneToMany(targetEntity: DechetType::class, mappedBy: 'entite')]
-    private Collection $dechetTypes;
+    #[ORM\OneToMany(targetEntity: Dechet::class, mappedBy: 'entite')]
+    private Collection $dechets;
 
 
     public function __construct()
@@ -207,7 +207,7 @@ class Entite
         $this->notes = new ArrayCollection();
         $this->chantiers = new ArrayCollection();
         $this->materiels = new ArrayCollection();
-        $this->dechetTypes = new ArrayCollection();
+        $this->dechets = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -916,26 +916,26 @@ class Entite
         return $this;
     }
 
-    public function getDechetTypes(): Collection
+    public function getDechets(): Collection
     {
-        return $this->dechetTypes;
+        return $this->dechets;
     }
 
-    public function addDechetType(DechetType $dechetType): static
+    public function addDechet(Dechet $dechet): static
     {
-        if (!$this->dechetTypes->contains($dechetType)) {
-            $this->dechetTypes->add($dechetType);
-            $dechetType->setEntite($this);
+        if (!$this->dechets->contains($dechet)) {
+            $this->dechets->add($dechet);
+            $dechet->setEntite($this);
         }
 
         return $this;
     }
 
-    public function removeDechetType(DechetType $dechetType): static
+    public function removeDechet(Dechet $dechet): static
     {
-        if ($this->dechetTypes->removeElement($dechetType)) {
-            if ($dechetType->getEntite() === $this) {
-                $dechetType->setEntite(null);
+        if ($this->dechets->removeElement($dechet)) {
+            if ($dechet->getEntite() === $this) {
+                $dechet->setEntite(null);
             }
         }
 
