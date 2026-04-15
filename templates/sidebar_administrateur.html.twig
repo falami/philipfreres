@@ -427,7 +427,7 @@
 					app.request.attributes.get('_route') == 'app_administrateur_chantier_modifier' %}text-theme-secondaire{% else %}text-white{% endif %}" data-bs-toggle="collapse" data-bs-target="#submenuChantier" aria-expanded="{% if app.request.attributes.get('_route') in [
 										'app_administrateur_chantier_index', 'app_administrateur_chantier_ajouter', 'app_administrateur_chantier_modifier', 'app_administrateur_engin_external_id_all_index'
 										] %}true{% else %}false{% endif %}">
-				<i class="bi bi-recycle"></i>
+				<i class="bi bi-cone-striped"></i>
 				{{ 'navbar.chantier.title'|trans }}
 			</button>
 
