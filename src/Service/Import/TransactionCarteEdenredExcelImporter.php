@@ -62,7 +62,6 @@ final class TransactionCarteEdenredExcelImporter
           ];
         }
 
-        // se replacer après les entêtes
         $csv->rewind();
         for ($i = 1; $i <= $headerRow; $i++) {
           $csv->fgetcsv();
@@ -83,7 +82,6 @@ final class TransactionCarteEdenredExcelImporter
             continue;
           }
 
-          // normaliser encodage cellule par cellule (souvent Windows-1252)
           $raw = array_map(fn($v) => $this->toUtf8($v), $raw);
 
           if ($this->isCsvRowEmpty($raw, $colMap)) {
@@ -114,7 +112,6 @@ final class TransactionCarteEdenredExcelImporter
 
             $this->mapTransaction($t, $row);
 
-            // ✅ comme ALX : capture erreurs resolver avec origine + previous
             try {
               $this->resolver->resolveEdenred($entite, $t, false);
             } catch (\Throwable $e) {
@@ -155,7 +152,7 @@ final class TransactionCarteEdenredExcelImporter
     }
 
     // =========================================================
-    // ✅ XLS/XLSX CHUNK (aligné ALX)
+    // ✅ XLS/XLSX CHUNK
     // =========================================================
 
     $reader = IOFactory::createReaderForFile($path);
@@ -167,7 +164,6 @@ final class TransactionCarteEdenredExcelImporter
       $reader->setLoadSheetsOnly([$sheetName]);
     }
 
-    // scan entêtes sur 250 premières lignes
     $reader->setReadFilter(new ChunkReadFilter(1, 250, $sheetName));
     $spreadsheet = $reader->load($path);
     $sheet = $spreadsheet->getActiveSheet();
@@ -211,7 +207,6 @@ final class TransactionCarteEdenredExcelImporter
         $entiteRef = $this->em->getReference(Entite::class, $entite->getId());
         $batch = 0;
 
-        // 1) collecter les rows + keys du chunk
         $rowsBuffer = [];
         $keysBuffer = [];
 
@@ -224,7 +219,6 @@ final class TransactionCarteEdenredExcelImporter
             $row = $this->readRowFromSheet($sheet, $r, $colMap);
             $importKey = $this->buildImportKey($entite->getId(), $row);
 
-            // doublons internes fichier
             if (isset($seenKeys[$importKey])) {
               $skipped++;
               continue;
@@ -239,10 +233,8 @@ final class TransactionCarteEdenredExcelImporter
           }
         }
 
-        // 2) demander en 1 requête celles déjà en base
         $existing = $this->fetchExistingKeys($entiteRef, $keysBuffer);
 
-        // 3) persister uniquement les nouvelles
         foreach ($rowsBuffer as [$r, $row, $importKey]) {
           if (isset($existing[$importKey])) {
             $skipped++;
@@ -303,7 +295,6 @@ final class TransactionCarteEdenredExcelImporter
     return compact('imported', 'skipped', 'errors');
   }
 
-
   /** @return array<string,true> */
   private function fetchExistingKeys(Entite $entiteRef, array $keys): array
   {
@@ -328,10 +319,6 @@ final class TransactionCarteEdenredExcelImporter
     }
     return $out;
   }
-
-  // =========================================================
-  // ✅ Diagnostics (comme ALX)
-  // =========================================================
 
   private function firstNonVendorFrame(\Throwable $e): ?string
   {
@@ -381,10 +368,6 @@ final class TransactionCarteEdenredExcelImporter
       default => IOFactory::createReaderForFile($path),
     };
   }
-
-  // =========================================================
-  // ✅ CSV helpers
-  // =========================================================
 
   private function isCsvFile(UploadedFile $file): bool
   {
@@ -459,15 +442,13 @@ final class TransactionCarteEdenredExcelImporter
         $bestMap = $map;
       }
 
-      if ($bestScore >= 14 && isset($map['date_transaction'], $map['numero_transaction'], $map['montant_ttc'])) {
+      if ($bestScore >= 8 && $this->hasRequiredColumns($map)) {
         break;
       }
     }
 
-    if ($bestRow === null || $bestScore < 10) return [null, []];
-
-    foreach (['date_transaction', 'numero_transaction', 'montant_ttc'] as $must) {
-      if (!isset($bestMap[$must])) return [null, []];
+    if ($bestRow === null || $bestScore < 5 || !$this->hasRequiredColumns($bestMap)) {
+      return [null, []];
     }
 
     return [$bestRow, $bestMap];
@@ -475,7 +456,17 @@ final class TransactionCarteEdenredExcelImporter
 
   private function isCsvRowEmpty(array $raw, array $colMap): bool
   {
-    foreach (['date_transaction', 'produit', 'montant_ttc', 'carte_numero', 'numero_transaction'] as $k) {
+    foreach (
+      [
+        'date_transaction',
+        'produit',
+        'montant_ttc',
+        'carte_numero',
+        'numero_transaction',
+        'site_libelle',
+        'site_libelle_court',
+      ] as $k
+    ) {
       if (!isset($colMap[$k])) continue;
       $idx = $colMap[$k];
       $v = $raw[$idx] ?? null;
@@ -505,10 +496,6 @@ final class TransactionCarteEdenredExcelImporter
     }
     return $s;
   }
-
-  // =========================================================
-  // ✅ XLSX helpers
-  // =========================================================
 
   /** @return array{0:?int,1:array<string,int>} */
   private function detectHeaderRowAndMapFromSheet(Worksheet $sheet): array
@@ -544,15 +531,13 @@ final class TransactionCarteEdenredExcelImporter
         $bestMap = $map;
       }
 
-      if ($bestScore >= 14 && isset($map['date_transaction'], $map['numero_transaction'], $map['montant_ttc'])) {
+      if ($bestScore >= 8 && $this->hasRequiredColumns($map)) {
         break;
       }
     }
 
-    if ($bestRow === null || $bestScore < 10) return [null, []];
-
-    foreach (['date_transaction', 'numero_transaction', 'montant_ttc'] as $must) {
-      if (!isset($bestMap[$must])) return [null, []];
+    if ($bestRow === null || $bestScore < 5 || !$this->hasRequiredColumns($bestMap)) {
+      return [null, []];
     }
 
     return [$bestRow, $bestMap];
@@ -597,7 +582,17 @@ final class TransactionCarteEdenredExcelImporter
 
   private function isSheetRowEmpty(Worksheet $sheet, int $row, array $colMap): bool
   {
-    foreach (['date_transaction', 'produit', 'montant_ttc', 'carte_numero', 'numero_transaction'] as $k) {
+    foreach (
+      [
+        'date_transaction',
+        'produit',
+        'montant_ttc',
+        'carte_numero',
+        'numero_transaction',
+        'site_libelle',
+        'site_libelle_court',
+      ] as $k
+    ) {
       if (!isset($colMap[$k])) continue;
       $v = $sheet->getCell([$colMap[$k], $row])->getValue();
       if ($v !== null && $v !== '') return false;
@@ -615,10 +610,6 @@ final class TransactionCarteEdenredExcelImporter
     return $out;
   }
 
-  // =========================================================
-  // ✅ Header matching
-  // =========================================================
-
   /** @return array{0:int,1:array<string,int>} */
   private function scoreAndMap(array $rowValues, array $expected): array
   {
@@ -628,7 +619,6 @@ final class TransactionCarteEdenredExcelImporter
     foreach ($expected as $key => $labels) {
       $bestCol = null;
 
-      // 1) ✅ PASS EXACT MATCH (prioritaire)
       foreach ($rowValues as $col => $h) {
         foreach ($labels as $label) {
           $labelNorm = $this->normHeader($label);
@@ -639,7 +629,6 @@ final class TransactionCarteEdenredExcelImporter
         }
       }
 
-      // 2) ✅ PASS "CONTAINS" seulement si aucun exact
       if ($bestCol === null) {
         foreach ($rowValues as $col => $h) {
           foreach ($labels as $label) {
@@ -661,6 +650,28 @@ final class TransactionCarteEdenredExcelImporter
     return [$score, $map];
   }
 
+  /**
+   * On accepte désormais :
+   * - ancien format : date_transaction + montant_ttc + numero_transaction
+   * - nouveau format : date_transaction + montant_ttc + carte_numero
+   */
+  private function hasRequiredColumns(array $map): bool
+  {
+    if (!isset($map['date_transaction'], $map['montant_ttc'])) {
+      return false;
+    }
+
+    if (isset($map['numero_transaction'])) {
+      return true;
+    }
+
+    if (isset($map['carte_numero'])) {
+      return true;
+    }
+
+    return false;
+  }
+
   private function expectedHeaders(): array
   {
     return [
@@ -678,6 +689,14 @@ final class TransactionCarteEdenredExcelImporter
       'carte_type' => ['carte : type de carte'],
       'carte_numero' => ['carte : numero de carte', 'carte : numéro de carte'],
       'carte_validite' => ['carte : date de validite', 'carte : date de validité'],
+
+      // ✅ nouveau format
+      'carte_intitule_immatriculation' => [
+        'carte : intitule / immatriculation',
+        'carte : intitulé / immatriculation',
+      ],
+      'carte_analytique' => ['carte : analytique'],
+      'carte_embossage' => ['carte : embossage'],
 
       'numero_tlc' => ['numero de tlc', 'numéro de tlc'],
       'date_telecollecte' => ['date de telecollecte', 'date de télécollecte'],
@@ -737,10 +756,6 @@ final class TransactionCarteEdenredExcelImporter
     return trim($s);
   }
 
-  // =========================================================
-  // ✅ Mapping transaction
-  // =========================================================
-
   /** @param array<string,mixed> $row */
   private function mapTransaction(TransactionCarteEdenred $t, array $row): void
   {
@@ -767,7 +782,7 @@ final class TransactionCarteEdenredExcelImporter
     $this->setIf($t, 'typeTransaction', $row['type_transaction'] ?? null);
     $this->setIf($t, 'numeroTransaction', $this->cleanQuoted($row['numero_transaction'] ?? null));
     if (($d = $this->toDateTimeImmutable($row['date_transaction'] ?? null)) !== null) {
-      $t->setDateTransaction($d->setTime(0, 0, 0));
+      $t->setDateTransaction($d);
     }
 
     $this->setIf($t, 'referenceTransaction', $row['reference_transaction'] ?? null);
@@ -780,10 +795,22 @@ final class TransactionCarteEdenredExcelImporter
     $t->setMontantTtc($this->toDecimalString($row['montant_ttc'] ?? null, 2));
     $t->setMontantHt($this->toDecimalString($row['montant_ht'] ?? null, 2));
 
-    $this->setIf($t, 'codeVehicule', $this->cleanQuoted($row['code_vehicule'] ?? null));
-    $this->setIf($t, 'codeChauffeur', $this->cleanQuoted($row['code_chauffeur'] ?? null));
+    // ✅ ancien format
+    $codeVehicule = $this->cleanQuoted($row['code_vehicule'] ?? null);
+    $codeChauffeur = $this->cleanQuoted($row['code_chauffeur'] ?? null);
+    $immatriculation = $this->cleanQuoted($row['immatriculation'] ?? null);
+
+    // ✅ nouveau format
+    $carteIntituleImmat = $this->cleanQuoted($row['carte_intitule_immatriculation'] ?? null);
+    $carteAnalytique    = $this->cleanQuoted($row['carte_analytique'] ?? null);
+    $carteEmbossage     = $this->cleanQuoted($row['carte_embossage'] ?? null);
+
+    // mapping compatible sans modifier l'entité
+    $this->setIf($t, 'codeVehicule', $codeVehicule ?? $carteAnalytique);
+    $this->setIf($t, 'codeChauffeur', $codeChauffeur ?? $carteEmbossage ?? $carteIntituleImmat);
+    $this->setIf($t, 'immatriculation', $immatriculation ?? $carteIntituleImmat);
+
     $this->setIf($t, 'kilometrage', $this->cleanQuoted($row['kilometrage'] ?? null));
-    $this->setIf($t, 'immatriculation', $this->cleanQuoted($row['immatriculation'] ?? null));
 
     $this->setIf($t, 'codeReponse', $row['code_reponse'] ?? null);
     $this->setIf($t, 'numeroOpposition', $this->cleanQuoted($row['numero_opposition'] ?? null));
@@ -810,12 +837,12 @@ final class TransactionCarteEdenredExcelImporter
     $refTxn = FuelKey::norm($this->cleanQuoted($row['reference_transaction'] ?? null) ?? '') ?? '';
     $tlc    = FuelKey::norm($this->cleanQuoted($row['numero_tlc'] ?? null) ?? '') ?? '';
     $carte  = FuelKey::norm($this->cleanQuoted($row['carte_numero'] ?? null) ?? '') ?? '';
-    $site = FuelKey::norm($this->cleanQuoted($row['site_code_site'] ?? null) ?? '') ?? '';
-    $prod = FuelKey::norm($this->cleanQuoted($row['produit'] ?? null) ?? '') ?? '';
+    $site   = FuelKey::norm($this->cleanQuoted($row['site_code_site'] ?? null) ?? $this->cleanQuoted($row['site_libelle'] ?? null) ?? '') ?? '';
+    $prod   = FuelKey::norm($this->cleanQuoted($row['produit'] ?? null) ?? '') ?? '';
 
     $dateTxn = $this->toDateTimeImmutable($row['date_transaction'] ?? null);
     $dateTel = $this->toDateTimeImmutable($row['date_telecollecte'] ?? null);
-    $date = ($dateTxn ?? $dateTel)?->format('Y-m-d') ?? '';
+    $date = ($dateTxn ?? $dateTel)?->format('Y-m-d H:i:s') ?? '';
 
     $ttc = $this->toDecimalString($row['montant_ttc'] ?? null, 2) ?? '';
     $qty = $this->toDecimalString($row['quantite'] ?? null, 3) ?? '';
@@ -835,10 +862,6 @@ final class TransactionCarteEdenredExcelImporter
     return sha1(implode('|', [(string)$entiteId, 'F', $date, $carte, $ttc, $qty, $prod, $site]));
   }
 
-  // =========================================================
-  // Parsers
-  // =========================================================
-
   private function cleanQuoted(mixed $v): ?string
   {
     if ($v === null || $v === '') return null;
@@ -851,7 +874,6 @@ final class TransactionCarteEdenredExcelImporter
   {
     if ($v === null || $v === '') return null;
 
-    // 1) normaliser en string
     $s = is_string($v) ? $v : (string)$v;
     $s = trim($s);
     $s = str_replace(["\u{00A0}", ' '], '', $s);
@@ -860,12 +882,10 @@ final class TransactionCarteEdenredExcelImporter
 
     if ($s === '' || !preg_match('~^-?\d+(\.\d+)?$~', $s)) return null;
 
-    // 2) forcer scale sans float (BCMath si dispo, sinon fallback propre)
     if (extension_loaded('bcmath')) {
       return bcadd($s, '0', $scale);
     }
 
-    // fallback: arrondi sans surprises majeures
     return number_format((float)$s, $scale, '.', '');
   }
 
@@ -891,6 +911,7 @@ final class TransactionCarteEdenredExcelImporter
       'Y-m-d H:i:s',
       'Y-m-d H:i',
       'Y-m-d',
+      'm-y', // sécurité pour carte validité si jamais tu le réutilises ailleurs
     ];
 
     foreach ($try as $fmt) {
