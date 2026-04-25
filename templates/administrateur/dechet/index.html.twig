@@ -1,3 +1,4 @@
+{# templates/administrateur/dechet/index.html.twig #}
 {% extends 'base_admin.html.twig' %}
 
 {% block title %}Types de déchets{% endblock %}
@@ -213,6 +214,44 @@
     }
     .dechet-actions .menu .dropdown-item:hover{
       background:rgba(255,193,7,.10);
+    }
+
+
+    .table-card,
+    .dataTables_wrapper,
+    .dt-container {
+      position: relative;
+      z-index: 1;
+      overflow: visible !important;
+    }
+
+    .dataTables_scroll,
+    .dataTables_scrollBody,
+    .dt-scroll,
+    .dt-scroll-body {
+      overflow: visible !important;
+    }
+
+    #tableauDechetType,
+    #tableauDechetType tbody,
+    #tableauDechetType tbody tr,
+    #tableauDechetType tbody td {
+      overflow: visible !important;
+    }
+
+    #tableauDechetType td.action-column {
+      position: relative;
+      z-index: 20;
+    }
+
+    .dechet-actions {
+      position: relative;
+      z-index: 1055;
+    }
+
+    .dechet-actions .dropdown-menu,
+    .dechet-actions .menu {
+      z-index: 1060 !important;
     }
   </style>
 {% endblock %}

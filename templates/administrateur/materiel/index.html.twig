@@ -208,6 +208,44 @@
     .materiel-actions .menu .dropdown-item:hover{
       background:rgba(255,193,7,.10);
     }
+
+
+    .table-card,
+    .dataTables_wrapper,
+    .dt-container {
+      position: relative;
+      z-index: 1;
+      overflow: visible !important;
+    }
+
+    .dataTables_scroll,
+    .dataTables_scrollBody,
+    .dt-scroll,
+    .dt-scroll-body {
+      overflow: visible !important;
+    }
+
+    #tableauMateriel,
+    #tableauMateriel tbody,
+    #tableauMateriel tbody tr,
+    #tableauMateriel tbody td {
+      overflow: visible !important;
+    }
+
+    #tableauMateriel td.action-column {
+      position: relative;
+      z-index: 50;
+    }
+
+    .materiel-actions {
+      position: relative;
+      z-index: 1055;
+    }
+
+    .materiel-actions .dropdown-menu,
+    .materiel-actions .menu {
+      z-index: 1060 !important;
+    }
   </style>
 {% endblock %}
 

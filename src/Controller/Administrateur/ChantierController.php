@@ -2,7 +2,7 @@
 
 namespace App\Controller\Administrateur;
 
-use App\Entity\{Chantier, ChantierPhoto, Dechet, Entite, Utilisateur};
+use App\Entity\{Chantier, ChantierPhoto, Dechet, Entite, Utilisateur, Engin, Materiel};
 use App\Form\Administrateur\ChantierType;
 use App\Repository\ChantierRepository;
 use App\Security\Permission\TenantPermission;
@@ -15,6 +15,11 @@ use Symfony\Component\HttpFoundation\{JsonResponse, RedirectResponse, Request, R
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
+use App\Enum\{EnginType, MaterielStatut};
+use App\Repository\EnginRepository;
+use App\Repository\MaterielRepository;
+use App\Repository\DechetRepository;
+use App\Repository\UtilisateurRepository;
 
 #[Route('/administrateur/{entite}/chantier')]
 #[IsGranted(TenantPermission::CHANTIER_MANAGE, subject: 'entite')]
@@ -300,6 +305,197 @@ final class ChantierController extends AbstractController
       'chantier' => $chantier,
       'entite' => $entite,
       'modeEdition' => $isEdit,
+    ]);
+  }
+
+
+  #[Route('/ajax/ressource/creer', name: 'app_administrateur_chantier_ajax_ressource_creer', methods: ['POST'])]
+  public function ajaxCreateRessource(
+    Entite $entite,
+    Request $request,
+    EM $em,
+    EnginRepository $enginRepo,
+    MaterielRepository $materielRepo,
+    DechetRepository $dechetRepo,
+    UtilisateurRepository $utilisateurRepo,
+  ): JsonResponse {
+    /** @var Utilisateur $user */
+    $user = $this->getUser();
+
+    if (!$this->isCsrfTokenValid('chantier_inline_resource', (string) $request->request->get('_token'))) {
+      return new JsonResponse(['ok' => false, 'message' => 'Jeton CSRF invalide.'], 403);
+    }
+
+    $kind = trim((string) $request->request->get('kind', ''));
+    $nom = trim((string) $request->request->get('nom', ''));
+
+    if ($nom === '') {
+      return new JsonResponse(['ok' => false, 'message' => 'Le nom est obligatoire.'], 400);
+    }
+
+    $normalizedNom = mb_strtolower($nom);
+
+    switch ($kind) {
+      case 'engin':
+        $immat = trim((string) $request->request->get('immatriculation', ''));
+
+        $existing = $enginRepo->createQueryBuilder('e')
+          ->andWhere('e.entite = :entite')
+          ->andWhere('LOWER(e.nom) = :nom OR (:immat != \'\' AND e.immatriculation = :immat)')
+          ->setParameter('entite', $entite)
+          ->setParameter('nom', $normalizedNom)
+          ->setParameter('immat', $immat)
+          ->setMaxResults(1)
+          ->getQuery()
+          ->getOneOrNullResult();
+
+        if ($existing) {
+          return new JsonResponse([
+            'ok' => false,
+            'message' => 'Cet engin existe déjà pour cette entité.'
+          ], 409);
+        }
+
+        $ressource = new Engin();
+        $ressource->setEntite($entite);
+        $ressource->setCreateur($user);
+        $ressource->setNom($nom);
+        $ressource->setType(EnginType::CHARGEUSE);
+        $ressource->setAnnee((int) date('Y'));
+
+        if ($immat !== '') {
+          $ressource->setImmatriculation($immat);
+        }
+
+        break;
+
+      case 'materiel':
+        $type = trim((string) $request->request->get('type', ''));
+        $numeroSerie = trim((string) $request->request->get('numeroSerie', ''));
+
+        $existing = $materielRepo->createQueryBuilder('m')
+          ->andWhere('m.entite = :entite')
+          ->andWhere('LOWER(m.nom) = :nom OR (:numeroSerie != \'\' AND m.numeroSerie = :numeroSerie)')
+          ->setParameter('entite', $entite)
+          ->setParameter('nom', $normalizedNom)
+          ->setParameter('numeroSerie', $numeroSerie)
+          ->setMaxResults(1)
+          ->getQuery()
+          ->getOneOrNullResult();
+
+        if ($existing) {
+          return new JsonResponse([
+            'ok' => false,
+            'message' => 'Ce matériel existe déjà pour cette entité.'
+          ], 409);
+        }
+
+        $ressource = new Materiel();
+        $ressource->setEntite($entite);
+        $ressource->setCreateur($user);
+        $ressource->setNom($nom);
+        $ressource->setStatut(MaterielStatut::DISPONIBLE);
+
+        if ($type !== '') {
+          $ressource->setType($type);
+        }
+
+        if ($numeroSerie !== '') {
+          $ressource->setNumeroSerie($numeroSerie);
+        }
+
+        break;
+
+      case 'dechet':
+        $unite = trim((string) $request->request->get('unite', 'kg')) ?: 'kg';
+
+        $existing = $dechetRepo->createQueryBuilder('d')
+          ->andWhere('d.entite = :entite')
+          ->andWhere('LOWER(d.nom) = :nom')
+          ->setParameter('entite', $entite)
+          ->setParameter('nom', $normalizedNom)
+          ->setMaxResults(1)
+          ->getQuery()
+          ->getOneOrNullResult();
+
+        if ($existing) {
+          return new JsonResponse([
+            'ok' => false,
+            'message' => 'Ce déchet existe déjà pour cette entité.'
+          ], 409);
+        }
+
+        $ressource = new Dechet();
+        $ressource->setEntite($entite);
+        $ressource->setCreateur($user);
+        $ressource->setNom($nom);
+        $ressource->setUnite($unite);
+
+        break;
+
+      case 'utilisateur':
+        $prenom = trim((string) $request->request->get('prenom', ''));
+        $email = trim((string) $request->request->get('email', ''));
+
+        if ($prenom === '') {
+          return new JsonResponse(['ok' => false, 'message' => 'Le prénom est obligatoire.'], 400);
+        }
+
+        $qb = $utilisateurRepo->createQueryBuilder('u')
+          ->andWhere('LOWER(u.nom) = :nom')
+          ->andWhere('LOWER(u.prenom) = :prenom')
+          ->setParameter('nom', mb_strtolower($nom))
+          ->setParameter('prenom', mb_strtolower($prenom))
+          ->setMaxResults(1);
+
+        if ($email !== '') {
+          $qb->orWhere('LOWER(u.email) = :email')
+            ->setParameter('email', mb_strtolower($email));
+        }
+
+        $existing = $qb->getQuery()->getOneOrNullResult();
+
+        if ($existing) {
+          return new JsonResponse([
+            'ok' => false,
+            'message' => 'Cette ressource humaine existe déjà.'
+          ], 409);
+        }
+
+        if ($email === '') {
+          $safe = mb_strtolower(preg_replace('/[^a-zA-Z0-9]+/', '.', $prenom . '.' . $nom));
+          $email = trim($safe, '.') . '+' . uniqid() . '@local.invalid';
+        }
+
+        $ressource = new Utilisateur();
+        $ressource->setNom($nom);
+        $ressource->setPrenom($prenom);
+        $ressource->setEmail($email);
+        $ressource->setRoles(['ROLE_USER']);
+        $ressource->setPassword(bin2hex(random_bytes(32)));
+        $ressource->setIsVerified(true);
+        $ressource->setEntite($entite);
+        $ressource->setCreateur($user);
+        $ressource->setDateCreation(new \DateTimeImmutable());
+
+        break;
+
+      default:
+        return new JsonResponse(['ok' => false, 'message' => 'Type de ressource invalide.'], 400);
+    }
+
+    $em->persist($ressource);
+    $em->flush();
+
+    return new JsonResponse([
+      'ok' => true,
+      'kind' => $kind,
+      'id' => $ressource->getId(),
+      'label' => match ($kind) {
+        'utilisateur' => trim($ressource->getPrenom() . ' ' . $ressource->getNom()),
+        'materiel' => (string) $ressource,
+        default => (string) $ressource->getNom(),
+      },
     ]);
   }
 

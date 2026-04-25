@@ -1,6 +1,7 @@
+{# templates/administrateur/dechet/_actions.html.twig #}
 <div class="btn-group btn-group-sm dechet-actions" role="group">
   <a class="btn btn-light main-btn"
-     href="{{ path('app_administrateur_dechet_modifier', { entite: entite.id, id: dechetType.id }) }}"
+     href="{{ path('app_administrateur_dechet_modifier', { entite: entite.id, id: dechet.id }) }}"
      title="Modifier">
     <i class="bi bi-pencil"></i>
   </a>
@@ -15,14 +16,14 @@
   <ul class="dropdown-menu dropdown-menu-end menu">
     <li>
       <a class="dropdown-item d-flex align-items-center"
-         href="{{ path('app_administrateur_dechet_show', { entite: entite.id, id: dechetType.id }) }}">
+         href="{{ path('app_administrateur_dechet_show', { entite: entite.id, id: dechet.id }) }}">
         <i class="bi bi-eye me-2"></i> Afficher
       </a>
     </li>
 
     <li>
       <a class="dropdown-item d-flex align-items-center"
-         href="{{ path('app_administrateur_dechet_modifier', { entite: entite.id, id: dechetType.id }) }}">
+         href="{{ path('app_administrateur_dechet_modifier', { entite: entite.id, id: dechet.id }) }}">
         <i class="bi bi-pencil me-2"></i> Modifier
       </a>
     </li>
@@ -34,8 +35,8 @@
               class="dropdown-item d-flex align-items-center text-danger delete-btn"
               data-bs-toggle="modal"
               data-bs-target="#deleteModal"
-              data-url="{{ path('app_administrateur_dechet_supprimer', { entite: entite.id, id: dechetType.id }) }}"
-              data-token="{{ csrf_token('delete_dechet_type_' ~ dechetType.id) }}">
+              data-url="{{ path('app_administrateur_dechet_supprimer', { entite: entite.id, id: dechet.id }) }}"
+              data-token="{{ csrf_token('delete_dechet_type_' ~ dechet.id) }}">
         <i class="bi bi-trash me-2"></i> Supprimer
       </button>
     </li>

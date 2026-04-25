@@ -489,10 +489,10 @@
 
   {% set collections = {
     'zones': {'label':'Sous-chantiers / parcelles', 'icon':'bi-diagram-3', 'btn':'Ajouter un sous-chantier', 'chip':'Parcelles'},
-    'ressourcesHumaines': {'label':'Ressources humaines', 'icon':'bi-people', 'btn':'Ajouter une ressource humaine', 'chip':'Équipe'},
-    'ressourcesEngins': {'label':'Ressources engins', 'icon':'bi-truck', 'btn':'Ajouter un engin', 'chip':'Engins'},
-    'ressourcesMateriels': {'label':'Ressources matériel', 'icon':'bi-tools', 'btn':'Ajouter un matériel', 'chip':'Matériel'},
-    'dechets': {'label':'Déchets', 'icon':'bi-recycle', 'btn':'Ajouter un déchet', 'chip':'Suivi'},
+    'ressourcesHumaines': {'label':'Ressources humaines', 'icon':'bi-people', 'btn':'Ajouter une ressource humaine', 'chip':'Équipe', 'quick':'utilisateur'},
+    'ressourcesEngins': {'label':'Ressources engins', 'icon':'bi-truck', 'btn':'Ajouter un engin', 'chip':'Engins', 'quick':'engin'},
+    'ressourcesMateriels': {'label':'Ressources matériel', 'icon':'bi-tools', 'btn':'Ajouter un matériel', 'chip':'Matériel', 'quick':'materiel'},
+    'dechets': {'label':'Déchets', 'icon':'bi-recycle', 'btn':'Ajouter un déchet', 'chip':'Suivi', 'quick':'dechet'},
     'photos': {'label':'Photos avant / après', 'icon':'bi-images', 'btn':'Ajouter une paire de photos', 'chip':'Photos'}
   } %}
 
@@ -602,11 +602,22 @@
               <span class="chip">{{ meta.chip }}</span>
             </div>
 
-            <button type="button"
-                    class="btn btn-warning btn-sm add-collection-item"
-                    data-collection-holder="#{{ fieldName }}-holder">
-              <i class="bi bi-plus-circle me-1"></i> {{ meta.btn }}
-            </button>
+            <div class="d-flex align-items-center gap-2">
+              <button type="button"
+                      class="btn btn-warning btn-sm add-collection-item"
+                      data-collection-holder="#{{ fieldName }}-holder">
+                <i class="bi bi-plus-circle me-1"></i> {{ meta.btn }}
+              </button>
+
+              {% if meta.quick is defined %}
+                <button type="button"
+                        class="btn btn-outline-warning btn-sm rounded-circle js-open-quick-resource"
+                        data-kind="{{ meta.quick }}"
+                        title="Créer une ressource à la volée">
+                  <i class="bi bi-plus-lg"></i>
+                </button>
+              {% endif %}
+            </div>
           </div>
 
           <div class="p-3 p-md-4">
@@ -740,6 +751,72 @@
   </div>
 
   {{ form_end(form) }}
+
+
+
+
+
+  <div class="modal fade" id="quickResourceModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 rounded-4 shadow">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold" id="quickResourceTitle">
+          Ajouter une ressource
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+
+      <div class="modal-body">
+        <input type="hidden" id="quickResourceKind">
+
+        <div class="mb-3 js-field-prenom d-none">
+          <label class="form-label">Prénom</label>
+          <input type="text" class="form-control" id="quickResourcePrenom">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" id="quickResourceNomLabel">Nom</label>
+          <input type="text" class="form-control" id="quickResourceNom">
+        </div>
+
+        <div class="mb-3 js-field-email d-none">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-control" id="quickResourceEmail">
+          <div class="form-text">Facultatif. Un email technique sera généré si vide.</div>
+        </div>
+
+        <div class="mb-3 js-field-immatriculation d-none">
+          <label class="form-label">Immatriculation</label>
+          <input type="text" class="form-control" id="quickResourceImmatriculation">
+        </div>
+
+        <div class="mb-3 js-field-type d-none">
+          <label class="form-label">Type</label>
+          <input type="text" class="form-control" id="quickResourceType" placeholder="Ex : Tronçonneuse, EPI, Signalisation...">
+        </div>
+
+        <div class="mb-3 js-field-numero-serie d-none">
+          <label class="form-label">Numéro de série</label>
+          <input type="text" class="form-control" id="quickResourceNumeroSerie">
+        </div>
+
+        <div class="mb-3 js-field-unite d-none">
+          <label class="form-label">Unité</label>
+          <input type="text" class="form-control" id="quickResourceUnite" value="kg">
+        </div>
+
+        <div class="alert alert-danger d-none" id="quickResourceError"></div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+        <button type="button" class="btn btn-warning fw-bold" id="quickResourceSubmit">
+          <i class="bi bi-check2 me-1"></i> Créer
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
 
   <script>
@@ -915,6 +992,33 @@
       function initWidgets(scope = document) {
         initFlatpickr(scope);
         initTomSelect(scope);
+      }
+
+      function initRealDatesDefaults() {
+        const debutPrev = document.getElementById('{{ form.dateDebutPrevisionnelle.vars.id }}');
+        const finPrev = document.getElementById('{{ form.dateFinPrevisionnelle.vars.id }}');
+        const debutReel = document.getElementById('{{ form.dateDebutReelle.vars.id }}');
+        const finReel = document.getElementById('{{ form.dateFinReelle.vars.id }}');
+
+        function syncDate(source, target) {
+          if (!source || !target) return;
+
+          const copy = () => {
+            if (!target.value && source.value) {
+              target.value = source.value;
+
+              if (target._flatpickr) {
+                target._flatpickr.setDate(source.value, true);
+              }
+            }
+          };
+
+          copy();
+          source.addEventListener('change', copy);
+        }
+
+        syncDate(debutPrev, debutReel);
+        syncDate(finPrev, finReel);
       }
       
       async function initPhotoMaps(scope = document) {
@@ -1331,7 +1435,198 @@
 
       fields.statut?.addEventListener('change', refreshResume);
 
+
+
+      function initQuickResourceModal() {
+        const modalEl = document.getElementById('quickResourceModal');
+        if (!modalEl || !window.bootstrap) return;
+
+        const modal = new bootstrap.Modal(modalEl);
+
+        const config = {
+          utilisateur: {
+            title: 'Ajouter une ressource humaine',
+            nomLabel: 'Nom',
+            selectName: '[utilisateur]',
+            fields: ['prenom', 'email']
+          },
+          engin: {
+            title: 'Ajouter un engin',
+            nomLabel: 'Nom de l’engin',
+            selectName: '[engin]',
+            fields: ['immatriculation']
+          },
+          materiel: {
+            title: 'Ajouter un matériel',
+            nomLabel: 'Nom du matériel',
+            selectName: '[materiel]',
+            fields: ['type', 'numeroSerie']
+          },
+          dechet: {
+            title: 'Ajouter un déchet',
+            nomLabel: 'Nom du déchet',
+            selectName: '[typeDechet]',
+            fields: ['unite']
+          }
+        };
+
+        const kindInput = document.getElementById('quickResourceKind');
+        const title = document.getElementById('quickResourceTitle');
+        const nomLabel = document.getElementById('quickResourceNomLabel');
+        const nomInput = document.getElementById('quickResourceNom');
+        const prenomInput = document.getElementById('quickResourcePrenom');
+        const emailInput = document.getElementById('quickResourceEmail');
+        const immatriculationInput = document.getElementById('quickResourceImmatriculation');
+        const typeInput = document.getElementById('quickResourceType');
+        const numeroSerieInput = document.getElementById('quickResourceNumeroSerie');
+        const uniteInput = document.getElementById('quickResourceUnite');
+        const errorBox = document.getElementById('quickResourceError');
+        const submitBtn = document.getElementById('quickResourceSubmit');
+
+        function hideError() {
+          errorBox.classList.add('d-none');
+          errorBox.textContent = '';
+        }
+
+        function showError(message) {
+          errorBox.textContent = message || 'Erreur inconnue.';
+          errorBox.classList.remove('d-none');
+        }
+
+        function resetFields() {
+          hideError();
+
+          [nomInput, prenomInput, emailInput, immatriculationInput, typeInput, numeroSerieInput].forEach(input => {
+            if (input) input.value = '';
+          });
+
+          if (uniteInput) uniteInput.value = 'kg';
+
+          document.querySelectorAll(
+            '.js-field-prenom, .js-field-email, .js-field-immatriculation, .js-field-type, .js-field-numero-serie, .js-field-unite'
+          ).forEach(el => el.classList.add('d-none'));
+        }
+
+        function openModal(kind) {
+          const cfg = config[kind];
+          if (!cfg) return;
+
+          resetFields();
+
+          kindInput.value = kind;
+          title.textContent = cfg.title;
+          nomLabel.textContent = cfg.nomLabel;
+
+          cfg.fields.forEach(field => {
+            const fieldEl = document.querySelector(`.js-field-${field}`);
+            if (fieldEl) fieldEl.classList.remove('d-none');
+          });
+
+          modal.show();
+
+          setTimeout(() => {
+            if (kind === 'utilisateur') {
+              prenomInput?.focus();
+            } else {
+              nomInput?.focus();
+            }
+          }, 250);
+        }
+
+        function addOptionToMatchingSelects(kind, id, label) {
+          const cfg = config[kind];
+          if (!cfg) return;
+
+          const selector = `select[name$="${cfg.selectName}"]`;
+          const selects = [...document.querySelectorAll(selector)];
+
+          selects.forEach(select => {
+            const value = String(id);
+
+            if (select.tomselect) {
+              if (!select.tomselect.options[value]) {
+                select.tomselect.addOption({ value, text: label });
+              }
+
+              select.tomselect.refreshOptions(false);
+
+              if (!select.value) {
+                select.tomselect.setValue(value, true);
+              }
+
+              return;
+            }
+
+            if (![...select.options].some(opt => opt.value === value)) {
+              const option = new Option(label, value, false, !select.value);
+              select.add(option);
+            }
+          });
+        }
+
+        document.querySelectorAll('.js-open-quick-resource').forEach(btn => {
+          btn.addEventListener('click', () => openModal(btn.dataset.kind));
+        });
+
+        submitBtn?.addEventListener('click', async () => {
+          const kind = kindInput.value;
+          const nom = (nomInput.value || '').trim();
+
+          if (!nom) {
+            showError('Le nom est obligatoire.');
+            return;
+          }
+
+          if (kind === 'utilisateur' && !(prenomInput.value || '').trim()) {
+            showError('Le prénom est obligatoire.');
+            return;
+          }
+
+          submitBtn.disabled = true;
+          hideError();
+
+          const body = new URLSearchParams();
+          body.set('_token', '{{ csrf_token('chantier_inline_resource') }}');
+          body.set('kind', kind);
+          body.set('nom', nom);
+          body.set('prenom', prenomInput?.value || '');
+          body.set('email', emailInput?.value || '');
+          body.set('immatriculation', immatriculationInput?.value || '');
+          body.set('type', typeInput?.value || '');
+          body.set('numeroSerie', numeroSerieInput?.value || '');
+          body.set('unite', uniteInput?.value || 'kg');
+
+          try {
+            const response = await fetch('{{ path('app_administrateur_chantier_ajax_ressource_creer', { entite: entite.id }) }}', {
+              method: 'POST',
+              headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/x-www-form-urlencoded'
+              },
+              body
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.ok) {
+              throw new Error(data.message || 'Impossible de créer la ressource.');
+            }
+
+            addOptionToMatchingSelects(data.kind, data.id, data.label);
+
+            modal.hide();
+            refreshResume();
+          } catch (e) {
+            showError(e.message || 'Erreur lors de la création.');
+          } finally {
+            submitBtn.disabled = false;
+          }
+        });
+      }
+
       initWidgets(document);
+      initRealDatesDefaults();
+      initQuickResourceModal();
       initPhotoUploadUI(document);
       bindRemoveButtons(document);
       ensureEmptyPlaceholders();

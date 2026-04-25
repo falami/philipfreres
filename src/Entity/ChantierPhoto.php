@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use App\Repository\ChantierPhotoRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\DBAL\Types\Types;
 
 #[ORM\Entity(repositoryClass: ChantierPhotoRepository::class)]
 class ChantierPhoto
@@ -55,6 +56,15 @@ class ChantierPhoto
 
     #[ORM\Column(length: 20, nullable: true)]
     private ?string $sourceLocalisationApres = null;
+
+
+    #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
+    private ?\DateTimeInterface $datePriseVueAvant = null;
+
+    #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
+    private ?\DateTimeInterface $datePriseVueApres = null;
+
+
 
     public function getId(): ?int
     {
@@ -212,6 +222,29 @@ class ChantierPhoto
     public function setSourceLocalisationApres(?string $sourceLocalisationApres): static
     {
         $this->sourceLocalisationApres = $sourceLocalisationApres;
+        return $this;
+    }
+
+
+    public function getDatePriseVueAvant(): ?\DateTimeInterface
+    {
+        return $this->datePriseVueAvant;
+    }
+
+    public function setDatePriseVueAvant(?\DateTimeInterface $datePriseVueAvant): static
+    {
+        $this->datePriseVueAvant = $datePriseVueAvant;
+        return $this;
+    }
+
+    public function getDatePriseVueApres(): ?\DateTimeInterface
+    {
+        return $this->datePriseVueApres;
+    }
+
+    public function setDatePriseVueApres(?\DateTimeInterface $datePriseVueApres): static
+    {
+        $this->datePriseVueApres = $datePriseVueApres;
         return $this;
     }
 }

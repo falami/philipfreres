@@ -1,6 +1,7 @@
+{# templates/administrateur/dechet/show.html.twig #}
 {% extends 'base_admin.html.twig' %}
 
-{% block title %}Type de déchet #{{ dechetType.id }} - {{ dechetType.nom }}{% endblock %}
+{% block title %}Type de déchet #{{ dechet.id }} - {{ dechet.nom }}{% endblock %}
 
 {% block stylesheets %}
   {{ parent() }}
@@ -104,13 +105,13 @@
         <div>
           <h2 class="m-0 fw-bold">
             <i class="bi bi-trash3 me-2" style="color:var(--theme-color-secondaire)"></i>
-            {{ dechetType.nom }}
+            {{ dechet.nom }}
           </h2>
 
           <div class="d-flex gap-2 flex-wrap mt-3">
             <span class="chip"><i class="bi bi-building"></i> {{ entite.nom }}</span>
-            <span class="chip"><i class="bi bi-hash"></i> #{{ dechetType.id }}</span>
-            <span class="chip"><i class="bi bi-speedometer2"></i> {{ dechetType.unite == 'm3' ? 'm³' : dechetType.unite }}</span>
+            <span class="chip"><i class="bi bi-hash"></i> #{{ dechet.id }}</span>
+            <span class="chip"><i class="bi bi-speedometer2"></i> {{ dechet.unite == 'm3' ? 'm³' : dechet.unite }}</span>
           </div>
         </div>
 
@@ -118,13 +119,13 @@
           <a href="{{ path('app_administrateur_dechet_index',{entite:entite.id}) }}" class="btn btn-outline-light btn-sm fw-semibold">
             <i class="bi bi-arrow-left me-1"></i> Retour
           </a>
-          <a href="{{ path('app_administrateur_dechet_modifier',{entite:entite.id,id:dechetType.id}) }}" class="btn btn-light btn-sm fw-semibold">
+          <a href="{{ path('app_administrateur_dechet_modifier',{entite:entite.id,id:dechet.id}) }}" class="btn btn-light btn-sm fw-semibold">
             <i class="bi bi-pencil me-1"></i> Modifier
           </a>
           <form method="post"
-                action="{{ path('app_administrateur_dechet_supprimer',{entite:entite.id,id:dechetType.id}) }}"
+                action="{{ path('app_administrateur_dechet_supprimer',{entite:entite.id,id:dechet.id}) }}"
                 onsubmit="return confirm('Supprimer ce type de déchet ?');">
-            <input type="hidden" name="_token" value="{{ csrf_token('delete_dechet_type_' ~ dechetType.id) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('delete_dechet_type_' ~ dechet.id) }}">
             <button class="btn btn-danger btn-sm fw-semibold" type="submit">
               <i class="bi bi-trash me-1"></i> Supprimer
             </button>
@@ -147,28 +148,28 @@
           <div class="row g-3">
             <div class="col-md-6">
               <div class="text-muted small">Nom</div>
-              <div class="fw-semibold">{{ dechetType.nom ?: '-' }}</div>
+              <div class="fw-semibold">{{ dechet.nom ?: '-' }}</div>
             </div>
 
             <div class="col-md-6">
               <div class="text-muted small">Unité</div>
               <div class="fw-semibold">
-                <span class="unite-badge">{{ dechetType.unite == 'm3' ? 'm³' : dechetType.unite }}</span>
+                <span class="unite-badge">{{ dechet.unite == 'm3' ? 'm³' : dechet.unite }}</span>
               </div>
             </div>
 
             <div class="col-md-6">
               <div class="text-muted small">Date de création</div>
               <div class="fw-semibold">
-                {{ dechetType.dateCreation ? dechetType.dateCreation|date('d/m/Y H:i') : '-' }}
+                {{ dechet.dateCreation ? dechet.dateCreation|date('d/m/Y H:i') : '-' }}
               </div>
             </div>
 
             <div class="col-md-6">
               <div class="text-muted small">Créé par</div>
               <div class="fw-semibold">
-                {% if dechetType.createur %}
-                  {{ dechetType.createur.prenom ?? '' }} {{ dechetType.createur.nom ? dechetType.createur.nom|upper : '' }}
+                {% if dechet.createur %}
+                  {{ dechet.createur.prenom ?? '' }} {{ dechet.createur.nom ? dechet.createur.nom|upper : '' }}
                 {% else %}
                   -
                 {% endif %}
@@ -189,15 +190,15 @@
           <div class="border rounded-4 p-3">
             <div class="d-flex justify-content-between py-2">
               <span class="text-muted">Type</span>
-              <span class="fw-semibold">{{ dechetType.nom }}</span>
+              <span class="fw-semibold">{{ dechet.nom }}</span>
             </div>
             <div class="d-flex justify-content-between py-2">
               <span class="text-muted">Mesure</span>
-              <span class="fw-semibold">{{ dechetType.unite == 'm3' ? 'm³' : dechetType.unite }}</span>
+              <span class="fw-semibold">{{ dechet.unite == 'm3' ? 'm³' : dechet.unite }}</span>
             </div>
             <div class="d-flex justify-content-between py-2">
               <span class="text-muted">ID</span>
-              <span class="fw-semibold">#{{ dechetType.id }}</span>
+              <span class="fw-semibold">#{{ dechet.id }}</span>
             </div>
           </div>
         </div>
