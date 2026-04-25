@@ -4,9 +4,9 @@ namespace App\Form\Administrateur;
 
 use App\Entity\ChantierPhoto;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\HiddenType;
-use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -25,12 +25,11 @@ class ChantierPhotoType extends AbstractType
           'placeholder' => 'Ex : Avaloir zone nord',
         ],
       ])
-      ->add('ordre', IntegerType::class, [
-        'label' => 'Ordre',
+      ->add('ordre', HiddenType::class, [
         'required' => false,
+        'empty_data' => '0',
         'attr' => [
-          'class' => 'form-control',
-          'min' => 0,
+          'class' => 'js-photo-ordre',
         ],
       ])
 
@@ -42,6 +41,17 @@ class ChantierPhotoType extends AbstractType
         'attr' => [
           'class' => 'd-none js-photo-file js-photo-file-avant',
           'accept' => 'image/*',
+        ],
+      ])
+      ->add('datePriseVueAvant', DateType::class, [
+        'label' => 'Date de prise de vue avant',
+        'widget' => 'single_text',
+        'required' => false,
+        'html5' => false,
+        'attr' => [
+          'class' => 'form-control js-photo-date-avant',
+          'data-flatpickr' => '1',
+          'placeholder' => 'jj/mm/aaaa',
         ],
       ])
       ->add('adresseAvant', TextType::class, [
@@ -73,6 +83,17 @@ class ChantierPhotoType extends AbstractType
         'attr' => [
           'class' => 'd-none js-photo-file js-photo-file-apres',
           'accept' => 'image/*',
+        ],
+      ])
+      ->add('datePriseVueApres', DateType::class, [
+        'label' => 'Date de prise de vue après',
+        'widget' => 'single_text',
+        'required' => false,
+        'html5' => false,
+        'attr' => [
+          'class' => 'form-control js-photo-date-apres',
+          'data-flatpickr' => '1',
+          'placeholder' => 'jj/mm/aaaa',
         ],
       ])
       ->add('adresseApres', TextType::class, [

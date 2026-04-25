@@ -1,3 +1,4 @@
+{# templates/administrateur/chantier/show.html.twig #}
 {% extends 'base_admin.html.twig' %}
 {% block title %}Chantier #{{ chantier.id }}{% endblock %}
 
@@ -151,27 +152,43 @@
               {% for p in chantier.photos %}
                 <div class="photo-box">
                   <div class="fw-bold mb-2">{{ p.titre ?: 'Photo' }}</div>
-                  <div class="small text-muted mb-2">{{ p.commentaire ?: '' }}</div>
+
+                  {% if p.commentaire %}
+                    <div class="small text-muted mb-2">{{ p.commentaire }}</div>
+                  {% endif %}
+
                   {% if p.photoAvant %}
                     <div class="mb-2">
                       <div class="small text-muted mb-1">Avant</div>
                       <img src="{{ asset('uploads/photos/chantiers/' ~ p.photoAvant) }}" alt="Avant">
+
+                      {% if p.adresseAvant or (p.latitudeAvant and p.longitudeAvant) %}
+                        <div class="small text-muted mt-2">
+                          <i class="bi bi-geo-alt me-1"></i>
+                          {{ p.adresseAvant ?: 'Coordonnées enregistrées' }}
+                          {% if p.latitudeAvant and p.longitudeAvant %}
+                            <br>
+                            <span>{{ p.latitudeAvant }}, {{ p.longitudeAvant }}</span>
+                          {% endif %}
+                        </div>
+                      {% endif %}
                     </div>
                   {% endif %}
+
                   {% if p.photoApres %}
                     <div>
                       <div class="small text-muted mb-1">Après</div>
                       <img src="{{ asset('uploads/photos/chantiers/' ~ p.photoApres) }}" alt="Après">
-                    </div>
-                  {% endif %}
 
-                  {% if p.adresse or (p.latitude and p.longitude) %}
-                    <div class="small text-muted mt-2">
-                      <i class="bi bi-geo-alt me-1"></i>
-                      {{ p.adresse ?: 'Coordonnées enregistrées' }}
-                      {% if p.latitude and p.longitude %}
-                        <br>
-                        <span>{{ p.latitude }}, {{ p.longitude }}</span>
+                      {% if p.adresseApres or (p.latitudeApres and p.longitudeApres) %}
+                        <div class="small text-muted mt-2">
+                          <i class="bi bi-geo-alt me-1"></i>
+                          {{ p.adresseApres ?: 'Coordonnées enregistrées' }}
+                          {% if p.latitudeApres and p.longitudeApres %}
+                            <br>
+                            <span>{{ p.latitudeApres }}, {{ p.longitudeApres }}</span>
+                          {% endif %}
+                        </div>
                       {% endif %}
                     </div>
                   {% endif %}

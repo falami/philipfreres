@@ -473,6 +473,33 @@
       padding:1rem;
       background:linear-gradient(180deg, transparent, rgba(15,23,42,.72));
     }
+
+
+
+    .photo-drag-handle{
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,193,7,.14);
+      border: 1px solid rgba(255,193,7,.30);
+      color: var(--ink);
+      cursor: grab;
+    }
+
+    .photo-drag-handle:active{
+      cursor: grabbing;
+    }
+
+    .collection-item.sortable-ghost{
+      opacity: .45;
+    }
+
+    .collection-item.sortable-chosen{
+      box-shadow: 0 18px 45px rgba(15,23,42,.16);
+    }
   </style>
 {% endblock %}
 
@@ -483,6 +510,7 @@
   <script src="https://npmcdn.com/flatpickr/dist/l10n/fr.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 {% endblock %}
 
 {% block body %}
@@ -750,73 +778,76 @@
     </div>
   </div>
 
-  {{ form_end(form) }}
+
+  {{ form_row(form._token) }}
+
+  {{ form_end(form, { render_rest: false }) }}
 
 
 
 
 
   <div class="modal fade" id="quickResourceModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 rounded-4 shadow">
-      <div class="modal-header">
-        <h5 class="modal-title fw-bold" id="quickResourceTitle">
-          Ajouter une ressource
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-      </div>
-
-      <div class="modal-body">
-        <input type="hidden" id="quickResourceKind">
-
-        <div class="mb-3 js-field-prenom d-none">
-          <label class="form-label">Prénom</label>
-          <input type="text" class="form-control" id="quickResourcePrenom">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 rounded-4 shadow">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" id="quickResourceTitle">
+            Ajouter une ressource
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
         </div>
 
-        <div class="mb-3">
-          <label class="form-label" id="quickResourceNomLabel">Nom</label>
-          <input type="text" class="form-control" id="quickResourceNom">
+        <div class="modal-body">
+          <input type="hidden" id="quickResourceKind">
+
+          <div class="mb-3 js-field-prenom d-none">
+            <label class="form-label">Prénom</label>
+            <input type="text" class="form-control" id="quickResourcePrenom">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" id="quickResourceNomLabel">Nom</label>
+            <input type="text" class="form-control" id="quickResourceNom">
+          </div>
+
+          <div class="mb-3 js-field-email d-none">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" id="quickResourceEmail">
+            <div class="form-text">Facultatif. Un email technique sera généré si vide.</div>
+          </div>
+
+          <div class="mb-3 js-field-immatriculation d-none">
+            <label class="form-label">Immatriculation</label>
+            <input type="text" class="form-control" id="quickResourceImmatriculation">
+          </div>
+
+          <div class="mb-3 js-field-type d-none">
+            <label class="form-label">Type</label>
+            <input type="text" class="form-control" id="quickResourceType" placeholder="Ex : Tronçonneuse, EPI, Signalisation...">
+          </div>
+
+          <div class="mb-3 js-field-numero-serie d-none">
+            <label class="form-label">Numéro de série</label>
+            <input type="text" class="form-control" id="quickResourceNumeroSerie">
+          </div>
+
+          <div class="mb-3 js-field-unite d-none">
+            <label class="form-label">Unité</label>
+            <input type="text" class="form-control" id="quickResourceUnite" value="kg">
+          </div>
+
+          <div class="alert alert-danger d-none" id="quickResourceError"></div>
         </div>
 
-        <div class="mb-3 js-field-email d-none">
-          <label class="form-label">Email</label>
-          <input type="email" class="form-control" id="quickResourceEmail">
-          <div class="form-text">Facultatif. Un email technique sera généré si vide.</div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-warning fw-bold" id="quickResourceSubmit">
+            <i class="bi bi-check2 me-1"></i> Créer
+          </button>
         </div>
-
-        <div class="mb-3 js-field-immatriculation d-none">
-          <label class="form-label">Immatriculation</label>
-          <input type="text" class="form-control" id="quickResourceImmatriculation">
-        </div>
-
-        <div class="mb-3 js-field-type d-none">
-          <label class="form-label">Type</label>
-          <input type="text" class="form-control" id="quickResourceType" placeholder="Ex : Tronçonneuse, EPI, Signalisation...">
-        </div>
-
-        <div class="mb-3 js-field-numero-serie d-none">
-          <label class="form-label">Numéro de série</label>
-          <input type="text" class="form-control" id="quickResourceNumeroSerie">
-        </div>
-
-        <div class="mb-3 js-field-unite d-none">
-          <label class="form-label">Unité</label>
-          <input type="text" class="form-control" id="quickResourceUnite" value="kg">
-        </div>
-
-        <div class="alert alert-danger d-none" id="quickResourceError"></div>
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
-        <button type="button" class="btn btn-warning fw-bold" id="quickResourceSubmit">
-          <i class="bi bi-check2 me-1"></i> Créer
-        </button>
       </div>
     </div>
   </div>
-</div>
 
 
   <script>
@@ -1222,8 +1253,33 @@
 
           input.addEventListener('change', () => {
             const file = input.files?.[0];
+
             if (file) {
               showPreview(file);
+
+              const item = zone.closest('.js-photo-item') || zone.closest('.collection-item');
+              const isAvant = input.name.includes('[avantFile]');
+              const isApres = input.name.includes('[apresFile]');
+
+              const dateInput = isAvant
+                ? item?.querySelector('.js-photo-date-avant')
+                : isApres
+                  ? item?.querySelector('.js-photo-date-apres')
+                  : null;
+
+              if (dateInput && !dateInput.value) {
+                const suggestedDate = new Date(file.lastModified || Date.now());
+                const yyyy = suggestedDate.getFullYear();
+                const mm = String(suggestedDate.getMonth() + 1).padStart(2, '0');
+                const dd = String(suggestedDate.getDate()).padStart(2, '0');
+                const value = `${yyyy}-${mm}-${dd}`;
+
+                dateInput.value = value;
+
+                if (dateInput._flatpickr) {
+                  dateInput._flatpickr.setDate(value, true);
+                }
+              }
             } else {
               clearPreview();
             }
@@ -1270,6 +1326,7 @@
             btn.closest('.collection-item')?.remove();
             ensureEmptyPlaceholders();
             refreshResume();
+            updatePhotoOrders();
           });
         });
       }
@@ -1319,6 +1376,9 @@
           initWidgets(item);
           initPhotoUploadUI(item);
           await initPhotoMaps(item);
+
+          initPhotoSortable();
+          updatePhotoOrders();
           refreshResume();
         });
       });
@@ -1624,12 +1684,56 @@
         });
       }
 
+
+
+
+      function updatePhotoOrders() {
+        const holder = document.querySelector('#photos-holder');
+        if (!holder) return;
+
+        holder.querySelectorAll('.collection-item').forEach((item, index) => {
+          const ordreInput = item.querySelector('.js-photo-ordre');
+          if (ordreInput) {
+            ordreInput.value = index + 1;
+          }
+        });
+      }
+
+      function initPhotoSortable() {
+        const holder = document.querySelector('#photos-holder');
+        if (!holder || !window.Sortable || holder.dataset.sortableInit === '1') return;
+
+        holder.dataset.sortableInit = '1';
+
+        new Sortable(holder, {
+          animation: 180,
+          handle: '.js-photo-drag-handle',
+          draggable: '.collection-item',
+          ghostClass: 'sortable-ghost',
+          chosenClass: 'sortable-chosen',
+          onEnd: () => {
+            initPhotoSortable();
+            updatePhotoOrders();
+            refreshResume();
+          }
+        });
+
+        updatePhotoOrders();
+      }
+
+
+      formMain?.addEventListener('submit', () => {
+        updatePhotoOrders();
+      });
+
       initWidgets(document);
       initRealDatesDefaults();
       initQuickResourceModal();
       initPhotoUploadUI(document);
       bindRemoveButtons(document);
       ensureEmptyPlaceholders();
+      initPhotoSortable();
+      updatePhotoOrders();
       initFormValidation({ formName: 'chantier_administrateur' });
       await initPhotoMaps(document);
       refreshResume();

@@ -1,9 +1,21 @@
 <div class="row g-3 js-photo-item">
-  <div class="col-md-6">{{ form_row(row.titre) }}</div>
-  <div class="col-md-6">{{ form_row(row.ordre) }}</div>
+  {{ form_widget(row.ordre) }}
+
+  <div class="col-12">
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <span class="photo-drag-handle js-photo-drag-handle" title="Déplacer cette paire de photos">
+        <i class="bi bi-grip-vertical"></i>
+      </span>
+
+      <div class="flex-grow-1">
+        {{ form_row(row.titre) }}
+      </div>
+    </div>
+  </div>
 
   <div class="col-12">
     <div class="row g-4">
+
       <div class="col-lg-6">
         <div class="photo-card photo-card--before">
           <div class="photo-card__head">
@@ -29,6 +41,10 @@
                 <button type="button" class="btn btn-danger btn-sm js-photo-remove">Supprimer</button>
               </div>
             </div>
+          </div>
+
+          <div class="mt-3">
+            {{ form_row(row.datePriseVueAvant) }}
           </div>
 
           <div class="photo-location-box mt-3">
@@ -93,6 +109,10 @@
             </div>
           </div>
 
+          <div class="mt-3">
+            {{ form_row(row.datePriseVueApres) }}
+          </div>
+
           <div class="photo-location-box mt-3">
             {{ form_row(row.adresseApres) }}
             {{ form_widget(row.latitudeApres) }}
@@ -127,6 +147,7 @@
           </div>
         </div>
       </div>
+
     </div>
   </div>
 

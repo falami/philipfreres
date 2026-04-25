@@ -480,4 +480,36 @@ class Chantier
         }
         return $this;
     }
+
+    // Alias nécessaires pour Symfony Form / PropertyAccess
+
+    public function addRessourcesHumaine(ChantierRessourceHumaine $item): static
+    {
+        return $this->addRessourceHumaine($item);
+    }
+
+    public function removeRessourcesHumaine(ChantierRessourceHumaine $item): static
+    {
+        return $this->removeRessourceHumaine($item);
+    }
+
+    public function addRessourcesEngin(ChantierRessourceEngin $item): static
+    {
+        return $this->addRessourceEngin($item);
+    }
+
+    public function removeRessourcesEngin(ChantierRessourceEngin $item): static
+    {
+        return $this->removeRessourceEngin($item);
+    }
+
+    public function addRessourcesMateriel(ChantierRessourceMateriel $item): static
+    {
+        return $this->addRessourceMateriel($item);
+    }
+
+    public function removeRessourcesMateriel(ChantierRessourceMateriel $item): static
+    {
+        return $this->removeRessourceMateriel($item);
+    }
 }
