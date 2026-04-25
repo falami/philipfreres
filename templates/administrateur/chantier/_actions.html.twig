@@ -1,3 +1,4 @@
+{# templates/administrateur/chantier/_actions.html.twig #}
 <div class="btn-group btn-group-sm chantier-actions" role="group">
 
   <a class="btn btn-light chantier-main"
@@ -23,10 +24,10 @@
     </li>
 
     <li>
-      <a class="dropdown-item d-flex align-items-center"
-         href="{{ path('app_administrateur_chantier_pdf', { entite: entite.id, id: chantier.id }) }}"
-         target="_blank">
-        <i class="bi bi-file-earmark-pdf me-2"></i> PDF
+      <a class="dropdown-item d-flex align-items-center fw-semibold"
+        href="{{ path('app_administrateur_chantier_pdf', { entite: entite.id, id: chantier.id }) }}"
+        target="_blank">
+        <i class="bi bi-file-earmark-pdf me-2 text-danger"></i> Compte rendu PDF
       </a>
     </li>
 

@@ -546,7 +546,7 @@ final class ChantierController extends AbstractController
 
     return $this->pdfManager->streamPdfFromHtml(
       $html,
-      sprintf('chantier-%d.pdf', $chantier->getId()),
+      sprintf('compte-rendu-chantier-%d.pdf', $chantier->getId()),
       'portrait'
     );
   }

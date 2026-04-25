@@ -5,76 +5,591 @@
 {% block stylesheets %}
   {{ parent() }}
   <link rel="stylesheet" href="{{ asset('dist/css/style.css') }}">
+
   <style>
     :root{
       --theme-color-principal: {{ themeColorPrimaire|default(entite.couleurPrincipal|default('#233342')) }};
       --theme-color-secondaire: {{ themeColorSecondaire|default(entite.couleurSecondaire|default('#ffc107')) }};
-      --stroke: rgba(15,23,42,.10);
+      --theme-color-tertiaire: {{ themeColorTertiaire|default(entite.couleurTertiaire|default('#f8fafc')) }};
+      --ink:#0f172a;
+      --muted:#64748b;
+      --stroke:rgba(15,23,42,.10);
+      --bg:#f5f7fb;
+      --panel:#fff;
+      --radius:22px;
+      --shadow:0 18px 55px rgba(15,23,42,.10);
     }
-    .hero{
-      border-radius:22px; overflow:hidden; color:#fff; box-shadow:0 18px 50px rgba(0,0,0,.14);
+
+    body{background:var(--bg);}
+
+    .hero-premium{
+      position:relative;
+      overflow:hidden;
+      border-radius:26px;
+      color:#fff;
+      box-shadow:0 24px 70px rgba(15,23,42,.22);
       background:
-        radial-gradient(900px 380px at 92% 0%, color-mix(in srgb, var(--theme-color-secondaire) 28%, transparent), transparent 60%),
-        linear-gradient(135deg, color-mix(in srgb, var(--theme-color-principal) 92%, #000 8%), color-mix(in srgb, var(--theme-color-principal) 70%, #fff 30%));
+        radial-gradient(900px 360px at 95% -10%, color-mix(in srgb, var(--theme-color-secondaire) 34%, transparent), transparent 60%),
+        radial-gradient(700px 300px at 10% 115%, rgba(255,255,255,.14), transparent 62%),
+        linear-gradient(135deg, color-mix(in srgb, var(--theme-color-principal) 94%, #000 6%), color-mix(in srgb, var(--theme-color-principal) 68%, #fff 32%));
     }
+
+    .hero-premium::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      background:linear-gradient(180deg, rgba(255,255,255,.13), transparent 55%);
+    }
+
+    .hero-content{position:relative; z-index:1;}
+
+    .hero-icon{
+      width:58px;
+      height:58px;
+      border-radius:20px;
+      display:grid;
+      place-items:center;
+      background:rgba(255,255,255,.12);
+      border:1px solid rgba(255,255,255,.18);
+      color:var(--theme-color-secondaire);
+      font-size:1.75rem;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.18);
+    }
+
+    .chip-premium{
+      display:inline-flex;
+      align-items:center;
+      gap:.45rem;
+      padding:.38rem .75rem;
+      border-radius:999px;
+      background:rgba(255,255,255,.12);
+      border:1px solid rgba(255,255,255,.16);
+      color:rgba(255,255,255,.92);
+      font-size:.82rem;
+      font-weight:700;
+      backdrop-filter:blur(8px);
+    }
+
     .cardx{
-      background:#fff; border:1px solid var(--stroke); border-radius:18px;
-      box-shadow:0 10px 28px rgba(15,23,42,.08); overflow:hidden;
+      background:var(--panel);
+      border:1px solid var(--stroke);
+      border-radius:var(--radius);
+      box-shadow:0 12px 35px rgba(15,23,42,.08);
+      overflow:hidden;
     }
-    .cardx-h{padding:1rem 1.1rem; border-bottom:1px solid var(--stroke); font-weight:800;}
-    .photo-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(240px,1fr)); gap:1rem;}
-    .photo-box img{width:100%; height:220px; object-fit:cover; border-radius:16px; border:1px solid rgba(0,0,0,.08);}
+
+    .cardx-h{
+      padding:1rem 1.15rem;
+      border-bottom:1px solid var(--stroke);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:1rem;
+      background:linear-gradient(180deg, rgba(15,23,42,.025), transparent);
+    }
+
+    .cardx-title{
+      margin:0;
+      font-weight:900;
+      color:var(--ink);
+      display:flex;
+      align-items:center;
+      gap:.55rem;
+      letter-spacing:-.02em;
+    }
+
+    .stat-card{
+      border-radius:22px;
+      background:#fff;
+      border:1px solid var(--stroke);
+      box-shadow:0 12px 30px rgba(15,23,42,.07);
+      padding:1rem;
+      height:100%;
+      position:relative;
+      overflow:hidden;
+    }
+
+    .stat-card::after{
+      content:"";
+      position:absolute;
+      width:120px;
+      height:120px;
+      border-radius:50%;
+      right:-50px;
+      top:-50px;
+      background:color-mix(in srgb, var(--theme-color-secondaire) 18%, transparent);
+    }
+
+    .stat-icon{
+      width:46px;
+      height:46px;
+      border-radius:16px;
+      display:grid;
+      place-items:center;
+      background:color-mix(in srgb, var(--theme-color-principal) 10%, transparent);
+      color:var(--theme-color-principal);
+      font-size:1.25rem;
+    }
+
+    .stat-value{
+      font-size:1.65rem;
+      font-weight:950;
+      color:var(--ink);
+      line-height:1;
+    }
+
+    .stat-label{
+      color:var(--muted);
+      font-size:.84rem;
+      font-weight:700;
+    }
+
+    .info-tile{
+      border:1px solid var(--stroke);
+      border-radius:18px;
+      padding:1rem;
+      background:linear-gradient(180deg, rgba(248,250,252,.95), #fff);
+      height:100%;
+    }
+
+    .info-label{
+      color:var(--muted);
+      font-size:.78rem;
+      font-weight:800;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      margin-bottom:.25rem;
+    }
+
+    .info-value{
+      color:var(--ink);
+      font-weight:800;
+      word-break:break-word;
+    }
+
+    .table-premium{
+      margin:0;
+    }
+
+    .table-premium thead th{
+      color:var(--muted);
+      font-size:.78rem;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      border-bottom:1px solid var(--stroke);
+      background:#f8fafc;
+      white-space:nowrap;
+    }
+
+    .table-premium tbody td{
+      vertical-align:middle;
+      border-bottom:1px solid rgba(15,23,42,.06);
+    }
+
+    .resource-section + .resource-section{
+      border-top:1px dashed rgba(15,23,42,.12);
+      margin-top:1rem;
+      padding-top:1rem;
+    }
+
+    .resource-item{
+      display:flex;
+      align-items:flex-start;
+      gap:.75rem;
+      padding:.75rem;
+      border-radius:16px;
+      background:#f8fafc;
+      border:1px solid rgba(15,23,42,.07);
+      margin-bottom:.6rem;
+    }
+
+    .resource-avatar{
+      width:38px;
+      height:38px;
+      border-radius:14px;
+      display:grid;
+      place-items:center;
+      flex:0 0 auto;
+      background:color-mix(in srgb, var(--theme-color-secondaire) 18%, transparent);
+      color:var(--ink);
+      font-weight:900;
+    }
+
+    .empty-state{
+      border:1px dashed rgba(15,23,42,.18);
+      border-radius:18px;
+      padding:1rem;
+      color:var(--muted);
+      background:#f8fafc;
+      display:flex;
+      align-items:center;
+      gap:.6rem;
+      font-weight:700;
+    }
+
+    .photo-grid{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:1.1rem;
+    }
+
+    .photo-box{
+      border:1px solid var(--stroke);
+      border-radius:22px;
+      padding:1rem;
+      background:linear-gradient(180deg, #fff, #f8fafc);
+      box-shadow:0 10px 26px rgba(15,23,42,.06);
+    }
+
+    .photo-pair{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0, 1fr));
+      gap:1rem;
+    }
+
+    .photo-frame img{
+      width:100%;
+      height:230px;
+      object-fit:cover;
+      border-radius:18px;
+      border:1px solid rgba(15,23,42,.08);
+      box-shadow:0 12px 24px rgba(15,23,42,.10);
+    }
+
+    .photo-tag{
+      display:inline-flex;
+      align-items:center;
+      gap:.35rem;
+      border-radius:999px;
+      padding:.28rem .65rem;
+      font-size:.76rem;
+      font-weight:900;
+      background:rgba(13,110,253,.10);
+      color:#0d6efd;
+      border:1px solid rgba(13,110,253,.14);
+      margin-bottom:.5rem;
+    }
+
+    .photo-tag.after{
+      background:rgba(25,135,84,.10);
+      color:#198754;
+      border-color:rgba(25,135,84,.14);
+    }
+
+    .location-box{
+      margin-top:.65rem;
+      padding:.65rem .75rem;
+      border-radius:14px;
+      background:#fff;
+      border:1px solid rgba(15,23,42,.08);
+      color:var(--muted);
+      font-size:.82rem;
+    }
+
+    .badge-soft{
+      display:inline-flex;
+      align-items:center;
+      gap:.35rem;
+      border-radius:999px;
+      padding:.38rem .75rem;
+      font-size:.78rem;
+      font-weight:900;
+      border:1px solid rgba(15,23,42,.08);
+      background:#f8fafc;
+      color:var(--ink);
+    }
+
+    .actions-sticky{
+      position:sticky;
+      top:1rem;
+    }
+
+    @media(max-width:991.98px){
+      .actions-sticky{position:static;}
+      .photo-pair{grid-template-columns:1fr;}
+    }
+
+    @media(max-width:575.98px){
+      .hero-premium{border-radius:18px;}
+      .cardx,.stat-card,.photo-box{border-radius:18px;}
+      .photo-frame img{height:200px;}
+    }
   </style>
 {% endblock %}
 
 {% block body %}
-  <div class="hero p-3 mb-4">
-    <div class="d-flex justify-content-between gap-3 flex-wrap">
-      <div>
-        <h2 class="m-0 fw-bold"><i class="bi bi-cone-striped me-2" style="color:var(--theme-color-secondaire)"></i> {{ chantier.nom }}</h2>
-        <div class="opacity-75 mt-1">{{ chantier.ville ?: 'Ville non renseignée' }}</div>
-      </div>
+  {% set nbHumains = chantier.ressourcesHumaines|length %}
+  {% set nbEngins = chantier.ressourcesEngins|length %}
+  {% set nbMateriels = chantier.ressourcesMateriels|length %}
+  {% set nbDechets = chantier.dechets|length %}
+  {% set nbPhotos = chantier.photos|length %}
 
-      <div class="d-flex gap-2 flex-wrap">
-        <a class="btn btn-outline-light btn-sm fw-semibold" href="{{ path('app_administrateur_chantier_index', {entite: entite.id}) }}">Retour</a>
-        <a class="btn btn-light btn-sm fw-semibold" href="{{ path('app_administrateur_chantier_modifier', {entite: entite.id, id: chantier.id}) }}">Modifier</a>
-        <a class="btn btn-warning btn-sm fw-semibold" target="_blank" href="{{ path('app_administrateur_chantier_pdf', {entite: entite.id, id: chantier.id}) }}">
-          PDF
-        </a>
+  <div class="hero-premium p-3 p-md-4 mb-4">
+    <div class="hero-content">
+      <div class="d-flex justify-content-between gap-3 flex-wrap align-items-start">
+        <div class="d-flex gap-3 align-items-start">
+          <div class="hero-icon">
+            <i class="bi bi-cone-striped"></i>
+          </div>
+
+          <div>
+            <div class="d-flex flex-wrap gap-2 mb-2">
+              <span class="chip-premium">
+                <i class="bi bi-hash"></i> Chantier #{{ chantier.id }}
+              </span>
+              <span class="chip-premium">
+                <i class="bi bi-building"></i> {{ entite.nom }}
+              </span>
+              <span class="chip-premium">
+                <i class="bi bi-geo-alt"></i> {{ chantier.ville ?: 'Ville non renseignée' }}
+              </span>
+            </div>
+
+            <h1 class="m-0 fw-bold display-6">{{ chantier.nom }}</h1>
+
+            <div class="opacity-75 mt-2">
+              {{ chantier.adresse ?: 'Adresse non renseignée' }}
+              {% if chantier.codePostal or chantier.ville %}
+                — {{ chantier.codePostal }} {{ chantier.ville }}
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2 flex-wrap">
+          <a class="btn btn-outline-light btn-sm fw-bold rounded-pill px-3"
+            href="{{ path('app_administrateur_chantier_index', {entite: entite.id}) }}">
+            <i class="bi bi-arrow-left me-1"></i> Retour
+          </a>
+
+          <a class="btn btn-light btn-sm fw-bold rounded-pill px-3"
+            href="{{ path('app_administrateur_chantier_modifier', {entite: entite.id, id: chantier.id}) }}">
+            <i class="bi bi-pencil-square me-1"></i> Modifier
+          </a>
+
+          <a class="btn btn-warning btn-sm fw-bold rounded-pill px-3"
+            target="_blank"
+            href="{{ path('app_administrateur_chantier_pdf', {entite: entite.id, id: chantier.id}) }}">
+            <i class="bi bi-file-earmark-pdf me-1"></i> Compte rendu PDF
+          </a>
+        </div>
       </div>
     </div>
   </div>
 
   {% include 'flagMessage.html.twig' %}
 
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-xl-2">
+      <div class="stat-card">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div class="stat-value">{{ nbHumains }}</div>
+            <div class="stat-label">Employé(s)</div>
+          </div>
+          <div class="stat-icon"><i class="bi bi-people"></i></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-6 col-xl-2">
+      <div class="stat-card">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div class="stat-value">{{ nbEngins }}</div>
+            <div class="stat-label">Engin(s)</div>
+          </div>
+          <div class="stat-icon"><i class="bi bi-truck"></i></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-6 col-xl-2">
+      <div class="stat-card">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div class="stat-value">{{ nbMateriels }}</div>
+            <div class="stat-label">Matériel(s)</div>
+          </div>
+          <div class="stat-icon"><i class="bi bi-tools"></i></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-6 col-xl-2">
+      <div class="stat-card">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div class="stat-value">{{ chantier.zones|length }}</div>
+            <div class="stat-label">Zone(s)</div>
+          </div>
+          <div class="stat-icon"><i class="bi bi-diagram-3"></i></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-6 col-xl-2">
+      <div class="stat-card">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div class="stat-value">{{ nbDechets }}</div>
+            <div class="stat-label">Déchet(s)</div>
+          </div>
+          <div class="stat-icon"><i class="bi bi-recycle"></i></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-6 col-xl-2">
+      <div class="stat-card">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div class="stat-value">{{ nbPhotos }}</div>
+            <div class="stat-label">Photo(s)</div>
+          </div>
+          <div class="stat-icon"><i class="bi bi-images"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="row g-4">
-    <div class="col-lg-7">
+    <div class="col-xl-8">
       <div class="cardx mb-4">
-        <div class="cardx-h">Informations</div>
+        <div class="cardx-h">
+          <h5 class="cardx-title">
+            <i class="bi bi-info-circle text-warning"></i> Informations générales
+          </h5>
+          <span class="badge-soft">
+            <i class="bi bi-calendar-week"></i> {{ chantier.semainePrevisionnelle ?: 'Semaine non définie' }}
+          </span>
+        </div>
+
         <div class="p-3 p-md-4">
           <div class="row g-3">
-            <div class="col-md-6"><div class="text-muted small">Adresse</div><div class="fw-semibold">{{ chantier.adresse ?: '-' }}</div></div>
-            <div class="col-md-6"><div class="text-muted small">Ville</div><div class="fw-semibold">{{ chantier.ville ?: '-' }}</div></div>
-            <div class="col-md-6"><div class="text-muted small">Semaine</div><div class="fw-semibold">{{ chantier.semainePrevisionnelle ?: '-' }}</div></div>
-            <div class="col-md-6"><div class="text-muted small">Durée prévisionnelle</div><div class="fw-semibold">{{ chantier.dureePrevisionnelleJours ?: '-' }} jour(s)</div></div>
-            <div class="col-12"><div class="text-muted small">Nature de la prestation</div><div class="fw-semibold">{{ chantier.naturePrestation ?: '-' }}</div></div>
-            <div class="col-12"><div class="text-muted small">Difficultés rencontrées</div><div class="fw-semibold">{{ chantier.difficultesRencontrees ?: '-' }}</div></div>
+            <div class="col-md-6">
+              <div class="info-tile">
+                <div class="info-label">Adresse</div>
+                <div class="info-value">{{ chantier.adresse ?: '-' }}</div>
+              </div>
+            </div>
+
+            <div class="col-md-3">
+              <div class="info-tile">
+                <div class="info-label">Code postal</div>
+                <div class="info-value">{{ chantier.codePostal ?: '-' }}</div>
+              </div>
+            </div>
+
+            <div class="col-md-3">
+              <div class="info-tile">
+                <div class="info-label">Ville</div>
+                <div class="info-value">{{ chantier.ville ?: '-' }}</div>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="info-tile">
+                <div class="info-label">Période prévisionnelle</div>
+                <div class="info-value">
+                  {{ chantier.dateDebutPrevisionnelle ? chantier.dateDebutPrevisionnelle|date('d/m/Y') : '-' }}
+                  {% if chantier.dateFinPrevisionnelle %}
+                    → {{ chantier.dateFinPrevisionnelle|date('d/m/Y') }}
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="info-tile">
+                <div class="info-label">Durée prévisionnelle</div>
+                <div class="info-value">
+                  {{ chantier.dureePrevisionnelleJours ?: '-' }} jour(s)
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="info-tile">
+                <div class="info-label">Période réelle</div>
+                <div class="info-value">
+                  {{ chantier.dateDebutReelle ? chantier.dateDebutReelle|date('d/m/Y') : '-' }}
+                  {% if chantier.dateFinReelle %}
+                    → {{ chantier.dateFinReelle|date('d/m/Y') }}
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="info-tile">
+                <div class="info-label">Durée réelle</div>
+                <div class="info-value">
+                  {{ chantier.dureeReelleJours ?: '-' }} jour(s)
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="info-tile">
+                <div class="info-label">Surface traitée</div>
+                <div class="info-value">
+                  {{ chantier.surfaceTraitee ?: '-' }}{% if chantier.surfaceTraitee %} m²{% endif %}
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="info-tile">
+                <div class="info-label">Linéaire traité</div>
+                <div class="info-value">
+                  {{ chantier.lineaireTraite ?: '-' }}{% if chantier.lineaireTraite %} ml{% endif %}
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div class="info-tile">
+                <div class="info-label">Nature de la prestation</div>
+                <div class="info-value">{{ chantier.naturePrestation ?: '-' }}</div>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div class="info-tile">
+                <div class="info-label">Difficultés rencontrées</div>
+                <div class="info-value">{{ chantier.difficultesRencontrees ?: '-' }}</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       <div class="cardx mb-4">
-        <div class="cardx-h">Sous-chantiers</div>
+        <div class="cardx-h">
+          <h5 class="cardx-title">
+            <i class="bi bi-diagram-3 text-warning"></i> Sous-chantiers / parcelles
+          </h5>
+          <span class="badge-soft">{{ chantier.zones|length }} élément(s)</span>
+        </div>
+
         <div class="p-3 p-md-4">
           {% if chantier.zones|length %}
             <div class="table-responsive">
-              <table class="table align-middle">
-                <thead><tr><th>Ordre</th><th>Nom</th><th>Parcelle</th></tr></thead>
+              <table class="table table-premium align-middle">
+                <thead>
+                  <tr>
+                    <th>Ordre</th>
+                    <th>Nom</th>
+                    <th>Parcelle</th>
+                  </tr>
+                </thead>
                 <tbody>
                   {% for z in chantier.zones %}
                     <tr>
-                      <td>{{ z.ordre }}</td>
-                      <td>{{ z.nom }}</td>
+                      <td><span class="badge rounded-pill bg-dark-subtle text-dark">#{{ z.ordre }}</span></td>
+                      <td class="fw-bold">{{ z.nom }}</td>
                       <td>{{ z.parcelle ?: '-' }}</td>
                     </tr>
                   {% endfor %}
@@ -82,124 +597,206 @@
               </table>
             </div>
           {% else %}
-            <div class="text-muted">Aucun sous-chantier.</div>
+            <div class="empty-state">
+              <i class="bi bi-inbox"></i> Aucun sous-chantier renseigné.
+            </div>
           {% endif %}
         </div>
       </div>
 
       <div class="cardx mb-4">
-        <div class="cardx-h">Déchets</div>
+        <div class="cardx-h">
+          <h5 class="cardx-title">
+            <i class="bi bi-recycle text-warning"></i> Déchets
+          </h5>
+          <span class="badge-soft">{{ nbDechets }} type(s)</span>
+        </div>
+
         <div class="p-3 p-md-4">
           {% if chantier.dechets|length %}
             <div class="table-responsive">
-              <table class="table align-middle">
-                <thead><tr><th>Type</th><th>Poids</th></tr></thead>
+              <table class="table table-premium align-middle">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Poids total</th>
+                  </tr>
+                </thead>
                 <tbody>
                   {% for d in chantier.dechets %}
                     <tr>
-                      <td>{{ d.typeDechet.nom }}</td>
-                      <td>{{ d.poidsTotal ?: '0' }} {{ d.typeDechet.unite }}</td>
+                      <td class="fw-bold">{{ d.typeDechet.nom }}</td>
+                      <td>
+                        <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle">
+                          {{ d.poidsTotal ?: '0' }} {{ d.typeDechet.unite }}
+                        </span>
+                      </td>
                     </tr>
                   {% endfor %}
                 </tbody>
               </table>
             </div>
           {% else %}
-            <div class="text-muted">Aucun déchet renseigné.</div>
+            <div class="empty-state">
+              <i class="bi bi-inbox"></i> Aucun déchet renseigné.
+            </div>
           {% endif %}
         </div>
       </div>
     </div>
 
-    <div class="col-lg-5">
-      <div class="cardx mb-4">
-        <div class="cardx-h">Ressources</div>
-        <div class="p-3 p-md-4">
-          <div class="mb-3">
-            <div class="fw-bold mb-2">Humaines</div>
-            {% for r in chantier.ressourcesHumaines %}
-              <div>{{ r.utilisateur.prenom }} {{ r.utilisateur.nom }}{% if r.fonction %} — {{ r.fonction }}{% endif %}</div>
-            {% else %}
-              <div class="text-muted">Aucune ressource humaine.</div>
-            {% endfor %}
+    <div class="col-xl-4">
+      <div class="actions-sticky">
+        <div class="cardx mb-4">
+          <div class="cardx-h">
+            <h5 class="cardx-title">
+              <i class="bi bi-people text-warning"></i> Ressources
+            </h5>
           </div>
 
-          <div class="mb-3">
-            <div class="fw-bold mb-2">Engins</div>
-            {% for r in chantier.ressourcesEngins %}
-              <div>{{ r.engin.nom }}{% if r.commentaire %} — {{ r.commentaire }}{% endif %}</div>
-            {% else %}
-              <div class="text-muted">Aucun engin.</div>
-            {% endfor %}
-          </div>
+          <div class="p-3 p-md-4">
+            <div class="resource-section">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="fw-black fw-bold">Employés</div>
+                <span class="badge-soft">{{ nbHumains }}</span>
+              </div>
 
-          <div>
-            <div class="fw-bold mb-2">Matériels</div>
-            {% for r in chantier.ressourcesMateriels %}
-              <div>{{ r.materiel.nom }} × {{ r.quantite ?: 1 }}{% if r.commentaire %} — {{ r.commentaire }}{% endif %}</div>
-            {% else %}
-              <div class="text-muted">Aucun matériel.</div>
-            {% endfor %}
+              {% for r in chantier.ressourcesHumaines %}
+                <div class="resource-item">
+                  <div class="resource-avatar">
+                    {{ r.utilisateur.prenom|default('')|slice(0,1)|upper }}{{ r.utilisateur.nom|default('')|slice(0,1)|upper }}
+                  </div>
+                  <div>
+                    <div class="fw-bold">{{ r.utilisateur.prenom }} {{ r.utilisateur.nom }}</div>
+                    <div class="small text-muted">{{ r.fonction ?: 'Fonction non renseignée' }}</div>
+                  </div>
+                </div>
+              {% else %}
+                <div class="empty-state"><i class="bi bi-person-x"></i> Aucun employé.</div>
+              {% endfor %}
+            </div>
+
+            <div class="resource-section">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="fw-bold">Engins</div>
+                <span class="badge-soft">{{ nbEngins }}</span>
+              </div>
+
+              {% for r in chantier.ressourcesEngins %}
+                <div class="resource-item">
+                  <div class="resource-avatar"><i class="bi bi-truck"></i></div>
+                  <div>
+                    <div class="fw-bold">{{ r.engin.nom }}</div>
+                    <div class="small text-muted">{{ r.commentaire ?: 'Aucun commentaire' }}</div>
+                  </div>
+                </div>
+              {% else %}
+                <div class="empty-state"><i class="bi bi-truck"></i> Aucun engin.</div>
+              {% endfor %}
+            </div>
+
+            <div class="resource-section">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="fw-bold">Matériels</div>
+                <span class="badge-soft">{{ nbMateriels }}</span>
+              </div>
+
+              {% for r in chantier.ressourcesMateriels %}
+                <div class="resource-item">
+                  <div class="resource-avatar"><i class="bi bi-tools"></i></div>
+                  <div>
+                    <div class="fw-bold">{{ r.materiel.nom }} × {{ r.quantite ?: 1 }}</div>
+                    <div class="small text-muted">{{ r.commentaire ?: 'Aucun commentaire' }}</div>
+                  </div>
+                </div>
+              {% else %}
+                <div class="empty-state"><i class="bi bi-tools"></i> Aucun matériel.</div>
+              {% endfor %}
+            </div>
           </div>
         </div>
       </div>
+    </div>
+  </div>
 
-      <div class="cardx">
-        <div class="cardx-h">Photos avant / après</div>
-        <div class="p-3 p-md-4">
-          {% if chantier.photos|length %}
-            <div class="photo-grid">
-              {% for p in chantier.photos %}
-                <div class="photo-box">
-                  <div class="fw-bold mb-2">{{ p.titre ?: 'Photo' }}</div>
+  <div class="cardx mt-4">
+    <div class="cardx-h">
+      <h5 class="cardx-title">
+        <i class="bi bi-images text-warning"></i> Photos avant / après
+      </h5>
+      <span class="badge-soft">{{ nbPhotos }} paire(s)</span>
+    </div>
 
+    <div class="p-3 p-md-4">
+      {% if chantier.photos|length %}
+        <div class="photo-grid">
+          {% for p in chantier.photos %}
+            <div class="photo-box">
+              <div class="d-flex justify-content-between gap-3 flex-wrap mb-3">
+                <div>
+                  <div class="fw-bold fs-5">{{ p.titre ?: 'Photo' }}</div>
                   {% if p.commentaire %}
-                    <div class="small text-muted mb-2">{{ p.commentaire }}</div>
+                    <div class="small text-muted">{{ p.commentaire }}</div>
                   {% endif %}
+                </div>
+                <span class="badge-soft">
+                  <i class="bi bi-sort-numeric-down"></i> Ordre {{ p.ordre }}
+                </span>
+              </div>
+
+              <div class="photo-pair">
+                <div class="photo-frame">
+                  <span class="photo-tag">
+                    <i class="bi bi-camera"></i> Avant
+                  </span>
 
                   {% if p.photoAvant %}
-                    <div class="mb-2">
-                      <div class="small text-muted mb-1">Avant</div>
-                      <img src="{{ asset('uploads/photos/chantiers/' ~ p.photoAvant) }}" alt="Avant">
-
-                      {% if p.adresseAvant or (p.latitudeAvant and p.longitudeAvant) %}
-                        <div class="small text-muted mt-2">
-                          <i class="bi bi-geo-alt me-1"></i>
-                          {{ p.adresseAvant ?: 'Coordonnées enregistrées' }}
-                          {% if p.latitudeAvant and p.longitudeAvant %}
-                            <br>
-                            <span>{{ p.latitudeAvant }}, {{ p.longitudeAvant }}</span>
-                          {% endif %}
-                        </div>
-                      {% endif %}
-                    </div>
+                    <img src="{{ asset('uploads/photos/chantiers/' ~ p.photoAvant) }}" alt="Avant">
+                  {% else %}
+                    <div class="empty-state"><i class="bi bi-image"></i> Photo avant absente.</div>
                   {% endif %}
 
-                  {% if p.photoApres %}
-                    <div>
-                      <div class="small text-muted mb-1">Après</div>
-                      <img src="{{ asset('uploads/photos/chantiers/' ~ p.photoApres) }}" alt="Après">
-
-                      {% if p.adresseApres or (p.latitudeApres and p.longitudeApres) %}
-                        <div class="small text-muted mt-2">
-                          <i class="bi bi-geo-alt me-1"></i>
-                          {{ p.adresseApres ?: 'Coordonnées enregistrées' }}
-                          {% if p.latitudeApres and p.longitudeApres %}
-                            <br>
-                            <span>{{ p.latitudeApres }}, {{ p.longitudeApres }}</span>
-                          {% endif %}
-                        </div>
+                  {% if p.adresseAvant or (p.latitudeAvant and p.longitudeAvant) %}
+                    <div class="location-box">
+                      <i class="bi bi-geo-alt me-1"></i>
+                      {{ p.adresseAvant ?: 'Coordonnées enregistrées' }}
+                      {% if p.latitudeAvant and p.longitudeAvant %}
+                        <br><span>{{ p.latitudeAvant }}, {{ p.longitudeAvant }}</span>
                       {% endif %}
                     </div>
                   {% endif %}
                 </div>
-              {% endfor %}
+
+                <div class="photo-frame">
+                  <span class="photo-tag after">
+                    <i class="bi bi-camera-fill"></i> Après
+                  </span>
+
+                  {% if p.photoApres %}
+                    <img src="{{ asset('uploads/photos/chantiers/' ~ p.photoApres) }}" alt="Après">
+                  {% else %}
+                    <div class="empty-state"><i class="bi bi-image"></i> Photo après absente.</div>
+                  {% endif %}
+
+                  {% if p.adresseApres or (p.latitudeApres and p.longitudeApres) %}
+                    <div class="location-box">
+                      <i class="bi bi-geo-alt me-1"></i>
+                      {{ p.adresseApres ?: 'Coordonnées enregistrées' }}
+                      {% if p.latitudeApres and p.longitudeApres %}
+                        <br><span>{{ p.latitudeApres }}, {{ p.longitudeApres }}</span>
+                      {% endif %}
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
             </div>
-          {% else %}
-            <div class="text-muted">Aucune photo.</div>
-          {% endif %}
+          {% endfor %}
         </div>
-      </div>
+      {% else %}
+        <div class="empty-state">
+          <i class="bi bi-images"></i> Aucune photo ajoutée à ce chantier.
+        </div>
+      {% endif %}
     </div>
   </div>
 {% endblock %}
