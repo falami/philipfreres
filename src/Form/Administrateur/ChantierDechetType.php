@@ -34,12 +34,16 @@ class ChantierDechetType extends AbstractType
         'placeholder' => 'Sélectionner',
         'attr' => ['class' => 'form-select'],
       ])
-      ->add('poidsTotal', NumberType::class, [
-        'label' => 'Poids total',
+      ->add('quantite', NumberType::class, [
+        'label' => 'Quantité',
         'required' => false,
         'scale' => 2,
         'html5' => true,
-        'attr' => ['class' => 'form-control', 'step' => '0.01', 'min' => '0'],
+        'attr' => [
+          'class' => 'form-control',
+          'step' => '0.01',
+          'min' => '0',
+        ],
       ])
       ->add('nouveauType', TextType::class, [
         'mapped' => false,

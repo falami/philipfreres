@@ -319,11 +319,23 @@
 {% endblock %}
 
 {% block body %}
-  {% set nbHumains = chantier.ressourcesHumaines|length %}
-  {% set nbEngins = chantier.ressourcesEngins|length %}
-  {% set nbMateriels = chantier.ressourcesMateriels|length %}
-  {% set nbDechets = chantier.dechets|length %}
-  {% set nbPhotos = chantier.photos|length %}
+  {% set nbHumains = 0 %}
+  {% set nbEngins = 0 %}
+  {% set nbMateriels = 0 %}
+  {% set nbDechets = 0 %}
+  {% set nbPhotos = 0 %}
+  {% set surfaceTotale = 0 %}
+  {% set lineaireTotal = 0 %}
+
+  {% for zone in chantier.zones %}
+    {% set nbHumains = nbHumains + zone.ressourcesHumaines|length %}
+    {% set nbEngins = nbEngins + zone.ressourcesEngins|length %}
+    {% set nbMateriels = nbMateriels + zone.ressourcesMateriels|length %}
+    {% set nbDechets = nbDechets + zone.dechets|length %}
+    {% set nbPhotos = nbPhotos + zone.photos|length %}
+    {% set surfaceTotale = surfaceTotale + (zone.surfaceTraitee ?: 0) %}
+    {% set lineaireTotal = lineaireTotal + (zone.lineaireTraite ?: 0) %}
+  {% endfor %}
 
   <div class="hero-premium p-3 p-md-4 mb-4">
     <div class="hero-content">
@@ -493,9 +505,9 @@
               <div class="info-tile">
                 <div class="info-label">Période prévisionnelle</div>
                 <div class="info-value">
-                  {{ chantier.dateDebutPrevisionnelle ? chantier.dateDebutPrevisionnelle|date('d/m/Y') : '-' }}
+                  {{ chantier.dateDebutPrevisionnelle ? chantier.dateDebutPrevisionnelle|date('d/m/Y H:i') : '-' }}
                   {% if chantier.dateFinPrevisionnelle %}
-                    → {{ chantier.dateFinPrevisionnelle|date('d/m/Y') }}
+                    → {{ chantier.dateFinPrevisionnelle ? chantier.dateFinPrevisionnelle|date('d/m/Y H:i') : '' }}
                   {% endif %}
                 </div>
               </div>
@@ -506,6 +518,7 @@
                 <div class="info-label">Durée prévisionnelle</div>
                 <div class="info-value">
                   {{ chantier.dureePrevisionnelleJours ?: '-' }} jour(s)
+                  {{ chantier.dureePrevisionnelleHeures ?: '-' }} h
                 </div>
               </div>
             </div>
@@ -514,9 +527,9 @@
               <div class="info-tile">
                 <div class="info-label">Période réelle</div>
                 <div class="info-value">
-                  {{ chantier.dateDebutReelle ? chantier.dateDebutReelle|date('d/m/Y') : '-' }}
+                  {{ chantier.dateDebutReelle ? chantier.dateDebutReelle|date('d/m/Y H:i') : '-' }}
                   {% if chantier.dateFinReelle %}
-                    → {{ chantier.dateFinReelle|date('d/m/Y') }}
+                    → {{ chantier.dateFinReelle ? chantier.dateFinReelle|date('d/m/Y H:i') : '' }}
                   {% endif %}
                 </div>
               </div>
@@ -527,34 +540,29 @@
                 <div class="info-label">Durée réelle</div>
                 <div class="info-value">
                   {{ chantier.dureeReelleJours ?: '-' }} jour(s)
+                  {{ chantier.dureeReelleHeures ?: '-' }} h
                 </div>
               </div>
             </div>
 
             <div class="col-md-6">
               <div class="info-tile">
-                <div class="info-label">Surface traitée</div>
+                <div class="info-label">Surface traitée totale</div>
                 <div class="info-value">
-                  {{ chantier.surfaceTraitee ?: '-' }}{% if chantier.surfaceTraitee %} m²{% endif %}
+                  {{ surfaceTotale ?: '-' }}{% if surfaceTotale %} m²{% endif %}
                 </div>
               </div>
             </div>
 
             <div class="col-md-6">
               <div class="info-tile">
-                <div class="info-label">Linéaire traité</div>
+                <div class="info-label">Linéaire traité total</div>
                 <div class="info-value">
-                  {{ chantier.lineaireTraite ?: '-' }}{% if chantier.lineaireTraite %} ml{% endif %}
+                  {{ lineaireTotal ?: '-' }}{% if lineaireTotal %} ml{% endif %}
                 </div>
               </div>
             </div>
 
-            <div class="col-12">
-              <div class="info-tile">
-                <div class="info-label">Nature de la prestation</div>
-                <div class="info-value">{{ chantier.naturePrestation ?: '-' }}</div>
-              </div>
-            </div>
 
             <div class="col-12">
               <div class="info-tile">
@@ -566,43 +574,211 @@
         </div>
       </div>
 
-      <div class="cardx mb-4">
-        <div class="cardx-h">
-          <h5 class="cardx-title">
-            <i class="bi bi-diagram-3 text-warning"></i> Sous-chantiers / parcelles
-          </h5>
-          <span class="badge-soft">{{ chantier.zones|length }} élément(s)</span>
-        </div>
+      {% for z in chantier.zones %}
+        <div class="cardx mb-4">
+          <div class="cardx-h">
+            <h5 class="cardx-title">
+              <i class="bi bi-diagram-3 text-warning"></i>
+              {{ z.nom }}
+            </h5>
+            <span class="badge-soft">Parcelle : {{ z.parcelle ?: '-' }}</span>
+          </div>
 
-        <div class="p-3 p-md-4">
-          {% if chantier.zones|length %}
-            <div class="table-responsive">
-              <table class="table table-premium align-middle">
-                <thead>
-                  <tr>
-                    <th>Ordre</th>
-                    <th>Nom</th>
-                    <th>Parcelle</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for z in chantier.zones %}
+          <div class="p-3 p-md-4">
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <div class="info-tile">
+                  <div class="info-label">Période prévisionnelle</div>
+                  <div class="info-value">
+                    {{ z.dateDebutPrevisionnelle ? z.dateDebutPrevisionnelle|date('d/m/Y H:i') : '-' }}
+                    {% if z.dateFinPrevisionnelle %}
+                      → {{ z.dateFinPrevisionnelle|date('d/m/Y H:i') }}
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="info-tile">
+                  <div class="info-label">Période réelle</div>
+                  <div class="info-value">
+                    {{ z.dateDebutReelle ? z.dateDebutReelle|date('d/m/Y H:i') : '-' }}
+                    {% if z.dateFinReelle %}
+                      → {{ z.dateFinReelle|date('d/m/Y H:i') }}
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="info-tile">
+                  <div class="info-label">Surface traitée</div>
+                  <div class="info-value">{{ z.surfaceTraitee ?: '-' }}{% if z.surfaceTraitee %} m²{% endif %}</div>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="info-tile">
+                  <div class="info-label">Linéaire traité</div>
+                  <div class="info-value">{{ z.lineaireTraite ?: '-' }}{% if z.lineaireTraite %} ml{% endif %}</div>
+                </div>
+              </div>
+
+              <div class="col-12">
+                <div class="info-tile">
+                  <div class="info-label">Nature de la prestation</div>
+                  <div class="info-value">{{ z.naturePrestation ?: '-' }}</div>
+                </div>
+              </div>
+
+              <div class="col-12">
+                <div class="info-tile">
+                  <div class="info-label">Difficultés rencontrées</div>
+                  <div class="info-value">{{ z.difficultesRencontrees ?: '-' }}</div>
+                </div>
+              </div>
+            </div>
+
+            <h6 class="fw-bold mt-4"><i class="bi bi-people text-warning me-1"></i> Moyens humains</h6>
+            {% for r in z.ressourcesHumaines %}
+              <div class="resource-item">
+                <div class="resource-avatar">
+                  {{ r.utilisateur.prenom|default('')|slice(0,1)|upper }}{{ r.utilisateur.nom|default('')|slice(0,1)|upper }}
+                </div>
+                <div>
+                  <div class="fw-bold">{{ r.utilisateur.prenom }} {{ r.utilisateur.nom }}</div>
+                  <div class="small text-muted">{{ r.fonction ?: 'Fonction non renseignée' }}</div>
+                </div>
+              </div>
+            {% else %}
+              <div class="empty-state"><i class="bi bi-person-x"></i> Aucun employé.</div>
+            {% endfor %}
+
+            <h6 class="fw-bold mt-4"><i class="bi bi-truck text-warning me-1"></i> Engins</h6>
+            {% for r in z.ressourcesEngins %}
+              <div class="resource-item">
+                <div class="resource-avatar"><i class="bi bi-truck"></i></div>
+                <div>
+                  <div class="fw-bold">{{ r.engin.nom }}</div>
+                  <div class="small text-muted">{{ r.commentaire ?: 'Aucun commentaire' }}</div>
+                </div>
+              </div>
+            {% else %}
+              <div class="empty-state"><i class="bi bi-truck"></i> Aucun engin.</div>
+            {% endfor %}
+
+            <h6 class="fw-bold mt-4"><i class="bi bi-tools text-warning me-1"></i> Matériel</h6>
+            {% for r in z.ressourcesMateriels %}
+              <div class="resource-item">
+                <div class="resource-avatar"><i class="bi bi-tools"></i></div>
+                <div>
+                  <div class="fw-bold">{{ r.materiel.nom }} × {{ r.quantite ?: 1 }}</div>
+                  <div class="small text-muted">{{ r.commentaire ?: 'Aucun commentaire' }}</div>
+                </div>
+              </div>
+            {% else %}
+              <div class="empty-state"><i class="bi bi-tools"></i> Aucun matériel.</div>
+            {% endfor %}
+
+            <h6 class="fw-bold mt-4"><i class="bi bi-recycle text-warning me-1"></i> Déchets</h6>
+            {% if z.dechets|length %}
+              <div class="table-responsive">
+                <table class="table table-premium align-middle">
+                  <thead>
                     <tr>
-                      <td><span class="badge rounded-pill bg-dark-subtle text-dark">#{{ z.ordre }}</span></td>
-                      <td class="fw-bold">{{ z.nom }}</td>
-                      <td>{{ z.parcelle ?: '-' }}</td>
+                      <th>Type</th>
+                      <th>Quantité</th>
                     </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          {% else %}
-            <div class="empty-state">
-              <i class="bi bi-inbox"></i> Aucun sous-chantier renseigné.
-            </div>
-          {% endif %}
+                  </thead>
+                  <tbody>
+                    {% for d in z.dechets %}
+                      <tr>
+                        <td class="fw-bold">{{ d.typeDechet.nom }}</td>
+                        <td>
+                          <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle">
+                            {{ d.quantite ?: d.poidsTotal ?: '0' }} {{ d.typeDechet.unite }}
+                          </span>
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <div class="empty-state"><i class="bi bi-inbox"></i> Aucun déchet renseigné.</div>
+            {% endif %}
+
+            <h6 class="fw-bold mt-4"><i class="bi bi-images text-warning me-1"></i> Photos</h6>
+            {% if z.photos|length %}
+              <div class="photo-grid">
+                {% for p in z.photos %}
+                  <div class="photo-box">
+                    <div class="d-flex justify-content-between gap-3 flex-wrap mb-3">
+                      <div>
+                        <div class="fw-bold fs-5">{{ p.titre ?: 'Photo' }}</div>
+                        {% if p.commentaire %}
+                          <div class="small text-muted">{{ p.commentaire }}</div>
+                        {% endif %}
+                      </div>
+                      <span class="badge-soft">
+                        <i class="bi bi-sort-numeric-down"></i> Ordre {{ p.ordre }}
+                      </span>
+                    </div>
+
+                    <div class="photo-pair">
+                      <div class="photo-frame">
+                        <span class="photo-tag"><i class="bi bi-camera"></i> Avant</span>
+
+                        {% if p.photoAvant %}
+                          <img src="{{ asset('uploads/photos/chantiers/' ~ p.photoAvant) }}" alt="Avant">
+                        {% else %}
+                          <div class="empty-state"><i class="bi bi-image"></i> Photo avant absente.</div>
+                        {% endif %}
+
+                        {% if p.adresseAvant or (p.latitudeAvant and p.longitudeAvant) %}
+                          <div class="location-box">
+                            <i class="bi bi-geo-alt me-1"></i>
+                            {{ p.adresseAvant ?: 'Coordonnées enregistrées' }}
+                            {% if p.latitudeAvant and p.longitudeAvant %}
+                              <br><span>{{ p.latitudeAvant }}, {{ p.longitudeAvant }}</span>
+                            {% endif %}
+                          </div>
+                        {% endif %}
+                      </div>
+
+                      <div class="photo-frame">
+                        <span class="photo-tag after"><i class="bi bi-camera-fill"></i> Après</span>
+
+                        {% if p.photoApres %}
+                          <img src="{{ asset('uploads/photos/chantiers/' ~ p.photoApres) }}" alt="Après">
+                        {% else %}
+                          <div class="empty-state"><i class="bi bi-image"></i> Photo après absente.</div>
+                        {% endif %}
+
+                        {% if p.adresseApres or (p.latitudeApres and p.longitudeApres) %}
+                          <div class="location-box">
+                            <i class="bi bi-geo-alt me-1"></i>
+                            {{ p.adresseApres ?: 'Coordonnées enregistrées' }}
+                            {% if p.latitudeApres and p.longitudeApres %}
+                              <br><span>{{ p.latitudeApres }}, {{ p.longitudeApres }}</span>
+                            {% endif %}
+                          </div>
+                        {% endif %}
+                      </div>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="empty-state"><i class="bi bi-images"></i> Aucune photo pour cette parcelle.</div>
+            {% endif %}
+          </div>
         </div>
-      </div>
+      {% else %}
+        <div class="empty-state">
+          <i class="bi bi-inbox"></i> Aucun sous-chantier renseigné.
+        </div>
+      {% endfor %}
 
       <div class="cardx mb-4">
         <div class="cardx-h">

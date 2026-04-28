@@ -46,6 +46,7 @@ class Dechet
     {
         return $this->entite;
     }
+
     public function setEntite(?Entite $entite): static
     {
         $this->entite = $entite;
@@ -56,6 +57,7 @@ class Dechet
     {
         return $this->createur;
     }
+
     public function setCreateur(?Utilisateur $createur): static
     {
         $this->createur = $createur;
@@ -66,6 +68,7 @@ class Dechet
     {
         return $this->nom;
     }
+
     public function setNom(string $nom): static
     {
         $this->nom = trim($nom);
@@ -76,6 +79,7 @@ class Dechet
     {
         return $this->unite;
     }
+
     public function setUnite(string $unite): static
     {
         $this->unite = trim($unite) ?: 'kg';
@@ -86,6 +90,7 @@ class Dechet
     {
         return $this->dateCreation;
     }
+
     public function setDateCreation(\DateTimeImmutable $dateCreation): static
     {
         $this->dateCreation = $dateCreation;

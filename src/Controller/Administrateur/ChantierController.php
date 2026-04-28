@@ -70,7 +70,8 @@ final class ChantierController extends AbstractController
       1 => 'c.nom',
       2 => 'c.ville',
       3 => 'c.dateDebutPrevisionnelle',
-      4 => 'c.statut',
+      4 => 'c.dateDebutPrevisionnelle',
+      5 => 'c.statut',
     ];
 
     // 🔨 QueryBuilder de base
@@ -86,8 +87,8 @@ final class ChantierController extends AbstractController
     }
 
     if ($semaineFilter !== '') {
-      $qb->andWhere('c.semainePrevisionnelle = :semaine')
-        ->setParameter('semaine', $semaineFilter);
+      $qb->andWhere('WEEK(c.dateDebutPrevisionnelle, 3) = :semaine')
+        ->setParameter('semaine', (int) $semaineFilter);
     }
 
     if ($villeFilter !== '') {
@@ -121,8 +122,8 @@ final class ChantierController extends AbstractController
     }
 
     if ($semaineFilter !== '') {
-      $qbCount->andWhere('c.semainePrevisionnelle = :semaine')
-        ->setParameter('semaine', $semaineFilter);
+      $qbCount->andWhere('WEEK(c.dateDebutPrevisionnelle, 3) = :semaine')
+        ->setParameter('semaine', (int) $semaineFilter);
     }
 
     if ($villeFilter !== '') {
@@ -140,26 +141,29 @@ final class ChantierController extends AbstractController
     foreach ($rows as $chantier) {
       \assert($chantier instanceof Chantier);
 
+      $nbHumains = $chantier->getNbRessourcesHumaines();
+      $nbEngins = $chantier->getNbRessourcesEngins();
+      $nbMateriels = $chantier->getNbRessourcesMateriels();
+
       $data[] = [
         'id' => $chantier->getId(),
         'nom' => $chantier->getNom(),
         'ville' => $chantier->getVille() ?: '—',
         'semaine' => $chantier->getSemainePrevisionnelle() ?: '—',
-        'periode' => ($chantier->getDateDebutPrevisionnelle()?->format('d/m/Y') ?? '—')
+        'periode' => ($chantier->getDateDebutPrevisionnelle()?->format('d/m/Y H:i') ?? '—')
           . ($chantier->getDateFinPrevisionnelle()
-            ? ' → ' . $chantier->getDateFinPrevisionnelle()?->format('d/m/Y')
+            ? ' → ' . $chantier->getDateFinPrevisionnelle()?->format('d/m/Y H:i')
             : ''),
 
         // 🔥 VERSION PREMIUM BADGE
         'statut' => sprintf(
           '<span class="badge-soft %s">%s</span>',
-          match ($chantier->getStatut()->value ?? $chantier->getStatut()->name ?? '') {
-            'BROUILLON' => 'badge-soft-dark',
-            'PLANIFIE'  => 'badge-soft-primary',
-            'EN_COURS'  => 'badge-soft-warning',
-            'TERMINE'   => 'badge-soft-success',
-            'ANNULE'    => 'badge-soft-danger',
-            default     => 'badge-soft-dark'
+          match ($chantier->getStatut()->value) {
+            'brouillon' => 'badge-soft-dark',
+            'en_cours'  => 'badge-soft-warning',
+            'termine'   => 'badge-soft-success',
+            'archive'   => 'badge-soft-dark',
+            default     => 'badge-soft-dark',
           },
           $chantier->getStatut()->label()
         ),
@@ -167,13 +171,13 @@ final class ChantierController extends AbstractController
         // 🔥 VERSION PREMIUM RESSOURCES
         'ressources' => sprintf(
           '<div class="d-flex justify-content-center gap-1">
-          <span class="badge rounded-pill bg-primary-subtle text-primary border border-primary-subtle">%d H</span>
-          <span class="badge rounded-pill bg-warning-subtle text-warning border border-warning-subtle">%d E</span>
-          <span class="badge rounded-pill bg-dark-subtle text-dark border border-dark-subtle">%d M</span>
-        </div>',
-          $chantier->getRessourcesHumaines()->count(),
-          $chantier->getRessourcesEngins()->count(),
-          $chantier->getRessourcesMateriels()->count()
+            <span class="badge rounded-pill bg-primary-subtle text-primary border border-primary-subtle">%d H</span>
+            <span class="badge rounded-pill bg-warning-subtle text-warning border border-warning-subtle">%d E</span>
+            <span class="badge rounded-pill bg-dark-subtle text-dark border border-dark-subtle">%d M</span>
+          </div>',
+          $nbHumains,
+          $nbEngins,
+          $nbMateriels
         ),
 
         'actions' => $this->renderView('administrateur/chantier/_actions.html.twig', [
@@ -211,81 +215,103 @@ final class ChantierController extends AbstractController
     $form = $this->createForm(ChantierType::class, $chantier, [
       'entite' => $entite,
     ]);
+
     $form->handleRequest($request);
 
     if ($form->isSubmitted() && $form->isValid()) {
-      foreach ($chantier->getDechets() as $dechet) {
-        $type = $dechet->getTypeDechet();
-        if ($type instanceof Dechet && null === $type->getId()) {
-          $type->setEntite($entite);
-          $type->setCreateur($user);
-          $em->persist($type);
+      foreach ($chantier->getZones() as $zone) {
+        foreach ($zone->getDechets() as $chantierDechet) {
+          $type = $chantierDechet->getTypeDechet();
+
+          if ($type instanceof Dechet && null === $type->getId()) {
+            $type->setEntite($entite);
+            $type->setCreateur($user);
+            $em->persist($type);
+          }
         }
       }
 
       $uploadPath = $this->getParameter('chantier_photo_upload_dir');
 
-      foreach ($form->get('photos') as $index => $photoForm) {
-        /** @var ChantierPhoto|null $photoEntity */
-        $photoEntity = $chantier->getPhotos()->get($index);
-        if (!$photoEntity) {
+      $zones = array_values($chantier->getZones()->toArray());
+
+      foreach ($form->get('zones') as $zoneIndex => $zoneForm) {
+        $zone = $zones[$zoneIndex] ?? null;
+
+        if (!$zone) {
           continue;
         }
 
-        $avantFile = $photoForm->get('avantFile')->getData();
-        if ($avantFile) {
-          $this->photoManager->handleSingleImageUpload(
-            file: $avantFile,
-            setter: fn(string $name) => $photoEntity->setPhotoAvant($name),
-            fileUploader: $this->fileUploader,
-            uploadPath: $uploadPath,
-            sizeW: 1800,
-            sizeH: 1200,
-            oldFilename: $photoEntity->getPhotoAvant()
-          );
+        if (!$zoneForm->has('photos')) {
+          continue;
         }
 
-        $apresFile = $photoForm->get('apresFile')->getData();
-        if ($apresFile) {
-          $this->photoManager->handleSingleImageUpload(
-            file: $apresFile,
-            setter: fn(string $name) => $photoEntity->setPhotoApres($name),
-            fileUploader: $this->fileUploader,
-            uploadPath: $uploadPath,
-            sizeW: 1800,
-            sizeH: 1200,
-            oldFilename: $photoEntity->getPhotoApres()
-          );
-        }
+        $photos = array_values($zone->getPhotos()->toArray());
 
-        if (!$photoEntity->getLatitudeAvant() || !$photoEntity->getLongitudeAvant()) {
-          if ($photoEntity->getPhotoAvant()) {
-            $absoluteAvant = rtrim($uploadPath, '/') . '/' . $photoEntity->getPhotoAvant();
-            $gpsAvant = $this->photoGpsExtractor->extractFromFile($absoluteAvant);
+        foreach ($zoneForm->get('photos') as $photoIndex => $photoForm) {
+          $photoEntity = $photos[$photoIndex] ?? null;
 
-            if ($gpsAvant) {
-              $photoEntity->setLatitudeAvant($gpsAvant['latitude']);
-              $photoEntity->setLongitudeAvant($gpsAvant['longitude']);
-              $photoEntity->setSourceLocalisationAvant('exif');
-            }
+          if (!$photoEntity) {
+            continue;
           }
-        } elseif (!$photoEntity->getSourceLocalisationAvant()) {
-          $photoEntity->setSourceLocalisationAvant('manuel');
-        }
 
-        if (!$photoEntity->getLatitudeApres() || !$photoEntity->getLongitudeApres()) {
-          if ($photoEntity->getPhotoApres()) {
-            $absoluteApres = rtrim($uploadPath, '/') . '/' . $photoEntity->getPhotoApres();
-            $gpsApres = $this->photoGpsExtractor->extractFromFile($absoluteApres);
+          $avantFile = $photoForm->get('avantFile')->getData();
 
-            if ($gpsApres) {
-              $photoEntity->setLatitudeApres($gpsApres['latitude']);
-              $photoEntity->setLongitudeApres($gpsApres['longitude']);
-              $photoEntity->setSourceLocalisationApres('exif');
-            }
+          if ($avantFile) {
+            $this->photoManager->handleSingleImageUpload(
+              file: $avantFile,
+              setter: fn(string $name) => $photoEntity->setPhotoAvant($name),
+              fileUploader: $this->fileUploader,
+              uploadPath: $uploadPath,
+              sizeW: 1800,
+              sizeH: 1200,
+              oldFilename: $photoEntity->getPhotoAvant()
+            );
           }
-        } elseif (!$photoEntity->getSourceLocalisationApres()) {
-          $photoEntity->setSourceLocalisationApres('manuel');
+
+          $apresFile = $photoForm->get('apresFile')->getData();
+
+          if ($apresFile) {
+            $this->photoManager->handleSingleImageUpload(
+              file: $apresFile,
+              setter: fn(string $name) => $photoEntity->setPhotoApres($name),
+              fileUploader: $this->fileUploader,
+              uploadPath: $uploadPath,
+              sizeW: 1800,
+              sizeH: 1200,
+              oldFilename: $photoEntity->getPhotoApres()
+            );
+          }
+
+          if (!$photoEntity->getLatitudeAvant() || !$photoEntity->getLongitudeAvant()) {
+            if ($photoEntity->getPhotoAvant()) {
+              $absoluteAvant = rtrim($uploadPath, '/') . '/' . $photoEntity->getPhotoAvant();
+              $gpsAvant = $this->photoGpsExtractor->extractFromFile($absoluteAvant);
+
+              if ($gpsAvant) {
+                $photoEntity->setLatitudeAvant($gpsAvant['latitude']);
+                $photoEntity->setLongitudeAvant($gpsAvant['longitude']);
+                $photoEntity->setSourceLocalisationAvant('exif');
+              }
+            }
+          } elseif (!$photoEntity->getSourceLocalisationAvant()) {
+            $photoEntity->setSourceLocalisationAvant('manuel');
+          }
+
+          if (!$photoEntity->getLatitudeApres() || !$photoEntity->getLongitudeApres()) {
+            if ($photoEntity->getPhotoApres()) {
+              $absoluteApres = rtrim($uploadPath, '/') . '/' . $photoEntity->getPhotoApres();
+              $gpsApres = $this->photoGpsExtractor->extractFromFile($absoluteApres);
+
+              if ($gpsApres) {
+                $photoEntity->setLatitudeApres($gpsApres['latitude']);
+                $photoEntity->setLongitudeApres($gpsApres['longitude']);
+                $photoEntity->setSourceLocalisationApres('exif');
+              }
+            }
+          } elseif (!$photoEntity->getSourceLocalisationApres()) {
+            $photoEntity->setSourceLocalisationApres('manuel');
+          }
         }
       }
 

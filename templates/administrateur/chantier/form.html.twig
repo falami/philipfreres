@@ -500,6 +500,28 @@
     .collection-item.sortable-chosen{
       box-shadow: 0 18px 45px rgba(15,23,42,.16);
     }
+
+    .input-unit .form-control{
+      border-top-right-radius: 0 !important;
+      border-bottom-right-radius: 0 !important;
+    }
+
+    .input-unit .unit-suffix{
+      border-top-left-radius: 0 !important;
+      border-bottom-left-radius: 0 !important;
+      font-weight: 900;
+      letter-spacing: .02em;
+      color: var(--theme-color-principal);
+      border-color: var(--stroke);
+      min-width: 54px;
+      justify-content: center;
+      border: 1px solid var(--stroke);
+      background:
+        linear-gradient(180deg,
+          color-mix(in srgb, var(--theme-color-secondaire) 12%, #fff),
+          #fff
+        );
+    }
   </style>
 {% endblock %}
 
@@ -516,12 +538,7 @@
 {% block body %}
 
   {% set collections = {
-    'zones': {'label':'Sous-chantiers / parcelles', 'icon':'bi-diagram-3', 'btn':'Ajouter un sous-chantier', 'chip':'Parcelles'},
-    'ressourcesHumaines': {'label':'Ressources humaines', 'icon':'bi-people', 'btn':'Ajouter une ressource humaine', 'chip':'Équipe', 'quick':'utilisateur'},
-    'ressourcesEngins': {'label':'Ressources engins', 'icon':'bi-truck', 'btn':'Ajouter un engin', 'chip':'Engins', 'quick':'engin'},
-    'ressourcesMateriels': {'label':'Ressources matériel', 'icon':'bi-tools', 'btn':'Ajouter un matériel', 'chip':'Matériel', 'quick':'materiel'},
-    'dechets': {'label':'Déchets', 'icon':'bi-recycle', 'btn':'Ajouter un déchet', 'chip':'Suivi', 'quick':'dechet'},
-    'photos': {'label':'Photos avant / après', 'icon':'bi-images', 'btn':'Ajouter une paire de photos', 'chip':'Photos'}
+    'zones': {'label':'Sous-chantiers / parcelles', 'icon':'bi-diagram-3', 'btn':'Ajouter un sous-chantier', 'chip':'Parcelles'}
   } %}
 
   <div class="hero p-3 mb-4 d-flex gap-3">
@@ -593,7 +610,6 @@
             <div class="col-md-4">{{ form_row(form.codePostal) }}</div>
             <div class="col-md-8">{{ form_row(form.ville) }}</div>
 
-            <div class="col-12">{{ form_row(form.naturePrestation) }}</div>
           </div>
         </div>
       </div>
@@ -606,14 +622,33 @@
 
         <div class="p-3 p-md-4">
           <div class="row g-3">
-            <div class="col-md-6">{{ form_row(form.dateDebutPrevisionnelle) }}</div>
-            <div class="col-md-6">{{ form_row(form.dateFinPrevisionnelle) }}</div>
+            <div class="col-md-6">
+              {{ form_row(form.dateDebutPrevisionnelle) }}
+              <div class="form-text fw-semibold" id="week-dateDebutPrevisionnelle">
+                Semaine : -
+              </div>
+            </div>
 
-            <div class="col-md-6">{{ form_row(form.dateDebutReelle) }}</div>
-            <div class="col-md-6">{{ form_row(form.dateFinReelle) }}</div>
+            <div class="col-md-6">
+              {{ form_row(form.dateFinPrevisionnelle) }}
+              <div class="form-text fw-semibold" id="week-dateFinPrevisionnelle">
+                Semaine : -
+              </div>
+            </div>
 
-            <div class="col-md-6">{{ form_row(form.surfaceTraitee) }}</div>
-            <div class="col-md-6">{{ form_row(form.lineaireTraite) }}</div>
+            <div class="col-md-6">
+              {{ form_row(form.dateDebutReelle) }}
+              <div class="form-text fw-semibold" id="week-dateDebutReelle">
+                Semaine : -
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              {{ form_row(form.dateFinReelle) }}
+              <div class="form-text fw-semibold" id="week-dateFinReelle">
+                Semaine : -
+              </div>
+            </div>
 
             <div class="col-12">{{ form_row(form.difficultesRencontrees) }}</div>
           </div>
@@ -625,48 +660,35 @@
           <div class="cardx-h">
             <div class="d-flex align-items-center gap-2 flex-wrap">
               <h5 class="cardx-title mb-0">
-                <i class="bi {{ meta.icon }} text-warning"></i> {{ meta.label }}
+                <i class="bi bi-diagram-3 text-warning"></i> Sous-chantiers / parcelles
               </h5>
-              <span class="chip">{{ meta.chip }}</span>
+              <span class="chip">Parcelles</span>
             </div>
 
-            <div class="d-flex align-items-center gap-2">
-              <button type="button"
-                      class="btn btn-warning btn-sm add-collection-item"
-                      data-collection-holder="#{{ fieldName }}-holder">
-                <i class="bi bi-plus-circle me-1"></i> {{ meta.btn }}
-              </button>
-
-              {% if meta.quick is defined %}
-                <button type="button"
-                        class="btn btn-outline-warning btn-sm rounded-circle js-open-quick-resource"
-                        data-kind="{{ meta.quick }}"
-                        title="Créer une ressource à la volée">
-                  <i class="bi bi-plus-lg"></i>
-                </button>
-              {% endif %}
-            </div>
+            <button type="button"
+                    class="btn btn-warning btn-sm add-collection-item"
+                    data-collection-holder="#zones-holder">
+              <i class="bi bi-plus-circle me-1"></i> Ajouter un sous-chantier
+            </button>
           </div>
 
           <div class="p-3 p-md-4">
-            <div id="{{ fieldName }}-holder"
-                 class="collection-holder"
-                 data-index="{{ attribute(form, fieldName)|length }}"
-                 data-prototype="{% if fieldName == 'photos' %}{{ include('administrateur/chantier/_photo_item.html.twig', { row: attribute(form, fieldName).vars.prototype })|e('html_attr') }}{% else %}{{ form_widget(attribute(form, fieldName).vars.prototype)|e('html_attr') }}{% endif %}">
-              {% for row in attribute(form, fieldName) %}
-                <div class="collection-item">
+            <div id="zones-holder"
+                class="collection-holder"
+                data-prototype-name="__zone__"
+                data-prototype="{{ include('administrateur/chantier/_zone_item.html.twig', { row: form.zones.vars.prototype })|e('html_attr') }}">
+
+              {% for zoneForm in form.zones %}
+                <div class="collection-item zone-item">
                   <button type="button" class="btn btn-outline-danger btn-sm remove-collection-item">
                     <i class="bi bi-trash"></i>
                   </button>
-                  {% if fieldName == 'photos' %}
-                    {% include 'administrateur/chantier/_photo_item.html.twig' with { row: row } %}
-                  {% else %}
-                    {{ form_widget(row) }}
-                  {% endif %}
+
+                  {% include 'administrateur/chantier/_zone_item.html.twig' with { row: zoneForm } %}
                 </div>
               {% else %}
                 <div class="collection-empty empty-placeholder">
-                  <i class="bi bi-inbox me-1"></i> Aucun élément ajouté pour le moment.
+                  <i class="bi bi-inbox me-1"></i> Aucun sous-chantier ajouté pour le moment.
                 </div>
               {% endfor %}
             </div>
@@ -683,6 +705,21 @@
         </button>
       </div>
     </div>
+
+
+    {% set totalRh = 0 %}
+    {% set totalEngins = 0 %}
+    {% set totalMateriels = 0 %}
+    {% set totalDechets = 0 %}
+    {% set totalPhotos = 0 %}
+
+    {% for zone in chantier.zones %}
+      {% set totalRh = totalRh + zone.ressourcesHumaines|length %}
+      {% set totalEngins = totalEngins + zone.ressourcesEngins|length %}
+      {% set totalMateriels = totalMateriels + zone.ressourcesMateriels|length %}
+      {% set totalDechets = totalDechets + zone.dechets|length %}
+      {% set totalPhotos = totalPhotos + zone.photos|length %}
+    {% endfor %}
 
     <div class="col-lg-4">
 
@@ -721,23 +758,23 @@
             </div>
             <div class="resume-line">
               <span class="text-muted">Ressources humaines</span>
-              <span class="fw-semibold text-end" id="resume-rh">{{ chantier.ressourcesHumaines|length }}</span>
+              <span class="fw-semibold text-end" id="resume-rh">{{ totalRh }}</span>
             </div>
             <div class="resume-line">
               <span class="text-muted">Engins</span>
-              <span class="fw-semibold text-end" id="resume-engins">{{ chantier.ressourcesEngins|length }}</span>
+              <span class="fw-semibold text-end" id="resume-engins">{{ totalEngins}}</span>
             </div>
             <div class="resume-line">
               <span class="text-muted">Matériel</span>
-              <span class="fw-semibold text-end" id="resume-materiels">{{ chantier.ressourcesMateriels|length }}</span>
+              <span class="fw-semibold text-end" id="resume-materiels">{{ totalMateriels }}</span>
             </div>
             <div class="resume-line">
               <span class="text-muted">Déchets</span>
-              <span class="fw-semibold text-end" id="resume-dechets">{{ chantier.dechets|length }}</span>
+              <span class="fw-semibold text-end" id="resume-dechets">{{ totalDechets }}</span>
             </div>
             <div class="resume-line">
               <span class="text-muted">Photos</span>
-              <span class="fw-semibold text-end" id="resume-photos">{{ chantier.photos|length }}</span>
+              <span class="fw-semibold text-end" id="resume-photos">{{ totalPhotos }}</span>
             </div>
           </div>
 
@@ -968,17 +1005,78 @@
         });
       }
 
+      function getIsoWeek(date) {
+        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+        const dayNum = d.getUTCDay() || 7;
+
+        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+
+        return {
+          week: weekNo,
+          year: d.getUTCFullYear()
+        };
+      }
+
+      function updateWeekLabel(input) {
+        const targetId = input.dataset.weekTarget;
+        if (!targetId) return;
+
+        const target = document.getElementById(targetId);
+        if (!target) return;
+
+        let date = null;
+
+        if (input._flatpickr && input._flatpickr.selectedDates.length) {
+          date = input._flatpickr.selectedDates[0];
+        } else if (input.value) {
+          date = new Date(input.value);
+        }
+
+        if (!date || Number.isNaN(date.getTime())) {
+          target.textContent = 'Semaine : -';
+          return;
+        }
+
+        const iso = getIsoWeek(date);
+        target.textContent = `Semaine : S${String(iso.week).padStart(2, '0')} - ${iso.year}`;
+      }
+
       function initFlatpickr(scope = document) {
         if (!window.flatpickr) return;
 
-        const selectors = [
-          'input[type="date"]',
-          '.js-datepicker',
-          '[data-flatpickr]'
-        ];
-
-        scope.querySelectorAll(selectors.join(',')).forEach(el => {
+        scope.querySelectorAll('.js-datetime').forEach(el => {
           if (el._flatpickr) return;
+
+          const isEndDate =
+            el.name?.includes('dateFinPrevisionnelle') ||
+            el.name?.includes('dateFinReelle');
+
+          const defaultHour = isEndDate ? 17 : 8;
+
+          flatpickr(el, {
+            enableTime: true,
+            time_24hr: true,
+            minuteIncrement: 15,
+            defaultHour: defaultHour,
+            defaultMinute: 0,
+            dateFormat: 'Y-m-d H:i',
+            altInput: true,
+            altFormat: 'd/m/Y H:i',
+            allowInput: true,
+            locale: 'fr',
+            onReady: () => updateWeekLabel(el),
+            onChange: () => updateWeekLabel(el),
+            onValueUpdate: () => updateWeekLabel(el),
+          });
+
+          updateWeekLabel(el);
+        });
+
+        scope.querySelectorAll('input[type="date"], .js-datepicker, [data-flatpickr]').forEach(el => {
+          if (el._flatpickr || el.classList.contains('js-datetime')) return;
 
           flatpickr(el, {
             dateFormat: 'Y-m-d',
@@ -1039,8 +1137,10 @@
               target.value = source.value;
 
               if (target._flatpickr) {
-                target._flatpickr.setDate(source.value, true);
+                target._flatpickr.setDate(source.value, true, 'Y-m-d H:i');
               }
+
+              updateWeekLabel(target);
             }
           };
 
@@ -1349,38 +1449,40 @@
         });
       }
 
-      document.querySelectorAll('.add-collection-item').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const holder = document.querySelector(btn.dataset.collectionHolder);
-          if (!holder) return;
+      document.addEventListener('click', async (e) => {
+        const btn = e.target.closest('.add-collection-item');
+        if (!btn) return;
 
-          const placeholder = holder.querySelector('.empty-placeholder');
-          if (placeholder) placeholder.remove();
+        const holder = document.querySelector(btn.dataset.collectionHolder);
+        if (!holder) return;
 
-          const index = parseInt(holder.dataset.index || '0', 10);
-          const proto = holder.dataset.prototype.replace(/__name__/g, index);
+        const placeholder = holder.querySelector('.empty-placeholder');
+        if (placeholder) placeholder.remove();
 
-          const item = document.createElement('div');
-          item.className = 'collection-item';
-          item.innerHTML = `
-            <button type="button" class="btn btn-outline-danger btn-sm remove-collection-item">
-              <i class="bi bi-trash"></i>
-            </button>
-            ${proto}
-          `;
+        const index = parseInt(holder.dataset.index || '0', 10);
+        const prototypeName = holder.dataset.prototypeName || '__name__';
+        const proto = holder.dataset.prototype.replaceAll(prototypeName, index);
 
-          holder.appendChild(item);
-          holder.dataset.index = String(index + 1);
+        const item = document.createElement('div');
+        item.className = 'collection-item';
 
-          bindRemoveButtons(item);
-          initWidgets(item);
-          initPhotoUploadUI(item);
-          await initPhotoMaps(item);
+        item.innerHTML = `
+          <button type="button" class="btn btn-outline-danger btn-sm remove-collection-item">
+            <i class="bi bi-trash"></i>
+          </button>
+          ${proto}
+        `;
 
-          initPhotoSortable();
-          updatePhotoOrders();
-          refreshResume();
-        });
+        holder.appendChild(item);
+        holder.dataset.index = String(index + 1);
+
+        bindRemoveButtons(item);
+        initWidgets(item);
+        initPhotoUploadUI(item);
+        await initPhotoMaps(item);
+        initPhotoSortable();
+        updatePhotoOrders();
+        refreshResume();
       });
 
       const fields = {
@@ -1417,12 +1519,12 @@
         if (resume.statut) resume.statut.textContent = selectedText(fields.statut) || '-';
         if (resume.ville) resume.ville.textContent = (fields.ville?.value || '').trim() || '-';
 
-        if (resume.zones) resume.zones.textContent = countItems('#zones-holder');
-        if (resume.rh) resume.rh.textContent = countItems('#ressourcesHumaines-holder');
-        if (resume.engins) resume.engins.textContent = countItems('#ressourcesEngins-holder');
-        if (resume.materiels) resume.materiels.textContent = countItems('#ressourcesMateriels-holder');
-        if (resume.dechets) resume.dechets.textContent = countItems('#dechets-holder');
-        if (resume.photos) resume.photos.textContent = countItems('#photos-holder');
+        if (resume.zones) resume.zones.textContent = document.querySelectorAll('#zones-holder > .collection-item').length;
+        if (resume.rh) resume.rh.textContent = document.querySelectorAll('[id$="-ressourcesHumaines-holder"] .collection-item').length;
+        if (resume.engins) resume.engins.textContent = document.querySelectorAll('[id$="-ressourcesEngins-holder"] .collection-item').length;
+        if (resume.materiels) resume.materiels.textContent = document.querySelectorAll('[id$="-ressourcesMateriels-holder"] .collection-item').length;
+        if (resume.dechets) resume.dechets.textContent = document.querySelectorAll('[id$="-dechets-holder"] .collection-item').length;
+        if (resume.photos) resume.photos.textContent = document.querySelectorAll('[id$="-photos-holder"] .collection-item').length;
 
         const hasNom = !!((fields.nom?.value || '').trim());
         const hasStatut = !!((fields.statut?.value || '').trim());
@@ -1624,8 +1726,11 @@
           });
         }
 
-        document.querySelectorAll('.js-open-quick-resource').forEach(btn => {
-          btn.addEventListener('click', () => openModal(btn.dataset.kind));
+        document.addEventListener('click', (e) => {
+          const btn = e.target.closest('.js-open-quick-resource');
+          if (!btn) return;
+
+          openModal(btn.dataset.kind);
         });
 
         submitBtn?.addEventListener('click', async () => {
@@ -1688,37 +1793,39 @@
 
 
       function updatePhotoOrders() {
-        const holder = document.querySelector('#photos-holder');
-        if (!holder) return;
+        document.querySelectorAll('[id$="-photos-holder"]').forEach(holder => {
+          holder.querySelectorAll('.collection-item').forEach((item, index) => {
+            const ordreInput = item.querySelector('.js-photo-ordre');
 
-        holder.querySelectorAll('.collection-item').forEach((item, index) => {
-          const ordreInput = item.querySelector('.js-photo-ordre');
-          if (ordreInput) {
-            ordreInput.value = index + 1;
-          }
+            if (ordreInput) {
+              ordreInput.value = index + 1;
+            }
+          });
         });
       }
 
       function initPhotoSortable() {
-        const holder = document.querySelector('#photos-holder');
-        if (!holder || !window.Sortable || holder.dataset.sortableInit === '1') return;
-
-        holder.dataset.sortableInit = '1';
-
-        new Sortable(holder, {
-          animation: 180,
-          handle: '.js-photo-drag-handle',
-          draggable: '.collection-item',
-          ghostClass: 'sortable-ghost',
-          chosenClass: 'sortable-chosen',
-          onEnd: () => {
-            initPhotoSortable();
-            updatePhotoOrders();
-            refreshResume();
+        document.querySelectorAll('[id$="-photos-holder"]').forEach(holder => {
+          if (!holder || !window.Sortable || holder.dataset.sortableInit === '1') {
+            return;
           }
-        });
 
-        updatePhotoOrders();
+          holder.dataset.sortableInit = '1';
+
+          new Sortable(holder, {
+            animation: 180,
+            handle: '.js-photo-drag-handle',
+            draggable: '.collection-item',
+            ghostClass: 'sortable-ghost',
+            chosenClass: 'sortable-chosen',
+            onEnd: () => {
+              updatePhotoOrders();
+              refreshResume();
+            }
+          });
+
+          updatePhotoOrders();
+        });
       }
 
 

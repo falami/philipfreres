@@ -3,8 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\ChantierPhotoRepository;
-use Doctrine\ORM\Mapping as ORM;
 use Doctrine\DBAL\Types\Types;
+use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: ChantierPhotoRepository::class)]
 class ChantierPhoto
@@ -16,7 +16,7 @@ class ChantierPhoto
 
     #[ORM\ManyToOne(inversedBy: 'photos')]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
-    private ?Chantier $chantier = null;
+    private ?ChantierZone $zone = null;
 
     #[ORM\Column(length: 180, nullable: true)]
     private ?string $titre = null;
@@ -36,10 +36,10 @@ class ChantierPhoto
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $adresseAvant = null;
 
-    #[ORM\Column(type: 'decimal', precision: 10, scale: 7, nullable: true)]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 7, nullable: true)]
     private ?string $latitudeAvant = null;
 
-    #[ORM\Column(type: 'decimal', precision: 10, scale: 7, nullable: true)]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 7, nullable: true)]
     private ?string $longitudeAvant = null;
 
     #[ORM\Column(length: 20, nullable: true)]
@@ -48,15 +48,14 @@ class ChantierPhoto
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $adresseApres = null;
 
-    #[ORM\Column(type: 'decimal', precision: 10, scale: 7, nullable: true)]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 7, nullable: true)]
     private ?string $latitudeApres = null;
 
-    #[ORM\Column(type: 'decimal', precision: 10, scale: 7, nullable: true)]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 7, nullable: true)]
     private ?string $longitudeApres = null;
 
     #[ORM\Column(length: 20, nullable: true)]
     private ?string $sourceLocalisationApres = null;
-
 
     #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $datePriseVueAvant = null;
@@ -64,21 +63,19 @@ class ChantierPhoto
     #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $datePriseVueApres = null;
 
-
-
     public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function getChantier(): ?Chantier
+    public function getZone(): ?ChantierZone
     {
-        return $this->chantier;
+        return $this->zone;
     }
 
-    public function setChantier(?Chantier $chantier): static
+    public function setZone(?ChantierZone $zone): static
     {
-        $this->chantier = $chantier;
+        $this->zone = $zone;
         return $this;
     }
 
@@ -224,7 +221,6 @@ class ChantierPhoto
         $this->sourceLocalisationApres = $sourceLocalisationApres;
         return $this;
     }
-
 
     public function getDatePriseVueAvant(): ?\DateTimeInterface
     {

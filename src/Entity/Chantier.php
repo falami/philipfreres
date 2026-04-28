@@ -44,29 +44,20 @@ class Chantier
     #[ORM\Column(length: 120, nullable: true)]
     private ?string $ville = null;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
-    private ?string $naturePrestation = null;
-
     #[ORM\Column(enumType: ChantierStatut::class)]
     private ChantierStatut $statut = ChantierStatut::BROUILLON;
 
-    #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $dateDebutPrevisionnelle = null;
 
-    #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $dateFinPrevisionnelle = null;
 
-    #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $dateDebutReelle = null;
 
-    #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $dateFinReelle = null;
-
-    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
-    private ?string $surfaceTraitee = null;
-
-    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
-    private ?string $lineaireTraite = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $difficultesRencontrees = null;
@@ -77,53 +68,14 @@ class Chantier
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $updatedAt = null;
 
-    /**
-     * @var Collection<int, ChantierZone>
-     */
     #[ORM\OneToMany(mappedBy: 'chantier', targetEntity: ChantierZone::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     #[ORM\OrderBy(['ordre' => 'ASC', 'id' => 'ASC'])]
     private Collection $zones;
-
-    /**
-     * @var Collection<int, ChantierRessourceHumaine>
-     */
-    #[ORM\OneToMany(mappedBy: 'chantier', targetEntity: ChantierRessourceHumaine::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
-    private Collection $ressourcesHumaines;
-
-    /**
-     * @var Collection<int, ChantierRessourceEngin>
-     */
-    #[ORM\OneToMany(mappedBy: 'chantier', targetEntity: ChantierRessourceEngin::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
-    private Collection $ressourcesEngins;
-
-    /**
-     * @var Collection<int, ChantierRessourceMateriel>
-     */
-    #[ORM\OneToMany(mappedBy: 'chantier', targetEntity: ChantierRessourceMateriel::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
-    private Collection $ressourcesMateriels;
-
-    /**
-     * @var Collection<int, ChantierDechet>
-     */
-    #[ORM\OneToMany(mappedBy: 'chantier', targetEntity: ChantierDechet::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
-    private Collection $dechets;
-
-    /**
-     * @var Collection<int, ChantierPhoto>
-     */
-    #[ORM\OneToMany(mappedBy: 'chantier', targetEntity: ChantierPhoto::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
-    #[ORM\OrderBy(['ordre' => 'ASC', 'id' => 'ASC'])]
-    private Collection $photos;
 
     public function __construct()
     {
         $this->dateCreation = new \DateTimeImmutable();
         $this->zones = new ArrayCollection();
-        $this->ressourcesHumaines = new ArrayCollection();
-        $this->ressourcesEngins = new ArrayCollection();
-        $this->ressourcesMateriels = new ArrayCollection();
-        $this->dechets = new ArrayCollection();
-        $this->photos = new ArrayCollection();
     }
 
     #[ORM\PrePersist]
@@ -148,6 +100,7 @@ class Chantier
     {
         return $this->entite;
     }
+
     public function setEntite(?Entite $entite): static
     {
         $this->entite = $entite;
@@ -158,6 +111,7 @@ class Chantier
     {
         return $this->createur;
     }
+
     public function setCreateur(?Utilisateur $createur): static
     {
         $this->createur = $createur;
@@ -168,6 +122,7 @@ class Chantier
     {
         return $this->nom;
     }
+
     public function setNom(string $nom): static
     {
         $this->nom = trim($nom);
@@ -178,6 +133,7 @@ class Chantier
     {
         return $this->adresse;
     }
+
     public function setAdresse(?string $adresse): static
     {
         $this->adresse = $adresse;
@@ -188,6 +144,7 @@ class Chantier
     {
         return $this->complement;
     }
+
     public function setComplement(?string $complement): static
     {
         $this->complement = $complement;
@@ -198,6 +155,7 @@ class Chantier
     {
         return $this->codePostal;
     }
+
     public function setCodePostal(?string $codePostal): static
     {
         $this->codePostal = $codePostal;
@@ -208,19 +166,10 @@ class Chantier
     {
         return $this->ville;
     }
+
     public function setVille(?string $ville): static
     {
         $this->ville = $ville;
-        return $this;
-    }
-
-    public function getNaturePrestation(): ?string
-    {
-        return $this->naturePrestation;
-    }
-    public function setNaturePrestation(?string $naturePrestation): static
-    {
-        $this->naturePrestation = $naturePrestation;
         return $this;
     }
 
@@ -228,6 +177,7 @@ class Chantier
     {
         return $this->statut;
     }
+
     public function setStatut(ChantierStatut $statut): static
     {
         $this->statut = $statut;
@@ -238,9 +188,10 @@ class Chantier
     {
         return $this->dateDebutPrevisionnelle;
     }
-    public function setDateDebutPrevisionnelle(?\DateTimeInterface $date): static
+
+    public function setDateDebutPrevisionnelle(?\DateTimeInterface $dateDebutPrevisionnelle): static
     {
-        $this->dateDebutPrevisionnelle = $date;
+        $this->dateDebutPrevisionnelle = $dateDebutPrevisionnelle;
         return $this;
     }
 
@@ -248,9 +199,10 @@ class Chantier
     {
         return $this->dateFinPrevisionnelle;
     }
-    public function setDateFinPrevisionnelle(?\DateTimeInterface $date): static
+
+    public function setDateFinPrevisionnelle(?\DateTimeInterface $dateFinPrevisionnelle): static
     {
-        $this->dateFinPrevisionnelle = $date;
+        $this->dateFinPrevisionnelle = $dateFinPrevisionnelle;
         return $this;
     }
 
@@ -258,9 +210,10 @@ class Chantier
     {
         return $this->dateDebutReelle;
     }
-    public function setDateDebutReelle(?\DateTimeInterface $date): static
+
+    public function setDateDebutReelle(?\DateTimeInterface $dateDebutReelle): static
     {
-        $this->dateDebutReelle = $date;
+        $this->dateDebutReelle = $dateDebutReelle;
         return $this;
     }
 
@@ -268,29 +221,10 @@ class Chantier
     {
         return $this->dateFinReelle;
     }
-    public function setDateFinReelle(?\DateTimeInterface $date): static
-    {
-        $this->dateFinReelle = $date;
-        return $this;
-    }
 
-    public function getSurfaceTraitee(): ?string
+    public function setDateFinReelle(?\DateTimeInterface $dateFinReelle): static
     {
-        return $this->surfaceTraitee;
-    }
-    public function setSurfaceTraitee(?string $surfaceTraitee): static
-    {
-        $this->surfaceTraitee = $surfaceTraitee;
-        return $this;
-    }
-
-    public function getLineaireTraite(): ?string
-    {
-        return $this->lineaireTraite;
-    }
-    public function setLineaireTraite(?string $lineaireTraite): static
-    {
-        $this->lineaireTraite = $lineaireTraite;
+        $this->dateFinReelle = $dateFinReelle;
         return $this;
     }
 
@@ -298,9 +232,10 @@ class Chantier
     {
         return $this->difficultesRencontrees;
     }
-    public function setDifficultesRencontrees(?string $texte): static
+
+    public function setDifficultesRencontrees(?string $difficultesRencontrees): static
     {
-        $this->difficultesRencontrees = $texte;
+        $this->difficultesRencontrees = $difficultesRencontrees;
         return $this;
     }
 
@@ -308,6 +243,7 @@ class Chantier
     {
         return $this->dateCreation;
     }
+
     public function setDateCreation(\DateTimeImmutable $dateCreation): static
     {
         $this->dateCreation = $dateCreation;
@@ -318,9 +254,34 @@ class Chantier
     {
         return $this->updatedAt;
     }
+
     public function setUpdatedAt(?\DateTimeImmutable $updatedAt): static
     {
         $this->updatedAt = $updatedAt;
+        return $this;
+    }
+
+    public function getZones(): Collection
+    {
+        return $this->zones;
+    }
+
+    public function addZone(ChantierZone $zone): static
+    {
+        if (!$this->zones->contains($zone)) {
+            $this->zones->add($zone);
+            $zone->setChantier($this);
+        }
+
+        return $this;
+    }
+
+    public function removeZone(ChantierZone $zone): static
+    {
+        if ($this->zones->removeElement($zone) && $zone->getChantier() === $this) {
+            $zone->setChantier(null);
+        }
+
         return $this;
     }
 
@@ -355,161 +316,103 @@ class Chantier
         return ((int) $this->dateDebutReelle->diff($this->dateFinReelle)->days) + 1;
     }
 
-    /** @return Collection<int, ChantierZone> */
-    public function getZones(): Collection
+    public function getDureePrevisionnelleHeures(): ?float
     {
-        return $this->zones;
-    }
-    public function addZone(ChantierZone $zone): static
-    {
-        if (!$this->zones->contains($zone)) {
-            $this->zones->add($zone);
-            $zone->setChantier($this);
+        if (!$this->dateDebutPrevisionnelle || !$this->dateFinPrevisionnelle) {
+            return null;
         }
-        return $this;
-    }
-    public function removeZone(ChantierZone $zone): static
-    {
-        if ($this->zones->removeElement($zone) && $zone->getChantier() === $this) {
-            $zone->setChantier(null);
-        }
-        return $this;
+
+        $seconds = $this->dateFinPrevisionnelle->getTimestamp() - $this->dateDebutPrevisionnelle->getTimestamp();
+
+        return $seconds >= 0 ? round($seconds / 3600, 2) : null;
     }
 
-    /** @return Collection<int, ChantierRessourceHumaine> */
-    public function getRessourcesHumaines(): Collection
+    public function getDureeReelleHeures(): ?float
     {
-        return $this->ressourcesHumaines;
-    }
-    public function addRessourceHumaine(ChantierRessourceHumaine $item): static
-    {
-        if (!$this->ressourcesHumaines->contains($item)) {
-            $this->ressourcesHumaines->add($item);
-            $item->setChantier($this);
+        if (!$this->dateDebutReelle || !$this->dateFinReelle) {
+            return null;
         }
-        return $this;
+
+        $seconds = $this->dateFinReelle->getTimestamp() - $this->dateDebutReelle->getTimestamp();
+
+        return $seconds >= 0 ? round($seconds / 3600, 2) : null;
     }
-    public function removeRessourceHumaine(ChantierRessourceHumaine $item): static
+
+    public function getSurfaceTotale(): float
     {
-        if ($this->ressourcesHumaines->removeElement($item) && $item->getChantier() === $this) {
-            $item->setChantier(null);
+        $total = 0.0;
+
+        foreach ($this->zones as $zone) {
+            $total += (float) ($zone->getSurfaceTraitee() ?? 0);
         }
-        return $this;
+
+        return $total;
     }
 
-    /** @return Collection<int, ChantierRessourceEngin> */
-    public function getRessourcesEngins(): Collection
+    public function getLineaireTotal(): float
     {
-        return $this->ressourcesEngins;
-    }
-    public function addRessourceEngin(ChantierRessourceEngin $item): static
-    {
-        if (!$this->ressourcesEngins->contains($item)) {
-            $this->ressourcesEngins->add($item);
-            $item->setChantier($this);
+        $total = 0.0;
+
+        foreach ($this->zones as $zone) {
+            $total += (float) ($zone->getLineaireTraite() ?? 0);
         }
-        return $this;
+
+        return $total;
     }
-    public function removeRessourceEngin(ChantierRessourceEngin $item): static
+
+
+    public function getNbRessourcesHumaines(): int
     {
-        if ($this->ressourcesEngins->removeElement($item) && $item->getChantier() === $this) {
-            $item->setChantier(null);
+        $total = 0;
+
+        foreach ($this->zones as $zone) {
+            $total += $zone->getRessourcesHumaines()->count();
         }
-        return $this;
+
+        return $total;
     }
 
-    /** @return Collection<int, ChantierRessourceMateriel> */
-    public function getRessourcesMateriels(): Collection
+    public function getNbRessourcesEngins(): int
     {
-        return $this->ressourcesMateriels;
-    }
-    public function addRessourceMateriel(ChantierRessourceMateriel $item): static
-    {
-        if (!$this->ressourcesMateriels->contains($item)) {
-            $this->ressourcesMateriels->add($item);
-            $item->setChantier($this);
+        $total = 0;
+
+        foreach ($this->zones as $zone) {
+            $total += $zone->getRessourcesEngins()->count();
         }
-        return $this;
+
+        return $total;
     }
-    public function removeRessourceMateriel(ChantierRessourceMateriel $item): static
+
+    public function getNbRessourcesMateriels(): int
     {
-        if ($this->ressourcesMateriels->removeElement($item) && $item->getChantier() === $this) {
-            $item->setChantier(null);
+        $total = 0;
+
+        foreach ($this->zones as $zone) {
+            $total += $zone->getRessourcesMateriels()->count();
         }
-        return $this;
+
+        return $total;
     }
 
-    /** @return Collection<int, ChantierDechet> */
-    public function getDechets(): Collection
+    public function getNbDechets(): int
     {
-        return $this->dechets;
-    }
-    public function addDechet(ChantierDechet $item): static
-    {
-        if (!$this->dechets->contains($item)) {
-            $this->dechets->add($item);
-            $item->setChantier($this);
+        $total = 0;
+
+        foreach ($this->zones as $zone) {
+            $total += $zone->getDechets()->count();
         }
-        return $this;
+
+        return $total;
     }
-    public function removeDechet(ChantierDechet $item): static
+
+    public function getNbPhotos(): int
     {
-        if ($this->dechets->removeElement($item) && $item->getChantier() === $this) {
-            $item->setChantier(null);
+        $total = 0;
+
+        foreach ($this->zones as $zone) {
+            $total += $zone->getPhotos()->count();
         }
-        return $this;
-    }
 
-    /** @return Collection<int, ChantierPhoto> */
-    public function getPhotos(): Collection
-    {
-        return $this->photos;
-    }
-    public function addPhoto(ChantierPhoto $photo): static
-    {
-        if (!$this->photos->contains($photo)) {
-            $this->photos->add($photo);
-            $photo->setChantier($this);
-        }
-        return $this;
-    }
-    public function removePhoto(ChantierPhoto $photo): static
-    {
-        if ($this->photos->removeElement($photo) && $photo->getChantier() === $this) {
-            $photo->setChantier(null);
-        }
-        return $this;
-    }
-
-    // Alias nécessaires pour Symfony Form / PropertyAccess
-
-    public function addRessourcesHumaine(ChantierRessourceHumaine $item): static
-    {
-        return $this->addRessourceHumaine($item);
-    }
-
-    public function removeRessourcesHumaine(ChantierRessourceHumaine $item): static
-    {
-        return $this->removeRessourceHumaine($item);
-    }
-
-    public function addRessourcesEngin(ChantierRessourceEngin $item): static
-    {
-        return $this->addRessourceEngin($item);
-    }
-
-    public function removeRessourcesEngin(ChantierRessourceEngin $item): static
-    {
-        return $this->removeRessourceEngin($item);
-    }
-
-    public function addRessourcesMateriel(ChantierRessourceMateriel $item): static
-    {
-        return $this->addRessourceMateriel($item);
-    }
-
-    public function removeRessourcesMateriel(ChantierRessourceMateriel $item): static
-    {
-        return $this->removeRessourceMateriel($item);
+        return $total;
     }
 }

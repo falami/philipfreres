@@ -15,7 +15,7 @@ class ChantierRessourceHumaine
 
     #[ORM\ManyToOne(inversedBy: 'ressourcesHumaines')]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
-    private ?Chantier $chantier = null;
+    private ?ChantierZone $zone = null;
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false, onDelete: 'RESTRICT')]
@@ -29,13 +29,14 @@ class ChantierRessourceHumaine
         return $this->id;
     }
 
-    public function getChantier(): ?Chantier
+    public function getZone(): ?ChantierZone
     {
-        return $this->chantier;
+        return $this->zone;
     }
-    public function setChantier(?Chantier $chantier): static
+
+    public function setZone(?ChantierZone $zone): static
     {
-        $this->chantier = $chantier;
+        $this->zone = $zone;
         return $this;
     }
 
@@ -43,6 +44,7 @@ class ChantierRessourceHumaine
     {
         return $this->utilisateur;
     }
+
     public function setUtilisateur(?Utilisateur $utilisateur): static
     {
         $this->utilisateur = $utilisateur;
@@ -53,6 +55,7 @@ class ChantierRessourceHumaine
     {
         return $this->fonction;
     }
+
     public function setFonction(?string $fonction): static
     {
         $this->fonction = $fonction;

@@ -1,0 +1,99 @@
+{# templates/administrateur/chantier/_zone_item.html.twig #}
+
+<div class="zone-block">
+  <div class="row g-3 mb-3">
+    <div class="col-md-6">{{ form_row(row.nom) }}</div>
+    <div class="col-md-4">{{ form_row(row.parcelle) }}</div>
+    <div class="col-md-2">{{ form_row(row.ordre) }}</div>
+
+    <div class="col-12">{{ form_row(row.naturePrestation) }}</div>
+
+    <div class="col-md-6">{{ form_row(row.dateDebutPrevisionnelle) }}</div>
+    <div class="col-md-6">{{ form_row(row.dateFinPrevisionnelle) }}</div>
+    <div class="col-md-6">{{ form_row(row.dateDebutReelle) }}</div>
+    <div class="col-md-6">{{ form_row(row.dateFinReelle) }}</div>
+
+    <div class="col-md-6">
+      {{ form_label(row.surfaceTraitee) }}
+      <div class="input-group input-unit">
+        {{ form_widget(row.surfaceTraitee) }}
+        <span class="input-group-text unit-suffix">m²</span>
+      </div>
+      {{ form_errors(row.surfaceTraitee) }}
+    </div>
+
+    <div class="col-md-6">
+      {{ form_label(row.lineaireTraite) }}
+      <div class="input-group input-unit">
+        {{ form_widget(row.lineaireTraite) }}
+        <span class="input-group-text unit-suffix">ml</span>
+      </div>
+      {{ form_errors(row.lineaireTraite) }}
+    </div>
+
+    <div class="col-12">{{ form_row(row.difficultesRencontrees) }}</div>
+  </div>
+
+  {% set nestedCollections = {
+    'ressourcesHumaines': {'label':'Moyens humains', 'icon':'bi-people', 'btn':'Ajouter une ressource humaine', 'quick':'utilisateur'},
+    'ressourcesEngins': {'label':'Engins utilisés', 'icon':'bi-truck', 'btn':'Ajouter un engin', 'quick':'engin'},
+    'ressourcesMateriels': {'label':'Matériel utilisé', 'icon':'bi-tools', 'btn':'Ajouter un matériel', 'quick':'materiel'},
+    'dechets': {'label':'Déchets ramassés', 'icon':'bi-recycle', 'btn':'Ajouter un déchet', 'quick':'dechet'},
+    'photos': {'label':'Photos avant / après', 'icon':'bi-images', 'btn':'Ajouter une paire de photos'}
+  } %}
+
+  {% for fieldName, meta in nestedCollections %}
+    <div class="nested-section mt-3">
+      <div class="d-flex justify-content-between align-items-center gap-2 mb-2 flex-wrap">
+        <div class="fw-bold">
+          <i class="bi {{ meta.icon }} text-warning me-1"></i> {{ meta.label }}
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="button"
+                  class="btn btn-warning btn-sm add-collection-item"
+                  data-collection-holder="#{{ row.vars.id }}-{{ fieldName }}-holder">
+            <i class="bi bi-plus-circle me-1"></i> {{ meta.btn }}
+          </button>
+
+          {% if meta.quick is defined %}
+            <button type="button"
+                    class="btn btn-outline-warning btn-sm rounded-circle js-open-quick-resource"
+                    data-kind="{{ meta.quick }}">
+              <i class="bi bi-plus-lg"></i>
+            </button>
+          {% endif %}
+        </div>
+      </div>
+
+      <div id="{{ row.vars.id }}-{{ fieldName }}-holder"
+        class="collection-holder nested-holder"
+        data-index="{{ attribute(row, fieldName)|length }}"
+        data-prototype-name="{{ attribute(row, fieldName).vars.prototype.vars.name }}"
+        data-prototype="{% if fieldName == 'photos' %}
+          {{ include('administrateur/chantier/_photo_item.html.twig', { row: attribute(row, fieldName).vars.prototype })|e('html_attr') }}
+        {% else %}
+          {{ form_widget(attribute(row, fieldName).vars.prototype)|e('html_attr') }}
+        {% endif %}">
+
+        {% for child in attribute(row, fieldName) %}
+          <div class="collection-item">
+            <button type="button" class="btn btn-outline-danger btn-sm remove-collection-item">
+              <i class="bi bi-trash"></i>
+            </button>
+
+            {% if fieldName == 'photos' %}
+              {% include 'administrateur/chantier/_photo_item.html.twig' with { row: child } %}
+            {% else %}
+              {{ form_widget(child) }}
+            {% endif %}
+          </div>
+        {% else %}
+          <div class="collection-empty empty-placeholder">
+            <i class="bi bi-inbox me-1"></i> Aucun élément.
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+</div>

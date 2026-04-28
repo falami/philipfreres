@@ -16,27 +16,28 @@ class ChantierDechet
 
     #[ORM\ManyToOne(inversedBy: 'dechets')]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
-    private ?Chantier $chantier = null;
+    private ?ChantierZone $zone = null;
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false, onDelete: 'RESTRICT')]
     private ?Dechet $typeDechet = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
-    private ?string $poidsTotal = null;
+    private ?string $quantite = null;
 
     public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function getChantier(): ?Chantier
+    public function getZone(): ?ChantierZone
     {
-        return $this->chantier;
+        return $this->zone;
     }
-    public function setChantier(?Chantier $chantier): static
+
+    public function setZone(?ChantierZone $zone): static
     {
-        $this->chantier = $chantier;
+        $this->zone = $zone;
         return $this;
     }
 
@@ -44,19 +45,32 @@ class ChantierDechet
     {
         return $this->typeDechet;
     }
+
     public function setTypeDechet(?Dechet $typeDechet): static
     {
         $this->typeDechet = $typeDechet;
         return $this;
     }
 
+    public function getQuantite(): ?string
+    {
+        return $this->quantite;
+    }
+
+    public function setQuantite(?string $quantite): static
+    {
+        $this->quantite = $quantite;
+        return $this;
+    }
+
     public function getPoidsTotal(): ?string
     {
-        return $this->poidsTotal;
+        return $this->quantite;
     }
+
     public function setPoidsTotal(?string $poidsTotal): static
     {
-        $this->poidsTotal = $poidsTotal;
+        $this->quantite = $poidsTotal;
         return $this;
     }
 }

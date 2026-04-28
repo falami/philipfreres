@@ -1,3 +1,5 @@
+{# templates/administrateur/chantier/_photo_item.html.twig #}
+
 <div class="row g-3 js-photo-item">
   {{ form_widget(row.ordre) }}
 
@@ -29,7 +31,9 @@
             {{ form_widget(row.avantFile) }}
 
             <div class="photo-dropzone__inner">
-              <div class="photo-dropzone__icon"><i class="bi bi-cloud-arrow-up"></i></div>
+              <div class="photo-dropzone__icon">
+                <i class="bi bi-cloud-arrow-up"></i>
+              </div>
               <div class="photo-dropzone__title">Glisser-déposer la photo avant</div>
               <div class="photo-dropzone__hint">ou cliquer pour sélectionner un fichier</div>
             </div>
@@ -56,11 +60,17 @@
             <div class="row g-2 mt-1">
               <div class="col-6">
                 <label class="form-label">Latitude</label>
-                <input type="text" class="form-control js-photo-lat-visible-avant" placeholder="Latitude">
+                <input type="text"
+                       class="form-control js-photo-lat-visible-avant"
+                       value="{{ row.latitudeAvant.vars.value }}"
+                       placeholder="Latitude">
               </div>
               <div class="col-6">
                 <label class="form-label">Longitude</label>
-                <input type="text" class="form-control js-photo-lng-visible-avant" placeholder="Longitude">
+                <input type="text"
+                       class="form-control js-photo-lng-visible-avant"
+                       value="{{ row.longitudeAvant.vars.value }}"
+                       placeholder="Longitude">
               </div>
             </div>
 
@@ -95,7 +105,9 @@
             {{ form_widget(row.apresFile) }}
 
             <div class="photo-dropzone__inner">
-              <div class="photo-dropzone__icon"><i class="bi bi-cloud-arrow-up"></i></div>
+              <div class="photo-dropzone__icon">
+                <i class="bi bi-cloud-arrow-up"></i>
+              </div>
               <div class="photo-dropzone__title">Glisser-déposer la photo après</div>
               <div class="photo-dropzone__hint">ou cliquer pour sélectionner un fichier</div>
             </div>
@@ -122,11 +134,17 @@
             <div class="row g-2 mt-1">
               <div class="col-6">
                 <label class="form-label">Latitude</label>
-                <input type="text" class="form-control js-photo-lat-visible-apres" placeholder="Latitude">
+                <input type="text"
+                       class="form-control js-photo-lat-visible-apres"
+                       value="{{ row.latitudeApres.vars.value }}"
+                       placeholder="Latitude">
               </div>
               <div class="col-6">
                 <label class="form-label">Longitude</label>
-                <input type="text" class="form-control js-photo-lng-visible-apres" placeholder="Longitude">
+                <input type="text"
+                       class="form-control js-photo-lng-visible-apres"
+                       value="{{ row.longitudeApres.vars.value }}"
+                       placeholder="Longitude">
               </div>
             </div>
 
@@ -151,5 +169,7 @@
     </div>
   </div>
 
-  <div class="col-12">{{ form_row(row.commentaire) }}</div>
+  <div class="col-12">
+    {{ form_row(row.commentaire) }}
+  </div>
 </div>

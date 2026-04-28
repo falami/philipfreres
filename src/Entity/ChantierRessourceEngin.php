@@ -15,7 +15,7 @@ class ChantierRessourceEngin
 
     #[ORM\ManyToOne(inversedBy: 'ressourcesEngins')]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
-    private ?Chantier $chantier = null;
+    private ?ChantierZone $zone = null;
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false, onDelete: 'RESTRICT')]
@@ -29,13 +29,14 @@ class ChantierRessourceEngin
         return $this->id;
     }
 
-    public function getChantier(): ?Chantier
+    public function getZone(): ?ChantierZone
     {
-        return $this->chantier;
+        return $this->zone;
     }
-    public function setChantier(?Chantier $chantier): static
+
+    public function setZone(?ChantierZone $zone): static
     {
-        $this->chantier = $chantier;
+        $this->zone = $zone;
         return $this;
     }
 
@@ -43,6 +44,7 @@ class ChantierRessourceEngin
     {
         return $this->engin;
     }
+
     public function setEngin(?Engin $engin): static
     {
         $this->engin = $engin;
@@ -53,6 +55,7 @@ class ChantierRessourceEngin
     {
         return $this->commentaire;
     }
+
     public function setCommentaire(?string $commentaire): static
     {
         $this->commentaire = $commentaire;
