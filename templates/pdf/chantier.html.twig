@@ -208,6 +208,20 @@
       text-transform: uppercase;
       font-size: 8px;
     }
+
+    .map-cell {
+      height: 150px;
+      background: {{ light }};
+      text-align: center;
+      vertical-align: middle;
+      border: 1px solid {{ border }};
+    }
+
+    .map-cell img {
+      max-width: 95%;
+      max-height: 140px;
+      border: 1px solid {{ border }};
+    }
   </style>
 </head>
 <body>
@@ -477,14 +491,39 @@
           <td class="photo-meta">
             <strong>Date :</strong> {{ p.datePriseVueAvant ? p.datePriseVueAvant|date('d/m/Y') : '-' }}<br>
             <strong>Adresse :</strong> {{ p.adresseAvant ?: '-' }}<br>
-            <strong>GPS :</strong> {{ p.latitudeAvant ? p.latitudeAvant ~ ', ' ~ p.longitudeAvant : '-' }}<br>
+            <strong>GPS :</strong> {{ p.latitudeAvant and p.longitudeAvant ? p.latitudeAvant ~ ', ' ~ p.longitudeAvant : '-' }}<br>
             <strong>Source :</strong> {{ p.sourceLocalisationAvant ?: '-' }}
           </td>
+
           <td class="photo-meta">
             <strong>Date :</strong> {{ p.datePriseVueApres ? p.datePriseVueApres|date('d/m/Y') : '-' }}<br>
             <strong>Adresse :</strong> {{ p.adresseApres ?: '-' }}<br>
-            <strong>GPS :</strong> {{ p.latitudeApres ? p.latitudeApres ~ ', ' ~ p.longitudeApres : '-' }}<br>
+            <strong>GPS :</strong> {{ p.latitudeApres and p.longitudeApres ? p.latitudeApres ~ ', ' ~ p.longitudeApres : '-' }}<br>
             <strong>Source :</strong> {{ p.sourceLocalisationApres ?: '-' }}
+          </td>
+        </tr>
+
+        <tr>
+          <td class="map-cell">
+            {% if p.latitudeAvant and p.longitudeAvant %}
+              <img
+                src="https://staticmap.openstreetmap.de/staticmap.php?center={{ p.latitudeAvant }},{{ p.longitudeAvant }}&zoom=17&size=360x150&maptype=mapnik&markers={{ p.latitudeAvant }},{{ p.longitudeAvant }},red-pushpin"
+                alt="Carte photo avant"
+              >
+            {% else %}
+              <span style="color: #9ca3af;">Carte indisponible</span>
+            {% endif %}
+          </td>
+
+          <td class="map-cell">
+            {% if p.latitudeApres and p.longitudeApres %}
+              <img
+                src="https://staticmap.openstreetmap.de/staticmap.php?center={{ p.latitudeApres }},{{ p.longitudeApres }}&zoom=17&size=360x150&maptype=mapnik&markers={{ p.latitudeApres }},{{ p.longitudeApres }},red-pushpin"
+                alt="Carte photo après"
+              >
+            {% else %}
+              <span style="color: #9ca3af;">Carte indisponible</span>
+            {% endif %}
           </td>
         </tr>
         {% if p.commentaire %}
