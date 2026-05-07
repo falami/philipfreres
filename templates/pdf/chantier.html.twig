@@ -505,22 +505,20 @@
 
         <tr>
           <td class="map-cell">
-            {% if p.latitudeAvant and p.longitudeAvant %}
-              <img
-                src="https://staticmap.openstreetmap.de/staticmap.php?center={{ p.latitudeAvant }},{{ p.longitudeAvant }}&zoom=17&size=360x150&maptype=mapnik&markers={{ p.latitudeAvant }},{{ p.longitudeAvant }},red-pushpin"
-                alt="Carte photo avant"
-              >
+            {% set mapAvant = photoMaps[p.id].avant ?? null %}
+
+            {% if mapAvant %}
+              <img src="{{ mapAvant }}" alt="Carte photo avant">
             {% else %}
               <span style="color: #9ca3af;">Carte indisponible</span>
             {% endif %}
           </td>
 
           <td class="map-cell">
-            {% if p.latitudeApres and p.longitudeApres %}
-              <img
-                src="https://staticmap.openstreetmap.de/staticmap.php?center={{ p.latitudeApres }},{{ p.longitudeApres }}&zoom=17&size=360x150&maptype=mapnik&markers={{ p.latitudeApres }},{{ p.longitudeApres }},red-pushpin"
-                alt="Carte photo après"
-              >
+            {% set mapApres = photoMaps[p.id].apres ?? null %}
+
+            {% if mapApres %}
+              <img src="{{ mapApres }}" alt="Carte photo après">
             {% else %}
               <span style="color: #9ca3af;">Carte indisponible</span>
             {% endif %}

@@ -267,12 +267,6 @@ final class ChantierController extends AbstractController
               sizeH: 1200,
               oldFilename: $photoEntity->getPhotoAvant()
             );
-
-            if ($photoEntity->getPhotoAvant()) {
-              $this->normalizeJpegOrientation(
-                rtrim($uploadPath, '/') . '/' . $photoEntity->getPhotoAvant()
-              );
-            }
           }
 
           $apresFile = $photoForm->get('apresFile')->getData();
@@ -287,12 +281,6 @@ final class ChantierController extends AbstractController
               sizeH: 1200,
               oldFilename: $photoEntity->getPhotoApres()
             );
-
-            if ($photoEntity->getPhotoApres()) {
-              $this->normalizeJpegOrientation(
-                rtrim($uploadPath, '/') . '/' . $photoEntity->getPhotoApres()
-              );
-            }
           }
 
           if (!$photoEntity->getLatitudeAvant() || !$photoEntity->getLongitudeAvant()) {
@@ -577,9 +565,27 @@ final class ChantierController extends AbstractController
       throw $this->createNotFoundException();
     }
 
+    $photoMaps = [];
+
+    foreach ($chantier->getZones() as $zone) {
+      foreach ($zone->getPhotos() as $photo) {
+        $photoMaps[$photo->getId()] = [
+          'avant' => $this->buildStaticMapBase64(
+            $photo->getLatitudeAvant(),
+            $photo->getLongitudeAvant()
+          ),
+          'apres' => $this->buildStaticMapBase64(
+            $photo->getLatitudeApres(),
+            $photo->getLongitudeApres()
+          ),
+        ];
+      }
+    }
+
     $html = $this->renderView('pdf/chantier.html.twig', [
       'entite' => $entite,
       'chantier' => $chantier,
+      'photoMaps' => $photoMaps,
     ]);
 
     return $this->pdfManager->streamPdfFromHtml(
@@ -587,6 +593,75 @@ final class ChantierController extends AbstractController
       sprintf('compte-rendu-chantier-%d.pdf', $chantier->getId()),
       'portrait'
     );
+  }
+
+
+  private function buildStaticMapBase64(?string $lat, ?string $lng): ?string
+  {
+    if (!$lat || !$lng) {
+      return null;
+    }
+
+    $lat = str_replace(',', '.', trim($lat));
+    $lng = str_replace(',', '.', trim($lng));
+
+    $urls = [
+      sprintf(
+        'https://staticmap.openstreetmap.de/staticmap.php?center=%s,%s&zoom=17&size=360x150&maptype=mapnik&markers=%s,%s,red-pushpin',
+        rawurlencode($lat),
+        rawurlencode($lng),
+        rawurlencode($lat),
+        rawurlencode($lng)
+      ),
+      sprintf(
+        'http://staticmap.openstreetmap.de/staticmap.php?center=%s,%s&zoom=17&size=360x150&maptype=mapnik&markers=%s,%s,red-pushpin',
+        rawurlencode($lat),
+        rawurlencode($lng),
+        rawurlencode($lat),
+        rawurlencode($lng)
+      ),
+    ];
+
+    foreach ($urls as $url) {
+      try {
+        $response = $this->httpClient->request('GET', $url, [
+          'headers' => [
+            'User-Agent' => 'Mozilla/5.0 PhilipFreres/1.0',
+            'Accept' => 'image/png,image/jpeg,image/*,*/*',
+          ],
+          'timeout' => 15,
+          'max_redirects' => 5,
+        ]);
+
+        $statusCode = $response->getStatusCode();
+
+        if ($statusCode !== 200) {
+          continue;
+        }
+
+        $content = $response->getContent(false);
+
+        if (!$content || strlen($content) < 1000) {
+          continue;
+        }
+
+        $contentType = $response->getHeaders(false)['content-type'][0] ?? 'image/png';
+
+        if (!str_contains($contentType, 'image')) {
+          continue;
+        }
+
+        if (str_contains($contentType, 'jpeg') || str_contains($contentType, 'jpg')) {
+          return 'data:image/jpeg;base64,' . base64_encode($content);
+        }
+
+        return 'data:image/png;base64,' . base64_encode($content);
+      } catch (\Throwable $e) {
+        continue;
+      }
+    }
+
+    return null;
   }
 
   #[Route('/geocode', name: 'app_administrateur_chantier_geocode', methods: ['GET'])]
@@ -678,56 +753,5 @@ final class ChantierController extends AbstractController
         'message' => 'Erreur lors du reverse geocoding.'
       ], 500);
     }
-  }
-
-
-  private function normalizeJpegOrientation(string $absolutePath): void
-  {
-    if (!is_file($absolutePath)) {
-      return;
-    }
-
-    $mime = mime_content_type($absolutePath);
-
-    if (!in_array($mime, ['image/jpeg', 'image/jpg'], true)) {
-      return;
-    }
-
-    if (!function_exists('exif_read_data') || !function_exists('imagecreatefromjpeg')) {
-      return;
-    }
-
-    $exif = @exif_read_data($absolutePath);
-
-    if (empty($exif['Orientation'])) {
-      return;
-    }
-
-    $image = @imagecreatefromjpeg($absolutePath);
-
-    if (!$image) {
-      return;
-    }
-
-    switch ((int) $exif['Orientation']) {
-      case 3:
-        $image = imagerotate($image, 180, 0);
-        break;
-
-      case 6:
-        $image = imagerotate($image, -90, 0);
-        break;
-
-      case 8:
-        $image = imagerotate($image, 90, 0);
-        break;
-
-      default:
-        imagedestroy($image);
-        return;
-    }
-
-    imagejpeg($image, $absolutePath, 92);
-    imagedestroy($image);
   }
 }
