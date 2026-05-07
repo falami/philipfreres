@@ -631,6 +631,35 @@
     .zone-toggle-btn{
       min-width:0;
     }
+
+
+    .photo-location-box,
+    .photo-card,
+    .collection-item,
+    .zone-collapse {
+      overflow: visible !important;
+    }
+
+    .photo-map {
+      display: block;
+      width: 100%;
+      height: 260px;
+      min-height: 260px;
+      border-radius: 16px;
+      border: 1px solid rgba(15,23,42,.10);
+      overflow: hidden !important;
+      margin-top: .75rem;
+      background: #e5e7eb;
+    }
+
+    .photo-map .leaflet-container {
+      width: 100%;
+      height: 100%;
+    }
+
+    .leaflet-container {
+      z-index: 1;
+    }
   </style>
 {% endblock %}
 
@@ -1315,12 +1344,33 @@
       }
       
       async function initPhotoMaps(scope = document) {
-        const items = [...scope.querySelectorAll('.js-photo-item')];
+        const items = [];
+
+        if (scope.classList && scope.classList.contains('js-photo-item')) {
+          items.push(scope);
+        }
+
+        scope.querySelectorAll?.('.js-photo-item').forEach(item => items.push(item));
 
         for (const item of items) {
           if (item.dataset.mapInit === '1') continue;
 
-          await applyDefaultLocationToPhotoItem(item);
+          const hasSavedAvant =
+            item.querySelector('.js-photo-lat-avant')?.value &&
+            item.querySelector('.js-photo-lng-avant')?.value;
+
+          const hasSavedApres =
+            item.querySelector('.js-photo-lat-apres')?.value &&
+            item.querySelector('.js-photo-lng-apres')?.value;
+
+          const isNewPhoto = item.dataset.newPhoto === '1';
+
+          // ✅ On propose la position navigateur uniquement pour une NOUVELLE photo
+          // ✅ Jamais pour une photo déjà chargée depuis la base
+          if (isNewPhoto && (!hasSavedAvant || !hasSavedApres)) {
+            await applyDefaultLocationToPhotoItem(item);
+          }
+
           item.dataset.mapInit = '1';
 
           const configs = ['avant', 'apres'];
@@ -1375,6 +1425,7 @@
 
               if (center) {
                 map.setView([lat, lng], Math.max(map.getZoom(), 17));
+                setTimeout(() => map.invalidateSize(true), 100);
               }
 
               if (updateAddress && addressInput) {
@@ -1456,10 +1507,28 @@
               }
             });
 
-            setTimeout(() => map.invalidateSize(), 150);
+            function fixMapSize() {
+              setTimeout(() => map.invalidateSize(true), 80);
+              setTimeout(() => map.invalidateSize(true), 250);
+              setTimeout(() => map.invalidateSize(true), 600);
+            }
+
+            fixMapSize();
+
+            mapEl._leafletMap = map;
           }
         }
       }
+
+
+      document.addEventListener('shown.bs.collapse', function (event) {
+        event.target.querySelectorAll('.js-photo-map').forEach(mapEl => {
+          if (mapEl._leafletMap) {
+            setTimeout(() => mapEl._leafletMap.invalidateSize(true), 80);
+            setTimeout(() => mapEl._leafletMap.invalidateSize(true), 250);
+          }
+        });
+      });
 
 
       function initPhotoUploadUI(scope = document) {
@@ -1636,6 +1705,14 @@
           </button>
           ${proto}
         `;
+
+        if (item.classList.contains('js-photo-item')) {
+          item.dataset.newPhoto = '1';
+        }
+
+        item.querySelectorAll('.js-photo-item').forEach(photoItem => {
+          photoItem.dataset.newPhoto = '1';
+        });
 
         holder.appendChild(item);
         holder.dataset.index = String(index + 1);
