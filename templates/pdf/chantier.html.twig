@@ -52,84 +52,268 @@
     .page-break { page-break-before: always; }
     .keep-together { page-break-inside: avoid; }
 
-    {# --- PAGE DE GARDE --- #}
-    .cover {
-      height: 900px;
-      background: {{ primary }};
-      color: #fff;
-      margin: -24px;
-      padding: 40px;
-      position: relative;
-    }
+    {# --- PAGE DE GARDE PREMIUM CORRIGÉE DOMPDF --- #}
+.cover {
+  height: 1042px;
+  margin: -24px -24px -42px -24px;
+  padding: 0;
+  position: relative;
+  background: {{ primary }};
+  color: #fff;
+  overflow: hidden;
+}
 
-    .cover-topline {
-      height: 8px;
-      background: {{ secondary }};
-      margin: -40px -40px 30px -40px;
-    }
+.cover-band {
+  height: 14px;
+  background: {{ secondary }};
+}
 
-    .logo-box {
-      width: 165px;
-      height: 76px;
-      background: #fff;
-      border-radius: 8px;
-      padding: 10px;
-      text-align: center;
-      display: inline-block;
-    }
+.cover-side {
+  position: absolute;
+  top: 14px;
+  left: 0;
+  bottom: 0;
+  width: 72px;
+  background: rgba(0,0,0,.16);
+}
 
-    .logo-box img {
-      max-width: 145px;
-      max-height: 58px;
-    }
+.cover-side-text {
+  position: absolute;
+  left: 18px;
+  bottom: 96px;
+  width: 42px;
+  color: rgba(255,255,255,.45);
+  font-size: 8px;
+  line-height: 1.45;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
 
-    .cover-meta {
-      color: #d1d5db;
-      font-size: 9px;
-      text-transform: uppercase;
-      letter-spacing: .4px;
-      line-height: 1.5;
-    }
+.cover-watermark {
+  position: absolute;
+  right: -120px;
+  top: 240px;
+  font-size: 78px;
+  line-height: .95;
+  font-weight: bold;
+  color: rgba(255,255,255,.035);
+  text-transform: uppercase;
+}
 
-    .cover-title {
-      margin-top: 80px;
-      font-size: 36px;
-      line-height: 1.1;
-      text-transform: uppercase;
-      font-weight: bold;
-    }
+.cover-inner {
+  padding: 50px 54px 0 120px;
+  position: relative;
+  z-index: 2;
+}
 
-    .cover-subtitle {
-      margin-top: 10px;
-      color: {{ secondary }};
-      font-size: 13px;
-      font-weight: bold;
-      text-transform: uppercase;
-    }
+.cover-header-table,
+.cover-kpi-table,
+.cover-footer-table {
+  width: 100%;
+  border-collapse: collapse;
+}
 
-    .cover-name {
-      margin-top: 40px;
-      font-size: 20px;
-      font-weight: bold;
-    }
+.cover-header-table td,
+.cover-kpi-table td,
+.cover-footer-table td {
+  border: 0;
+  padding: 0;
+  vertical-align: top;
+}
 
-    .cover-address {
-      margin-top: 10px;
-      font-size: 11px;
-      color: #e5e7eb;
-      line-height: 1.6;
-    }
+.logo-box {
+  width: 300px;
+  height: 130px;
+  background: #fff;
+  border-radius: 14px;
+  padding: 14px;
+  text-align: center;
+}
 
-    .cover-bottom {
-      position: absolute;
-      left: 40px;
-      right: 40px;
-      bottom: 40px;
-      border-top: 1px solid rgba(255,255,255,.25);
-      padding-top: 15px;
-      color: #d1d5db;
-      font-size: 9px;
-    }
+.logo-box img {
+  max-width: 300px;
+  max-height: 130px;
+}
+
+.logo-fallback {
+  color: {{ primary }};
+  font-size: 18px;
+  font-weight: bold;
+  padding-top: 45px;
+  text-transform: uppercase;
+}
+
+.cover-ref-card {
+  width: 210px;
+  background: rgba(255,255,255,.09);
+  border: 1px solid rgba(255,255,255,.25);
+  padding: 14px 16px;
+  text-align: right;
+  border-radius: 14px;
+}
+
+.cover-ref-label {
+  font-size: 7px;
+  color: #cbd5e1;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.cover-ref-value {
+  font-size: 11px;
+  color: #fff;
+  font-weight: bold;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+
+.cover-status {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 5px 10px;
+  background: #ffffff;
+  color: {{ primary }};
+  font-size: 8px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.cover-category {
+  margin-top: 70px;
+  color: {{ secondary }};
+  font-size: 10px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.cover-title {
+  margin-top: 14px;
+  width: 650px;
+  font-size: 42px;
+  line-height: 1.05;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.cover-title-small {
+  display: block;
+  margin-top: 8px;
+  font-size: 20px;
+  color: #dbeafe;
+  font-weight: normal;
+  letter-spacing: 1px;
+}
+
+.cover-rule {
+  margin-top: 22px;
+  width: 130px;
+  height: 4px;
+  background: {{ secondary }};
+}
+
+.cover-project {
+  margin-top: 34px;
+  width: 580px;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.20);
+  padding: 16px 20px;
+  border-radius: 14px;
+}
+
+.cover-project-label {
+  font-size: 7px;
+  color: #cbd5e1;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.cover-project-name {
+  font-size: 22px;
+  font-weight: bold;
+  line-height: 1.25;
+  color: #fff;
+}
+
+.cover-project-address {
+  margin-top: 10px;
+  font-size: 9px;
+  color: #dbeafe;
+  line-height: 1.5;
+}
+
+.cover-kpi-table {
+  margin-top: 26px;
+  border-collapse: separate;
+  border-spacing: 8px 0;
+}
+
+.cover-kpi-table + .cover-kpi-table {
+  margin-top: 10px;
+}
+
+.cover-kpi-table td {
+  width: 25%;
+  height: 72px;
+  background: rgba(255,255,255,.085);
+  padding: 11px 12px;
+  border-radius: 14px;
+}
+
+.cover-kpi-label {
+  font-size: 6.5px;
+  color: #cbd5e1;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  margin-bottom: 6px;
+}
+
+.cover-kpi-value {
+  font-size: 16px;
+  font-weight: bold;
+  color: #fff;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.cover-signature {
+  position: absolute;
+  left: 120px;
+  right: 54px;
+  bottom: 42px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255,255,255,.22);
+}
+
+.cover-company {
+  font-size: 12px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.cover-contact {
+  margin-top: 4px;
+  font-size: 8px;
+  color: #d1d5db;
+  line-height: 1.45;
+}
+
+.cover-doc-type {
+  text-align: right;
+  font-size: 7px;
+  color: #cbd5e1;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+}
+
+.cover-page-mark {
+  margin-top: 5px;
+  font-size: 16px;
+  color: {{ secondary }};
+  font-weight: bold;
+}
 
     {# --- TITRES ET SECTIONS --- #}
     h2 {
@@ -236,47 +420,144 @@
   </table>
 </div>
 
-{# --- PAGE DE GARDE --- #}
+{# --- PAGE DE GARDE PREMIUM CORRIGÉE --- #}
 <div class="cover">
-  <div class="cover-topline"></div>
+  <div class="cover-band"></div>
 
-  <table class="w-100">
-    <tr>
-      <td>
-        <div class="logo-box">
-          {% if logoPath %}
-            <img src="{{ logoPath }}" alt="{{ entite.nom }}">
-          {% else %}
-            <div style="color: {{ primary }}; font-weight: bold; padding-top: 20px;">{{ entite.nom ?: 'ENTITÉ' }}</div>
-          {% endif %}
-        </div>
-      </td>
-      <td class="text-right cover-meta">
-        Rapport généré le {{ "now"|date('d/m/Y') }}<br>
-        Chantier #{{ chantier.id }}<br>
-        Statut : {{ chantier.statut ? chantier.statut.label() : '-' }}
-      </td>
-    </tr>
-  </table>
-
-  <div class="cover-title">Compte rendu de chantier</div>
-  <div class="cover-subtitle">Suivi d’intervention · Ressources · Photos</div>
-
-  <div class="cover-name">{{ chantier.nom ?: '-' }}</div>
-
-  <div class="cover-address">
-    {{ chantier.adresse ?: '' }}
-    {% if chantier.complement %}<br>{{ chantier.complement }}{% endif %}
-    {% if chantier.codePostal or chantier.ville %}
-      <br>{{ chantier.codePostal }} {{ chantier.ville }}
-    {% endif %}
+  <div class="cover-side">
+    <div class="cover-side-text">Rapport chantier</div>
   </div>
 
-  <div class="cover-bottom">
-    <strong>{{ entite.nom ?: '-' }}</strong>
-    {% if entite.siret %} - SIRET : {{ entite.siret }}{% endif %}
-    {% if entite.email %}<br>{{ entite.email }}{% endif %}
-    {% if entite.telephone %} - {{ entite.telephone }}{% endif %}
+  <div class="cover-watermark">
+    SUIVI<br>CHANTIER
+  </div>
+
+  <div class="cover-inner">
+    <table class="cover-header-table">
+      <tr>
+        <td style="width: 58%;">
+          <div class="logo-box">
+            {% if logoPath %}
+              <img src="{{ logoPath }}" alt="{{ entite.nom }}">
+            {% else %}
+              <div class="logo-fallback">{{ entite.nom ?: 'ENTITÉ' }}</div>
+            {% endif %}
+          </div>
+        </td>
+
+        <td style="width: 42%; text-align: right;">
+          <div class="cover-ref-card">
+            <div class="cover-ref-label">Rapport généré le</div>
+            <div class="cover-ref-value">{{ "now"|date('d/m/Y') }}</div>
+
+            <div style="height: 8px;"></div>
+
+            <div class="cover-ref-label">Référence chantier</div>
+            <div class="cover-ref-value">#{{ chantier.id }}</div>
+          </div>
+        </td>
+      </tr>
+    </table>
+
+    <div class="cover-category">Compte rendu d’intervention</div>
+
+    <div class="cover-title">
+      Rapport de chantier
+      <span class="cover-title-small">Suivi opérationnel & reportage terrain</span>
+    </div>
+
+    <div class="cover-rule"></div>
+
+    <div class="cover-project">
+      <div class="cover-project-label">Chantier concerné</div>
+      <div class="cover-project-name">{{ chantier.nom ?: '-' }}</div>
+
+      <div class="cover-project-address">
+        {{ chantier.adresse ?: '' }}
+        {% if chantier.complement %}<br>{{ chantier.complement }}{% endif %}
+        {% if chantier.codePostal or chantier.ville %}
+          <br>{{ chantier.codePostal }} {{ chantier.ville }}
+        {% endif %}
+      </div>
+    </div>
+
+    <table class="cover-kpi-table">
+      <tr>
+        <td>
+          <div class="cover-kpi-label">Semaine</div>
+          <div class="cover-kpi-value">{{ chantier.semainePrevisionnelle ?: '-' }}</div>
+        </td>
+        <td>
+          <div class="cover-kpi-label">Période prévue</div>
+          <div class="cover-kpi-value">
+            {{ chantier.dateDebutPrevisionnelle ? chantier.dateDebutPrevisionnelle|date('d/m/Y') : '-' }}
+            {% if chantier.dateFinPrevisionnelle %}
+              <br>{{ chantier.dateFinPrevisionnelle|date('d/m/Y') }}
+            {% endif %}
+          </div>
+        </td>
+        <td>
+          <div class="cover-kpi-label">Photos</div>
+          <div class="cover-kpi-value">{{ totalPhotos }}</div>
+        </td>
+      </tr>
+    </table>
+
+    <table class="cover-kpi-table">
+      <tr>
+        <td>
+          <div class="cover-kpi-label">Surface traitée</div>
+          <div class="cover-kpi-value">{{ chantier.surfaceTotale ?: 0 }} m²</div>
+        </td>
+        <td>
+          <div class="cover-kpi-label">Linéaire traité</div>
+          <div class="cover-kpi-value">{{ chantier.lineaireTotal ?: 0 }} ml</div>
+        </td>
+        <td>
+          <div class="cover-kpi-label">Déchets</div>
+          <div class="cover-kpi-value">{{ totalDechets }}</div>
+        </td>
+      </tr>
+    </table>
+
+
+    <table class="cover-kpi-table">
+      <tr>
+        <td>
+          <div class="cover-kpi-label">{% if totalHumains > 1 %}Ressources Humaines{% else %} Ressource Humaine {% endif %}</div>
+          <div class="cover-kpi-value">{{ totalHumains }} </div>
+        </td>
+        <td>
+          <div class="cover-kpi-label">{% if totalEngins > 1 %}Ressources vehicules{% else %} Ressource vehicule {% endif %}</div>
+          <div class="cover-kpi-value">{{ totalEngins }}</div>
+        </td>
+        <td>
+          <div class="cover-kpi-label">{% if totalEngins > 1 %}Ressources Matériel{% else %} Ressource matériels {% endif %}</div>
+          <div class="cover-kpi-value">{{ totalMateriels }}</div>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="cover-signature">
+    <table class="cover-footer-table">
+      <tr>
+        <td style="width: 65%;">
+          <div class="cover-company">{{ entite.nom ?: '-' }}</div>
+          <div class="cover-contact">
+            {% if entite.siret %}SIRET : {{ entite.siret }}<br>{% endif %}
+            {{ entite.email ?: '' }}
+            {% if entite.email and entite.telephone %} · {% endif %}
+            {{ entite.telephone ?: '' }}
+          </div>
+        </td>
+
+        <td style="width: 35%; text-align: right;">
+          <div class="cover-doc-type">Document de synthèse</div>
+          <div class="cover-page-mark">PDF</div>
+        </td>
+      </tr>
+    </table>
   </div>
 </div>
 
@@ -333,6 +614,8 @@
   </tbody>
 </table>
 
+
+
 <table class="table-data w-100">
   <thead>
     <tr>
@@ -344,8 +627,13 @@
   </thead>
   <tbody>
     <tr>
-      <td class="text-center">{{ chantier.dureePrevisionnelleJours ?: '-' }} j / {{ chantier.dureePrevisionnelleHeures ?: '-' }} h</td>
-      <td class="text-center">{{ chantier.dureeReelleJours ?: '-' }} j / {{ chantier.dureeReelleHeures ?: '-' }} h</td>
+      <td class="text-center">
+        {{ chantier.dureePrevisionnelleJoursOuvres ?? '-' }} j / {{ chantier.dureePrevisionnelleHeuresOuvrees ?? '-' }} h
+      </td>
+
+      <td class="text-center">
+        {{ chantier.dureeReelleJoursOuvres ?? '-' }} j / {{ chantier.dureeReelleHeuresOuvrees ?? '-' }} h
+      </td>
       <td class="text-center">{{ chantier.surfaceTotale ?: 0 }} m²</td>
       <td class="text-center">{{ chantier.lineaireTotal ?: 0 }} ml</td>
     </tr>
@@ -399,15 +687,15 @@
         <tr>
           <th>Période prév.</th>
           <td>
-            {{ zone.dateDebutPrevisionnelle ? zone.dateDebutPrevisionnelle|date('d/m/Y H:i') : '-' }} 
-            {% if zone.dateFinPrevisionnelle %} → {{ zone.dateFinPrevisionnelle|date('d/m/Y H:i') }}{% endif %}
+            Du {{ zone.dateDebutPrevisionnelle ? zone.dateDebutPrevisionnelle|date('d/m/Y H:i') : '-' }} 
+            {% if zone.dateFinPrevisionnelle %} au {{ zone.dateFinPrevisionnelle|date('d/m/Y H:i') }}{% endif %}
           </td>
         </tr>
         <tr>
           <th>Période réelle</th>
           <td>
-            {{ zone.dateDebutReelle ? zone.dateDebutReelle|date('d/m/Y H:i') : '-' }} 
-            {% if zone.dateFinReelle %} → {{ zone.dateFinReelle|date('d/m/Y H:i') }}{% endif %}
+            Du {{ zone.dateDebutReelle ? zone.dateDebutReelle|date('d/m/Y H:i') : '-' }} 
+            {% if zone.dateFinReelle %} au {{ zone.dateFinReelle|date('d/m/Y H:i') }}{% endif %}
           </td>
         </tr>
       </table>

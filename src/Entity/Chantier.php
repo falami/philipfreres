@@ -415,4 +415,62 @@ class Chantier
 
         return $total;
     }
+
+    private function countJoursOuvres(?\DateTimeInterface $debut, ?\DateTimeInterface $fin): ?int
+    {
+        if (!$debut || !$fin) {
+            return null;
+        }
+
+        if ($fin < $debut) {
+            return null;
+        }
+
+        $start = \DateTimeImmutable::createFromInterface($debut)->setTime(0, 0, 0);
+        $end = \DateTimeImmutable::createFromInterface($fin)->setTime(0, 0, 0);
+
+        $jours = 0;
+
+        while ($start <= $end) {
+            $jourSemaine = (int) $start->format('N'); // 1 lundi, 7 dimanche
+
+            if ($jourSemaine <= 5) {
+                $jours++;
+            }
+
+            $start = $start->modify('+1 day');
+        }
+
+        return $jours;
+    }
+
+    public function getDureePrevisionnelleJoursOuvres(): ?int
+    {
+        return $this->countJoursOuvres(
+            $this->dateDebutPrevisionnelle,
+            $this->dateFinPrevisionnelle
+        );
+    }
+
+    public function getDureeReelleJoursOuvres(): ?int
+    {
+        return $this->countJoursOuvres(
+            $this->dateDebutReelle,
+            $this->dateFinReelle
+        );
+    }
+
+    public function getDureePrevisionnelleHeuresOuvrees(): ?int
+    {
+        $jours = $this->getDureePrevisionnelleJoursOuvres();
+
+        return $jours !== null ? $jours * 7 : null;
+    }
+
+    public function getDureeReelleHeuresOuvrees(): ?int
+    {
+        $jours = $this->getDureeReelleJoursOuvres();
+
+        return $jours !== null ? $jours * 7 : null;
+    }
 }
