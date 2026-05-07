@@ -259,13 +259,13 @@
     </tr>
   </table>
 
-  <div class="cover-title">Compte rendu<br>de chantier</div>
+  <div class="cover-title">Compte rendu de chantier</div>
   <div class="cover-subtitle">Suivi d’intervention · Ressources · Photos</div>
 
   <div class="cover-name">{{ chantier.nom ?: '-' }}</div>
 
   <div class="cover-address">
-    {{ chantier.adresse ?: 'Adresse non renseignée' }}
+    {{ chantier.adresse ?: '' }}
     {% if chantier.complement %}<br>{{ chantier.complement }}{% endif %}
     {% if chantier.codePostal or chantier.ville %}
       <br>{{ chantier.codePostal }} {{ chantier.ville }}
