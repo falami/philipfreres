@@ -254,6 +254,7 @@
       right:12px;
       z-index:2;
       border-radius: 12px;
+      margin-right: 35px;
     }
 
     .collection-item .form-row,
@@ -522,6 +523,114 @@
           #fff
         );
     }
+
+
+
+    .zone-item{
+      padding: 0 !important;
+      overflow: hidden !important;
+    }
+
+    .zone-accordion-header{
+      display:flex;
+      align-items:stretch;
+      gap:.75rem;
+      padding:.85rem;
+      background:
+        linear-gradient(180deg,
+          color-mix(in srgb, var(--theme-color-principal) 6%, transparent),
+          transparent
+        ),
+        #fff;
+      border-radius:18px;
+    }
+
+    .zone-drag-handle{
+      width:44px;
+      min-width:44px;
+      border-radius:14px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:rgba(255,193,7,.14);
+      border:1px solid rgba(255,193,7,.30);
+      color:var(--ink);
+      cursor:grab;
+      font-size:1.15rem;
+    }
+
+    .zone-drag-handle:active{
+      cursor:grabbing;
+    }
+
+    .zone-toggle-btn{
+      flex:1;
+      border:0;
+      background:transparent;
+      display:grid;
+      grid-template-columns:1fr auto auto;
+      align-items:center;
+      gap:.75rem;
+      text-align:left;
+      padding:0;
+    }
+
+    .zone-title{
+      font-weight:900;
+      color:var(--ink);
+    }
+
+    .zone-subtitle{
+      font-size:.82rem;
+      color:var(--muted);
+      background:rgba(15,23,42,.06);
+      border:1px solid rgba(15,23,42,.08);
+      border-radius:999px;
+      padding:.25rem .6rem;
+      white-space:nowrap;
+    }
+
+    .zone-chevron{
+      transition:.2s ease;
+      color:var(--muted);
+    }
+
+    .zone-toggle-btn[aria-expanded="true"] .zone-chevron{
+      transform:rotate(180deg);
+    }
+
+    .zone-collapse{
+      padding:0 1rem 1rem;
+    }
+
+    .zone-sortable-ghost{
+      opacity:.45;
+    }
+
+    .zone-sortable-chosen{
+      box-shadow:0 18px 45px rgba(15,23,42,.18);
+    }
+
+
+
+    .zone-sortable-drag{
+      opacity:.95;
+    }
+
+    body.is-sorting-zone .zone-collapse{
+      pointer-events:none;
+    }
+
+    .zone-title{
+      min-width:0;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    .zone-toggle-btn{
+      min-width:0;
+    }
   </style>
 {% endblock %}
 
@@ -674,9 +783,10 @@
 
           <div class="p-3 p-md-4">
             <div id="zones-holder"
-                class="collection-holder"
-                data-prototype-name="__zone__"
-                data-prototype="{{ include('administrateur/chantier/_zone_item.html.twig', { row: form.zones.vars.prototype })|e('html_attr') }}">
+              class="collection-holder"
+              data-index="{{ form.zones|length }}"
+              data-prototype-name="__zone__"
+              data-prototype="{{ include('administrateur/chantier/_zone_item.html.twig', { row: form.zones.vars.prototype })|e('html_attr') }}">
 
               {% for zoneForm in form.zones %}
                 <div class="collection-item zone-item">
@@ -1151,6 +1261,58 @@
         syncDate(debutPrev, debutReel);
         syncDate(finPrev, finReel);
       }
+
+
+      function initZoneRealDatesDefaults(scope = document) {
+        const zoneItems = [];
+
+        if (scope.classList && scope.classList.contains('zone-item')) {
+          zoneItems.push(scope);
+        }
+
+        scope.querySelectorAll?.('.zone-item').forEach(item => zoneItems.push(item));
+
+        zoneItems.forEach(zoneItem => {
+          if (zoneItem.dataset.realDatesInit === '1') return;
+          zoneItem.dataset.realDatesInit = '1';
+
+          const debutPrev = zoneItem.querySelector('input[name$="[dateDebutPrevisionnelle]"]');
+          const finPrev = zoneItem.querySelector('input[name$="[dateFinPrevisionnelle]"]');
+          const debutReel = zoneItem.querySelector('input[name$="[dateDebutReelle]"]');
+          const finReel = zoneItem.querySelector('input[name$="[dateFinReelle]"]');
+
+          function syncDate(source, target) {
+            if (!source || !target) return;
+
+            const copy = () => {
+              const sourceValue = source.value;
+
+              if (!sourceValue || target.value) {
+                return;
+              }
+
+              if (target._flatpickr) {
+                target._flatpickr.setDate(sourceValue, true, 'Y-m-d H:i');
+              } else {
+                target.value = sourceValue;
+              }
+            };
+
+            copy();
+
+            source.addEventListener('change', copy);
+            source.addEventListener('input', copy);
+
+            if (source._flatpickr) {
+              source._flatpickr.config.onChange.push(copy);
+              source._flatpickr.config.onValueUpdate.push(copy);
+            }
+          }
+
+          syncDate(debutPrev, debutReel);
+          syncDate(finPrev, finReel);
+        });
+      }
       
       async function initPhotoMaps(scope = document) {
         const items = [...scope.querySelectorAll('.js-photo-item')];
@@ -1427,6 +1589,7 @@
             ensureEmptyPlaceholders();
             refreshResume();
             updatePhotoOrders();
+            updateZoneOrders();
           });
         });
       }
@@ -1464,7 +1627,8 @@
         const proto = holder.dataset.prototype.replaceAll(prototypeName, index);
 
         const item = document.createElement('div');
-        item.className = 'collection-item';
+        const isZoneHolder = holder.id === 'zones-holder';
+        item.className = isZoneHolder ? 'collection-item zone-item' : 'collection-item';
 
         item.innerHTML = `
           <button type="button" class="btn btn-outline-danger btn-sm remove-collection-item">
@@ -1478,6 +1642,13 @@
 
         bindRemoveButtons(item);
         initWidgets(item);
+        initZoneRealDatesDefaults(item);
+        if (isZoneHolder) {
+          initZoneTitles(item);
+          initZoneSortable();
+          updateZoneOrders();
+        }
+
         initPhotoUploadUI(item);
         await initPhotoMaps(item);
         initPhotoSortable();
@@ -1829,16 +2000,123 @@
       }
 
 
+
+      function updateZoneOrders() {
+        const holder = document.getElementById('zones-holder');
+        if (!holder) return;
+
+        holder.querySelectorAll(':scope > .collection-item').forEach((item, index) => {
+          const ordreInput = item.querySelector('.js-zone-ordre');
+
+          if (ordreInput) {
+            ordreInput.value = index + 1;
+          }
+        });
+      }
+
+      function initZoneSortable() {
+        const holder = document.getElementById('zones-holder');
+
+        if (!holder || !window.Sortable || holder.dataset.zoneSortableInit === '1') {
+          return;
+        }
+
+        holder.dataset.zoneSortableInit = '1';
+
+        new Sortable(holder, {
+          animation: 180,
+          handle: '.js-zone-drag-handle',
+          draggable: '.zone-item',
+          filter: '.empty-placeholder',
+          preventOnFilter: false,
+          ghostClass: 'zone-sortable-ghost',
+          chosenClass: 'zone-sortable-chosen',
+          dragClass: 'zone-sortable-drag',
+          forceFallback: true,
+          fallbackOnBody: true,
+          swapThreshold: 0.65,
+          onStart: () => {
+            document.body.classList.add('is-sorting-zone');
+          },
+          onEnd: () => {
+            document.body.classList.remove('is-sorting-zone');
+            updateZoneOrders();
+            refreshResume();
+          }
+        });
+
+        updateZoneOrders();
+      }
+
+      function refreshOneZoneTitle(item) {
+        if (!item) return;
+
+        const nomInput = item.querySelector('.js-zone-nom-input');
+        const parcelleInput = item.querySelector('.js-zone-parcelle-input');
+
+        const title = item.querySelector('.js-zone-title');
+        const parcelle = item.querySelector('.js-zone-parcelle');
+
+        const nomValue = (nomInput?.value || '').trim();
+        const parcelleValue = (parcelleInput?.value || '').trim();
+
+        if (title) {
+          title.textContent = nomValue || 'Sous-chantier';
+        }
+
+        if (parcelle) {
+          parcelle.textContent = parcelleValue || 'Sans parcelle';
+        }
+      }
+
+      function initZoneTitles(scope = document) {
+        scope.querySelectorAll('.zone-item').forEach(item => {
+          refreshOneZoneTitle(item);
+        });
+      }
+
+
+
+      document.addEventListener('input', function (e) {
+        if (
+          !e.target.classList.contains('js-zone-nom-input') &&
+          !e.target.classList.contains('js-zone-parcelle-input')
+        ) {
+          return;
+        }
+
+        const item = e.target.closest('.zone-item');
+        refreshOneZoneTitle(item);
+      });
+
+      document.addEventListener('change', function (e) {
+        if (
+          !e.target.classList.contains('js-zone-nom-input') &&
+          !e.target.classList.contains('js-zone-parcelle-input')
+        ) {
+          return;
+        }
+
+        const item = e.target.closest('.zone-item');
+        refreshOneZoneTitle(item);
+      });
+
+
       formMain?.addEventListener('submit', () => {
+        updateZoneOrders();
         updatePhotoOrders();
       });
 
       initWidgets(document);
       initRealDatesDefaults();
+      initZoneRealDatesDefaults(document);
       initQuickResourceModal();
       initPhotoUploadUI(document);
       bindRemoveButtons(document);
       ensureEmptyPlaceholders();
+      initZoneTitles(document);
+      initZoneSortable();
+      updateZoneOrders();
       initPhotoSortable();
       updatePhotoOrders();
       initFormValidation({ formName: 'chantier_administrateur' });

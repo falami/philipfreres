@@ -1,5 +1,9 @@
 {# templates/administrateur/chantier/_photo_item.html.twig #}
 
+{% set photo = row.vars.data %}
+{% set hasPhotoAvant = photo and photo.photoAvant %}
+{% set hasPhotoApres = photo and photo.photoApres %}
+
 <div class="row g-3 js-photo-item">
   {{ form_widget(row.ordre) }}
 
@@ -18,19 +22,38 @@
   <div class="col-12">
     <div class="row g-4">
 
+      {# =========================
+         PHOTO AVANT
+         ========================= #}
       <div class="col-lg-6">
         <div class="photo-card photo-card--before">
           <div class="photo-card__head">
-            <div class="photo-card__title">
-              <i class="bi bi-camera me-2"></i> Photo avant
+            <div>
+              <div class="photo-card__title">
+                <i class="bi bi-camera me-2"></i> Photo avant
+              </div>
+              <div class="small text-muted fw-semibold mt-1">
+                État initial de la parcelle
+              </div>
             </div>
-            <span class="photo-badge">Avant</span>
+
+            <span class="photo-badge">
+              <i class="bi bi-arrow-left-circle me-1"></i> Avant
+            </span>
           </div>
 
           <div class="photo-dropzone js-dropzone" data-target-input-id="{{ row.avantFile.vars.id }}">
             {{ form_widget(row.avantFile) }}
 
-            <div class="photo-dropzone__inner">
+            {% if row.removePhotoAvant is defined %}
+              {{ form_widget(row.removePhotoAvant, {
+                attr: {
+                  class: 'js-remove-photo-avant'
+                }
+              }) }}
+            {% endif %}
+
+            <div class="photo-dropzone__inner {{ hasPhotoAvant ? 'd-none' : '' }}">
               <div class="photo-dropzone__icon">
                 <i class="bi bi-cloud-arrow-up"></i>
               </div>
@@ -38,47 +61,86 @@
               <div class="photo-dropzone__hint">ou cliquer pour sélectionner un fichier</div>
             </div>
 
-            <div class="photo-preview d-none js-photo-preview">
-              <img class="photo-preview__img js-photo-preview-img" alt="Prévisualisation photo avant">
+            <div class="photo-preview {{ hasPhotoAvant ? '' : 'd-none' }} js-photo-preview">
+              <img
+                class="photo-preview__img js-photo-preview-img"
+                src="{{ hasPhotoAvant ? asset('uploads/photos/chantiers/' ~ photo.photoAvant) : '' }}"
+                alt="Prévisualisation photo avant"
+              >
+
               <div class="photo-preview__overlay">
-                <button type="button" class="btn btn-light btn-sm js-photo-replace">Remplacer</button>
-                <button type="button" class="btn btn-danger btn-sm js-photo-remove">Supprimer</button>
+                <button type="button" class="btn btn-light btn-sm fw-bold js-photo-replace">
+                  <i class="bi bi-arrow-repeat me-1"></i> Remplacer
+                </button>
+
+                <button type="button" class="btn btn-danger btn-sm fw-bold js-photo-remove">
+                  <i class="bi bi-trash me-1"></i> Supprimer
+                </button>
               </div>
             </div>
           </div>
+
+          {% if hasPhotoAvant %}
+            <div class="small text-muted mt-2">
+              <i class="bi bi-check-circle text-success me-1"></i>
+              Photo déjà enregistrée : <strong>{{ photo.photoAvant }}</strong>
+            </div>
+          {% endif %}
 
           <div class="mt-3">
             {{ form_row(row.datePriseVueAvant) }}
           </div>
 
           <div class="photo-location-box mt-3">
+            <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap mb-2">
+              <div class="fw-bold">
+                <i class="bi bi-geo-alt text-warning me-1"></i> Localisation avant
+              </div>
+
+              {% if row.latitudeAvant.vars.value and row.longitudeAvant.vars.value %}
+                <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle">
+                  <i class="bi bi-pin-map me-1"></i> Point enregistré
+                </span>
+              {% else %}
+                <span class="badge rounded-pill bg-secondary-subtle text-secondary border border-secondary-subtle">
+                  <i class="bi bi-pin-map me-1"></i> Aucun point
+                </span>
+              {% endif %}
+            </div>
+
             {{ form_row(row.adresseAvant) }}
-            {{ form_widget(row.latitudeAvant) }}
-            {{ form_widget(row.longitudeAvant) }}
-            {{ form_widget(row.sourceLocalisationAvant) }}
+            {{ form_widget(row.latitudeAvant, { attr: { class: 'js-photo-lat-avant' } }) }}
+            {{ form_widget(row.longitudeAvant, { attr: { class: 'js-photo-lng-avant' } }) }}
+            {{ form_widget(row.sourceLocalisationAvant, { attr: { class: 'js-photo-source-avant' } }) }}
 
             <div class="row g-2 mt-1">
               <div class="col-6">
                 <label class="form-label">Latitude</label>
-                <input type="text"
-                       class="form-control js-photo-lat-visible-avant"
-                       value="{{ row.latitudeAvant.vars.value }}"
-                       placeholder="Latitude">
+                <input
+                  type="text"
+                  class="form-control js-photo-lat-visible-avant"
+                  value="{{ row.latitudeAvant.vars.value }}"
+                  placeholder="Latitude"
+                >
               </div>
+
               <div class="col-6">
                 <label class="form-label">Longitude</label>
-                <input type="text"
-                       class="form-control js-photo-lng-visible-avant"
-                       value="{{ row.longitudeAvant.vars.value }}"
-                       placeholder="Longitude">
+                <input
+                  type="text"
+                  class="form-control js-photo-lng-visible-avant"
+                  value="{{ row.longitudeAvant.vars.value }}"
+                  placeholder="Longitude"
+                >
               </div>
             </div>
 
             <div class="d-flex gap-2 mt-2 flex-wrap">
-              <button type="button" class="btn btn-outline-secondary btn-sm js-geocode-photo" data-kind="avant">
+              <button type="button" class="btn btn-outline-secondary btn-sm fw-bold js-geocode-photo" data-kind="avant">
                 <i class="bi bi-geo-alt me-1"></i> Localiser
               </button>
-              <button type="button" class="btn btn-outline-dark btn-sm js-apply-coords" data-kind="avant">
+
+              <button type="button" class="btn btn-outline-dark btn-sm fw-bold js-apply-coords" data-kind="avant">
                 <i class="bi bi-crosshair me-1"></i> Appliquer coordonnées
               </button>
             </div>
@@ -92,19 +154,38 @@
         </div>
       </div>
 
+      {# =========================
+         PHOTO APRÈS
+         ========================= #}
       <div class="col-lg-6">
         <div class="photo-card photo-card--after">
           <div class="photo-card__head">
-            <div class="photo-card__title">
-              <i class="bi bi-camera-fill me-2"></i> Photo après
+            <div>
+              <div class="photo-card__title">
+                <i class="bi bi-camera-fill me-2"></i> Photo après
+              </div>
+              <div class="small text-muted fw-semibold mt-1">
+                État final après intervention
+              </div>
             </div>
-            <span class="photo-badge photo-badge--after">Après</span>
+
+            <span class="photo-badge photo-badge--after">
+              <i class="bi bi-arrow-right-circle me-1"></i> Après
+            </span>
           </div>
 
           <div class="photo-dropzone js-dropzone" data-target-input-id="{{ row.apresFile.vars.id }}">
             {{ form_widget(row.apresFile) }}
 
-            <div class="photo-dropzone__inner">
+            {% if row.removePhotoApres is defined %}
+              {{ form_widget(row.removePhotoApres, {
+                attr: {
+                  class: 'js-remove-photo-apres'
+                }
+              }) }}
+            {% endif %}
+
+            <div class="photo-dropzone__inner {{ hasPhotoApres ? 'd-none' : '' }}">
               <div class="photo-dropzone__icon">
                 <i class="bi bi-cloud-arrow-up"></i>
               </div>
@@ -112,47 +193,86 @@
               <div class="photo-dropzone__hint">ou cliquer pour sélectionner un fichier</div>
             </div>
 
-            <div class="photo-preview d-none js-photo-preview">
-              <img class="photo-preview__img js-photo-preview-img" alt="Prévisualisation photo après">
+            <div class="photo-preview {{ hasPhotoApres ? '' : 'd-none' }} js-photo-preview">
+              <img
+                class="photo-preview__img js-photo-preview-img"
+                src="{{ hasPhotoApres ? asset('uploads/photos/chantiers/' ~ photo.photoApres) : '' }}"
+                alt="Prévisualisation photo après"
+              >
+
               <div class="photo-preview__overlay">
-                <button type="button" class="btn btn-light btn-sm js-photo-replace">Remplacer</button>
-                <button type="button" class="btn btn-danger btn-sm js-photo-remove">Supprimer</button>
+                <button type="button" class="btn btn-light btn-sm fw-bold js-photo-replace">
+                  <i class="bi bi-arrow-repeat me-1"></i> Remplacer
+                </button>
+
+                <button type="button" class="btn btn-danger btn-sm fw-bold js-photo-remove">
+                  <i class="bi bi-trash me-1"></i> Supprimer
+                </button>
               </div>
             </div>
           </div>
+
+          {% if hasPhotoApres %}
+            <div class="small text-muted mt-2">
+              <i class="bi bi-check-circle text-success me-1"></i>
+              Photo déjà enregistrée : <strong>{{ photo.photoApres }}</strong>
+            </div>
+          {% endif %}
 
           <div class="mt-3">
             {{ form_row(row.datePriseVueApres) }}
           </div>
 
           <div class="photo-location-box mt-3">
+            <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap mb-2">
+              <div class="fw-bold">
+                <i class="bi bi-geo-alt-fill text-warning me-1"></i> Localisation après
+              </div>
+
+              {% if row.latitudeApres.vars.value and row.longitudeApres.vars.value %}
+                <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle">
+                  <i class="bi bi-pin-map me-1"></i> Point enregistré
+                </span>
+              {% else %}
+                <span class="badge rounded-pill bg-secondary-subtle text-secondary border border-secondary-subtle">
+                  <i class="bi bi-pin-map me-1"></i> Aucun point
+                </span>
+              {% endif %}
+            </div>
+
             {{ form_row(row.adresseApres) }}
-            {{ form_widget(row.latitudeApres) }}
-            {{ form_widget(row.longitudeApres) }}
-            {{ form_widget(row.sourceLocalisationApres) }}
+            {{ form_widget(row.latitudeApres, { attr: { class: 'js-photo-lat-apres' } }) }}
+            {{ form_widget(row.longitudeApres, { attr: { class: 'js-photo-lng-apres' } }) }}
+            {{ form_widget(row.sourceLocalisationApres, { attr: { class: 'js-photo-source-apres' } }) }}
 
             <div class="row g-2 mt-1">
               <div class="col-6">
                 <label class="form-label">Latitude</label>
-                <input type="text"
-                       class="form-control js-photo-lat-visible-apres"
-                       value="{{ row.latitudeApres.vars.value }}"
-                       placeholder="Latitude">
+                <input
+                  type="text"
+                  class="form-control js-photo-lat-visible-apres"
+                  value="{{ row.latitudeApres.vars.value }}"
+                  placeholder="Latitude"
+                >
               </div>
+
               <div class="col-6">
                 <label class="form-label">Longitude</label>
-                <input type="text"
-                       class="form-control js-photo-lng-visible-apres"
-                       value="{{ row.longitudeApres.vars.value }}"
-                       placeholder="Longitude">
+                <input
+                  type="text"
+                  class="form-control js-photo-lng-visible-apres"
+                  value="{{ row.longitudeApres.vars.value }}"
+                  placeholder="Longitude"
+                >
               </div>
             </div>
 
             <div class="d-flex gap-2 mt-2 flex-wrap">
-              <button type="button" class="btn btn-outline-secondary btn-sm js-geocode-photo" data-kind="apres">
+              <button type="button" class="btn btn-outline-secondary btn-sm fw-bold js-geocode-photo" data-kind="apres">
                 <i class="bi bi-geo-alt me-1"></i> Localiser
               </button>
-              <button type="button" class="btn btn-outline-dark btn-sm js-apply-coords" data-kind="apres">
+
+              <button type="button" class="btn btn-outline-dark btn-sm fw-bold js-apply-coords" data-kind="apres">
                 <i class="bi bi-crosshair me-1"></i> Appliquer coordonnées
               </button>
             </div>

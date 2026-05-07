@@ -129,19 +129,19 @@ final class MaterielController extends AbstractController
       $createur = $materiel->getCreateur();
       $createurNom = $createur
         ? trim(($createur->getPrenom() ?? '') . ' ' . strtoupper($createur->getNom() ?? ''))
-        : '—';
+        : '-';
 
       $data[] = [
         'id'           => $materiel->getId(),
         'photo'        => $this->renderView('administrateur/materiel/_photo_cell.html.twig', [
           'materiel' => $materiel,
         ]),
-        'nom'          => $materiel->getNom() ?: '—',
-        'categorie'    => $materiel->getCategorie()?->label() ?? '—',
-        'numeroSerie'  => $materiel->getNumeroSerie() ?: '—',
+        'nom'          => $materiel->getNom() ?: '-',
+        'categorie'    => $materiel->getCategorie()?->label() ?? '-',
+        'numeroSerie'  => $materiel->getNumeroSerie() ?: '-',
         'statut'       => $materiel->getStatut()->label(),
         'statutBadge'  => $materiel->getStatut()->badgeClass(),
-        'dateCreation' => $materiel->getDateCreation()?->format('d/m/Y H:i') ?? '—',
+        'dateCreation' => $materiel->getDateCreation()?->format('d/m/Y H:i') ?? '-',
         'createur'     => $createurNom,
         'actions'      => $this->renderView('administrateur/materiel/_actions.html.twig', [
           'entite'   => $entite,

@@ -97,7 +97,7 @@ final class NoteController extends AbstractController
 
     $fmtMoney = static function (?string $value): string {
       if ($value === null || $value === '') {
-        return '—';
+        return '-';
       }
 
       return number_format((float) $value, 2, ',', ' ');
@@ -107,26 +107,26 @@ final class NoteController extends AbstractController
       $engin = $note->getEngin()
         ? trim(
           ($note->getEngin()->getNom() ?? ('Engin #' . $note->getEngin()->getId()))
-            . ($note->getEngin()->getImmatriculation() ? ' — ' . $note->getEngin()->getImmatriculation() : '')
+            . ($note->getEngin()->getImmatriculation() ? ' - ' . $note->getEngin()->getImmatriculation() : '')
         )
-        : '—';
+        : '-';
 
       $utilisateur = $note->getUtilisateur()
         ? trim(($note->getUtilisateur()->getPrenom() ?? '') . ' ' . ($note->getUtilisateur()->getNom() ?? ''))
-        : '—';
+        : '-';
 
       $produit = $note->getProduit()
-        ? $note->getProduit()->getCategorieProduit()->label() . ' — ' . $note->getProduit()->getSousCategorieProduit()->label()
-        : '—';
+        ? $note->getProduit()->getCategorieProduit()->label() . ' - ' . $note->getProduit()->getSousCategorieProduit()->label()
+        : '-';
 
       return [
         'id' => $note->getId(),
-        'date' => $note->getDateTransaction()?->format('d/m/Y') ?? '—',
-        'libelle' => $note->getLibelle() ?: '—',
-        'quantite' => $note->getQuantite() ?? '—',
+        'date' => $note->getDateTransaction()?->format('d/m/Y') ?? '-',
+        'libelle' => $note->getLibelle() ?: '-',
+        'quantite' => $note->getQuantite() ?? '-',
         'ttc' => $fmtMoney($note->getMontantTtcEur()),
         'engin' => $engin,
-        'utilisateur' => $utilisateur ?: '—',
+        'utilisateur' => $utilisateur ?: '-',
         'produit' => $produit,
         'actions' => $this->renderView('administrateur/note/_actions.html.twig', [
           'note' => $note,

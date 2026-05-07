@@ -44,33 +44,7 @@ class ChantierDechetType extends AbstractType
           'step' => '0.01',
           'min' => '0',
         ],
-      ])
-      ->add('nouveauType', TextType::class, [
-        'mapped' => false,
-        'required' => false,
-        'label' => 'Ou créer un nouveau type à la volée',
-        'attr' => ['class' => 'form-control', 'placeholder' => 'Ex : Gravats, ferraille, plastique...'],
       ]);
-
-    $b->addEventListener(FormEvents::POST_SUBMIT, function (FormEvent $event) use ($entite) {
-      $form = $event->getForm();
-      $data = $event->getData();
-      if (!$data instanceof ChantierDechet) {
-        return;
-      }
-
-      $nouveauType = trim((string) $form->get('nouveauType')->getData());
-      if ($nouveauType === '') {
-        return;
-      }
-
-      $type = new Dechet();
-      $type->setNom($nouveauType);
-      $type->setUnite('kg');
-      $type->setEntite($entite);
-
-      $data->setTypeDechet($type);
-    });
   }
 
   public function configureOptions(OptionsResolver $r): void

@@ -148,9 +148,9 @@ final class ChantierController extends AbstractController
       $data[] = [
         'id' => $chantier->getId(),
         'nom' => $chantier->getNom(),
-        'ville' => $chantier->getVille() ?: '—',
-        'semaine' => $chantier->getSemainePrevisionnelle() ?: '—',
-        'periode' => ($chantier->getDateDebutPrevisionnelle()?->format('d/m/Y H:i') ?? '—')
+        'ville' => $chantier->getVille() ?: '-',
+        'semaine' => $chantier->getSemainePrevisionnelle() ?: '-',
+        'periode' => ($chantier->getDateDebutPrevisionnelle()?->format('d/m/Y H:i') ?? '-')
           . ($chantier->getDateFinPrevisionnelle()
             ? ' → ' . $chantier->getDateFinPrevisionnelle()?->format('d/m/Y H:i')
             : ''),

@@ -47,7 +47,7 @@ final class EnginExternalIdImportController extends AbstractController
 
       if (!empty($result['errors'])) {
         $this->addFlash('warning', sprintf(
-          "Import terminé avec erreurs — %d importés, %d maj, %d ignorés, %d erreurs. (entêtes ligne %s)",
+          "Import terminé avec erreurs - %d importés, %d maj, %d ignorés, %d erreurs. (entêtes ligne %s)",
           $result['imported'],
           $result['updated'],
           $result['skipped'],
@@ -56,7 +56,7 @@ final class EnginExternalIdImportController extends AbstractController
         ));
       } else {
         $this->addFlash('success', sprintf(
-          "Import réussi — %d importés, %d maj, %d ignorés. (entêtes ligne %s)",
+          "Import réussi - %d importés, %d maj, %d ignorés. (entêtes ligne %s)",
           $result['imported'],
           $result['updated'],
           $result['skipped'],

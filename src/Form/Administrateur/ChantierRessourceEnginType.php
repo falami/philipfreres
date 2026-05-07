@@ -23,7 +23,7 @@ class ChantierRessourceEnginType extends AbstractType
       ->add('engin', EntityType::class, [
         'class' => Engin::class,
         'label' => 'Engin',
-        'choice_label' => fn(Engin $e) => $e->getNom() . ($e->getImmatriculation() ? ' — ' . $e->getImmatriculation() : ''),
+        'choice_label' => fn(Engin $e) => $e->getNom() . ($e->getImmatriculation() ? ' - ' . $e->getImmatriculation() : ''),
         'query_builder' => fn(EntityRepository $er) => $er->createQueryBuilder('e')
           ->andWhere('e.entite = :entite')
           ->setParameter('entite', $entite)

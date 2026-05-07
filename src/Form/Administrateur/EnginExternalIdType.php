@@ -19,7 +19,7 @@ final class EnginExternalIdType extends AbstractType
       ->add('provider', EnumType::class, [
         'class' => ExternalProvider::class,
         'label' => 'Fournisseur',
-        'placeholder' => '— Choisir un fournisseur —',
+        'placeholder' => '- Choisir un fournisseur -',
         'required' => true,
         'choice_label' => static function (ExternalProvider $p): string {
           return method_exists($p, 'label') ? $p->label() : ucfirst(strtolower($p->name));

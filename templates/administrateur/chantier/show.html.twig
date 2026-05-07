@@ -363,7 +363,7 @@
             <div class="opacity-75 mt-2">
               {{ chantier.adresse ?: 'Adresse non renseignée' }}
               {% if chantier.codePostal or chantier.ville %}
-                — {{ chantier.codePostal }} {{ chantier.ville }}
+                - {{ chantier.codePostal }} {{ chantier.ville }}
               {% endif %}
             </div>
           </div>
@@ -789,25 +789,30 @@
         </div>
 
         <div class="p-3 p-md-4">
-          {% if chantier.dechets|length %}
+          {% if nbDechets > 0 %}
             <div class="table-responsive">
               <table class="table table-premium align-middle">
                 <thead>
                   <tr>
+                    <th>Sous-chantier</th>
                     <th>Type</th>
-                    <th>Poids total</th>
+                    <th>Quantité</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {% for d in chantier.dechets %}
-                    <tr>
-                      <td class="fw-bold">{{ d.typeDechet.nom }}</td>
-                      <td>
-                        <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle">
-                          {{ d.poidsTotal ?: '0' }} {{ d.typeDechet.unite }}
-                        </span>
-                      </td>
-                    </tr>
+                  {% for zone in chantier.zones %}
+                    {% for d in zone.dechets %}
+                      <tr>
+                        <td class="fw-bold">{{ zone.nom ?: '-' }}</td>
+                        <td>{{ d.typeDechet ? d.typeDechet.nom : '-' }}</td>
+                        <td>
+                          <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle">
+                            {{ d.quantite ?: '0' }}
+                            {{ d.typeDechet ? d.typeDechet.unite : '' }}
+                          </span>
+                        </td>
+                      </tr>
+                    {% endfor %}
                   {% endfor %}
                 </tbody>
               </table>
@@ -833,23 +838,31 @@
           <div class="p-3 p-md-4">
             <div class="resource-section">
               <div class="d-flex justify-content-between align-items-center mb-2">
-                <div class="fw-black fw-bold">Employés</div>
+                <div class="fw-bold">Employés</div>
                 <span class="badge-soft">{{ nbHumains }}</span>
               </div>
 
-              {% for r in chantier.ressourcesHumaines %}
-                <div class="resource-item">
-                  <div class="resource-avatar">
-                    {{ r.utilisateur.prenom|default('')|slice(0,1)|upper }}{{ r.utilisateur.nom|default('')|slice(0,1)|upper }}
-                  </div>
-                  <div>
-                    <div class="fw-bold">{{ r.utilisateur.prenom }} {{ r.utilisateur.nom }}</div>
-                    <div class="small text-muted">{{ r.fonction ?: 'Fonction non renseignée' }}</div>
-                  </div>
-                </div>
+              {% if nbHumains > 0 %}
+                {% for zone in chantier.zones %}
+                  {% for r in zone.ressourcesHumaines %}
+                    <div class="resource-item">
+                      <div class="resource-avatar">
+                        {{ r.utilisateur ? r.utilisateur.prenom|default('')|slice(0,1)|upper : '' }}{{ r.utilisateur ? r.utilisateur.nom|default('')|slice(0,1)|upper : '' }}
+                      </div>
+                      <div>
+                        <div class="fw-bold">
+                          {{ r.utilisateur ? r.utilisateur.prenom ~ ' ' ~ r.utilisateur.nom : 'Utilisateur supprimé' }}
+                        </div>
+                        <div class="small text-muted">
+                          {{ zone.nom ?: 'Sous-chantier' }} - {{ r.fonction ?: 'Fonction non renseignée' }}
+                        </div>
+                      </div>
+                    </div>
+                  {% endfor %}
+                {% endfor %}
               {% else %}
                 <div class="empty-state"><i class="bi bi-person-x"></i> Aucun employé.</div>
-              {% endfor %}
+              {% endif %}
             </div>
 
             <div class="resource-section">
@@ -858,17 +871,23 @@
                 <span class="badge-soft">{{ nbEngins }}</span>
               </div>
 
-              {% for r in chantier.ressourcesEngins %}
-                <div class="resource-item">
-                  <div class="resource-avatar"><i class="bi bi-truck"></i></div>
-                  <div>
-                    <div class="fw-bold">{{ r.engin.nom }}</div>
-                    <div class="small text-muted">{{ r.commentaire ?: 'Aucun commentaire' }}</div>
-                  </div>
-                </div>
+              {% if nbEngins > 0 %}
+                {% for zone in chantier.zones %}
+                  {% for r in zone.ressourcesEngins %}
+                    <div class="resource-item">
+                      <div class="resource-avatar"><i class="bi bi-truck"></i></div>
+                      <div>
+                        <div class="fw-bold">{{ r.engin ? r.engin.nom : 'Engin supprimé' }}</div>
+                        <div class="small text-muted">
+                          {{ zone.nom ?: 'Sous-chantier' }} - {{ r.commentaire ?: 'Aucun commentaire' }}
+                        </div>
+                      </div>
+                    </div>
+                  {% endfor %}
+                {% endfor %}
               {% else %}
                 <div class="empty-state"><i class="bi bi-truck"></i> Aucun engin.</div>
-              {% endfor %}
+              {% endif %}
             </div>
 
             <div class="resource-section">
@@ -877,17 +896,25 @@
                 <span class="badge-soft">{{ nbMateriels }}</span>
               </div>
 
-              {% for r in chantier.ressourcesMateriels %}
-                <div class="resource-item">
-                  <div class="resource-avatar"><i class="bi bi-tools"></i></div>
-                  <div>
-                    <div class="fw-bold">{{ r.materiel.nom }} × {{ r.quantite ?: 1 }}</div>
-                    <div class="small text-muted">{{ r.commentaire ?: 'Aucun commentaire' }}</div>
-                  </div>
-                </div>
+              {% if nbMateriels > 0 %}
+                {% for zone in chantier.zones %}
+                  {% for r in zone.ressourcesMateriels %}
+                    <div class="resource-item">
+                      <div class="resource-avatar"><i class="bi bi-tools"></i></div>
+                      <div>
+                        <div class="fw-bold">
+                          {{ r.materiel ? r.materiel.nom : 'Matériel supprimé' }} × {{ r.quantite ?: 1 }}
+                        </div>
+                        <div class="small text-muted">
+                          {{ zone.nom ?: 'Sous-chantier' }} - {{ r.commentaire ?: 'Aucun commentaire' }}
+                        </div>
+                      </div>
+                    </div>
+                  {% endfor %}
+                {% endfor %}
               {% else %}
                 <div class="empty-state"><i class="bi bi-tools"></i> Aucun matériel.</div>
-              {% endfor %}
+              {% endif %}
             </div>
           </div>
         </div>
@@ -904,68 +931,50 @@
     </div>
 
     <div class="p-3 p-md-4">
-      {% if chantier.photos|length %}
+      {% if nbPhotos > 0 %}
         <div class="photo-grid">
-          {% for p in chantier.photos %}
-            <div class="photo-box">
-              <div class="d-flex justify-content-between gap-3 flex-wrap mb-3">
-                <div>
-                  <div class="fw-bold fs-5">{{ p.titre ?: 'Photo' }}</div>
-                  {% if p.commentaire %}
-                    <div class="small text-muted">{{ p.commentaire }}</div>
-                  {% endif %}
-                </div>
-                <span class="badge-soft">
-                  <i class="bi bi-sort-numeric-down"></i> Ordre {{ p.ordre }}
-                </span>
-              </div>
-
-              <div class="photo-pair">
-                <div class="photo-frame">
-                  <span class="photo-tag">
-                    <i class="bi bi-camera"></i> Avant
-                  </span>
-
-                  {% if p.photoAvant %}
-                    <img src="{{ asset('uploads/photos/chantiers/' ~ p.photoAvant) }}" alt="Avant">
-                  {% else %}
-                    <div class="empty-state"><i class="bi bi-image"></i> Photo avant absente.</div>
-                  {% endif %}
-
-                  {% if p.adresseAvant or (p.latitudeAvant and p.longitudeAvant) %}
-                    <div class="location-box">
-                      <i class="bi bi-geo-alt me-1"></i>
-                      {{ p.adresseAvant ?: 'Coordonnées enregistrées' }}
-                      {% if p.latitudeAvant and p.longitudeAvant %}
-                        <br><span>{{ p.latitudeAvant }}, {{ p.longitudeAvant }}</span>
-                      {% endif %}
+          {% for zone in chantier.zones %}
+            {% for p in zone.photos %}
+              <div class="photo-box">
+                <div class="d-flex justify-content-between gap-3 flex-wrap mb-3">
+                  <div>
+                    <div class="fw-bold fs-5">{{ p.titre ?: 'Photo' }}</div>
+                    <div class="small text-muted">
+                      {{ zone.nom ?: 'Sous-chantier' }}
+                      {% if zone.parcelle %} - {{ zone.parcelle }}{% endif %}
                     </div>
-                  {% endif %}
+                    {% if p.commentaire %}
+                      <div class="small text-muted">{{ p.commentaire }}</div>
+                    {% endif %}
+                  </div>
+                  <span class="badge-soft">
+                    <i class="bi bi-sort-numeric-down"></i> Ordre {{ p.ordre }}
+                  </span>
                 </div>
 
-                <div class="photo-frame">
-                  <span class="photo-tag after">
-                    <i class="bi bi-camera-fill"></i> Après
-                  </span>
+                <div class="photo-pair">
+                  <div class="photo-frame">
+                    <span class="photo-tag"><i class="bi bi-camera"></i> Avant</span>
 
-                  {% if p.photoApres %}
-                    <img src="{{ asset('uploads/photos/chantiers/' ~ p.photoApres) }}" alt="Après">
-                  {% else %}
-                    <div class="empty-state"><i class="bi bi-image"></i> Photo après absente.</div>
-                  {% endif %}
+                    {% if p.photoAvant %}
+                      <img src="{{ asset('uploads/photos/chantiers/' ~ p.photoAvant) }}" alt="Avant">
+                    {% else %}
+                      <div class="empty-state"><i class="bi bi-image"></i> Photo avant absente.</div>
+                    {% endif %}
+                  </div>
 
-                  {% if p.adresseApres or (p.latitudeApres and p.longitudeApres) %}
-                    <div class="location-box">
-                      <i class="bi bi-geo-alt me-1"></i>
-                      {{ p.adresseApres ?: 'Coordonnées enregistrées' }}
-                      {% if p.latitudeApres and p.longitudeApres %}
-                        <br><span>{{ p.latitudeApres }}, {{ p.longitudeApres }}</span>
-                      {% endif %}
-                    </div>
-                  {% endif %}
+                  <div class="photo-frame">
+                    <span class="photo-tag after"><i class="bi bi-camera-fill"></i> Après</span>
+
+                    {% if p.photoApres %}
+                      <img src="{{ asset('uploads/photos/chantiers/' ~ p.photoApres) }}" alt="Après">
+                    {% else %}
+                      <div class="empty-state"><i class="bi bi-image"></i> Photo après absente.</div>
+                    {% endif %}
+                  </div>
                 </div>
               </div>
-            </div>
+            {% endfor %}
           {% endfor %}
         </div>
       {% else %}

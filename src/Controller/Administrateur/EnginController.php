@@ -139,8 +139,8 @@ final class EnginController extends AbstractController
 
             $data[] = [
                 'id'             => $b->getId(),
-                'nom'            => $b->getNom() ?: '—',
-                'type'           => $b->getType()?->value ?? '—',
+                'nom'            => $b->getNom() ?: '-',
+                'type'           => $b->getType()?->value ?? '-',
                 'immatriculation' => $b->getImmatriculation() ?: null,
 
                 'ext_alx'     => $ext[\App\Enum\ExternalProvider::ALX->value] ?? [],
@@ -197,7 +197,7 @@ final class EnginController extends AbstractController
 
 
 
-            // 1) Photo de couverture (vignette pour la liste) — redimensionnée 360x240
+            // 1) Photo de couverture (vignette pour la liste) - redimensionnée 360x240
             $this->photoManager->handleImageUpload(
                 form: $form,
                 fieldName: 'photoCouverture',

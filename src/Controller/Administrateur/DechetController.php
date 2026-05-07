@@ -115,12 +115,12 @@ final class DechetController extends AbstractController
     foreach ($rows as $dechet) {
       $data[] = [
         'id'           => $dechet->getId(),
-        'nom'          => $dechet->getNom() ?: '—',
-        'unite'        => $dechet->getUnite() ?: '—',
-        'dateCreation' => $dechet->getDateCreation()?->format('d/m/Y H:i') ?? '—',
+        'nom'          => $dechet->getNom() ?: '-',
+        'unite'        => $dechet->getUnite() ?: '-',
+        'dateCreation' => $dechet->getDateCreation()?->format('d/m/Y H:i') ?? '-',
         'createur'     => $dechet->getCreateur()
           ? trim(($dechet->getCreateur()?->getPrenom() ?? '') . ' ' . strtoupper($dechet->getCreateur()?->getNom() ?? ''))
-          : '—',
+          : '-',
         'actions'      => $this->renderView('administrateur/dechet/_actions.html.twig', [
           'entite'     => $entite,
           'dechet' => $dechet,

@@ -97,13 +97,13 @@ final class TransactionCarteAlxController extends AbstractController
     $data = array_map(function (TransactionCarteAlx $t) use ($entite) {
       return [
         'id' => $t->getId(),
-        'journee' => $t->getJournee()?->format('d/m/Y') ?? '—',
-        'horaire' => $t->getHoraire()?->format('H:i') ?? '—',
-        'vehicule' => $t->getVehicule() ?: '—',
-        'agent' => $t->getAgent() ?: '—',
-        'quantite' => $t->getQuantite() ?? '—',
-        'prix' => $t->getPrixUnitaire() ?? '—',
-        'cuve' => $t->getCuve() ?? '—',
+        'journee' => $t->getJournee()?->format('d/m/Y') ?? '-',
+        'horaire' => $t->getHoraire()?->format('H:i') ?? '-',
+        'vehicule' => $t->getVehicule() ?: '-',
+        'agent' => $t->getAgent() ?: '-',
+        'quantite' => $t->getQuantite() ?? '-',
+        'prix' => $t->getPrixUnitaire() ?? '-',
+        'cuve' => $t->getCuve() ?? '-',
         'actions' => $this->renderView('administrateur/transaction/carte/alx/_actions.html.twig', [
           't' => $t,
           'entite' => $entite,

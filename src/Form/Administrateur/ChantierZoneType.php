@@ -7,11 +7,11 @@ use App\Entity\Entite;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
-use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class ChantierZoneType extends AbstractType
@@ -25,7 +25,7 @@ class ChantierZoneType extends AbstractType
       ->add('nom', TextType::class, [
         'label' => 'Nom du sous-chantier / parcelle',
         'attr' => [
-          'class' => 'form-control',
+          'class' => 'form-control js-zone-nom-input',
           'placeholder' => 'Ex : Parcelle Nord',
         ],
       ])
@@ -33,7 +33,7 @@ class ChantierZoneType extends AbstractType
         'label' => 'Référence parcelle',
         'required' => false,
         'attr' => [
-          'class' => 'form-control',
+          'class' => 'form-control js-zone-parcelle-input',
           'placeholder' => 'Ex : ZC 148',
         ],
       ])
@@ -113,12 +113,11 @@ class ChantierZoneType extends AbstractType
           'rows' => 3,
         ],
       ])
-      ->add('ordre', IntegerType::class, [
-        'label' => 'Ordre',
+      ->add('ordre', HiddenType::class, [
         'required' => false,
+        'empty_data' => '0',
         'attr' => [
-          'class' => 'form-control',
-          'min' => 0,
+          'class' => 'js-zone-ordre',
         ],
       ])
       ->add('ressourcesHumaines', CollectionType::class, [
