@@ -210,7 +210,7 @@
     }
 
     .map-cell {
-      height: 150px;
+      height: 170px;
       background: {{ light }};
       text-align: center;
       vertical-align: middle;
@@ -218,8 +218,8 @@
     }
 
     .map-cell img {
-      max-width: 95%;
-      max-height: 140px;
+      width: 95%;
+      max-height: 160px;
       border: 1px solid {{ border }};
     }
   </style>
@@ -488,22 +488,6 @@
           </td>
         </tr>
         <tr>
-          <td class="photo-meta">
-            <strong>Date :</strong> {{ p.datePriseVueAvant ? p.datePriseVueAvant|date('d/m/Y') : '-' }}<br>
-            <strong>Adresse :</strong> {{ p.adresseAvant ?: '-' }}<br>
-            <strong>GPS :</strong> {{ p.latitudeAvant and p.longitudeAvant ? p.latitudeAvant ~ ', ' ~ p.longitudeAvant : '-' }}<br>
-            <strong>Source :</strong> {{ p.sourceLocalisationAvant ?: '-' }}
-          </td>
-
-          <td class="photo-meta">
-            <strong>Date :</strong> {{ p.datePriseVueApres ? p.datePriseVueApres|date('d/m/Y') : '-' }}<br>
-            <strong>Adresse :</strong> {{ p.adresseApres ?: '-' }}<br>
-            <strong>GPS :</strong> {{ p.latitudeApres and p.longitudeApres ? p.latitudeApres ~ ', ' ~ p.longitudeApres : '-' }}<br>
-            <strong>Source :</strong> {{ p.sourceLocalisationApres ?: '-' }}
-          </td>
-        </tr>
-
-        <tr>
           <td class="map-cell">
             {% set mapAvant = photoMaps[p.id].avant ?? null %}
 
@@ -524,6 +508,23 @@
             {% endif %}
           </td>
         </tr>
+        <tr>
+          <td class="photo-meta">
+            <strong>Date :</strong> {{ p.datePriseVueAvant ? p.datePriseVueAvant|date('d/m/Y') : '-' }}<br>
+            <strong>Adresse :</strong> {{ p.adresseAvant ?: '-' }}<br>
+            <strong>GPS :</strong> {{ p.latitudeAvant and p.longitudeAvant ? p.latitudeAvant ~ ', ' ~ p.longitudeAvant : '-' }}<br>
+            <strong>Source :</strong> {{ p.sourceLocalisationAvant ?: '-' }}
+          </td>
+
+          <td class="photo-meta">
+            <strong>Date :</strong> {{ p.datePriseVueApres ? p.datePriseVueApres|date('d/m/Y') : '-' }}<br>
+            <strong>Adresse :</strong> {{ p.adresseApres ?: '-' }}<br>
+            <strong>GPS :</strong> {{ p.latitudeApres and p.longitudeApres ? p.latitudeApres ~ ', ' ~ p.longitudeApres : '-' }}<br>
+            <strong>Source :</strong> {{ p.sourceLocalisationApres ?: '-' }}
+          </td>
+        </tr>
+
+        
         {% if p.commentaire %}
           <tr>
             <td colspan="2" style="border: 1px solid {{ border }}; padding: 8px; font-style: italic;">

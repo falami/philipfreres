@@ -31,6 +31,8 @@ final class ChantierController extends AbstractController
     private readonly PdfManager $pdfManager,
     private readonly HttpClientInterface $httpClient,
     private readonly \App\Service\Photo\PhotoGpsExtractor $photoGpsExtractor,
+    #[\Symfony\Component\DependencyInjection\Attribute\Autowire('%env(GEOAPIFY_API_KEY)%')]
+    private readonly string $geoapifyApiKey,
   ) {}
 
   #[Route('', name: 'app_administrateur_chantier_index', methods: ['GET'])]
@@ -605,63 +607,73 @@ final class ChantierController extends AbstractController
     $lat = str_replace(',', '.', trim($lat));
     $lng = str_replace(',', '.', trim($lng));
 
-    $urls = [
-      sprintf(
-        'https://staticmap.openstreetmap.de/staticmap.php?center=%s,%s&zoom=17&size=360x150&maptype=mapnik&markers=%s,%s,red-pushpin',
-        rawurlencode($lat),
-        rawurlencode($lng),
-        rawurlencode($lat),
-        rawurlencode($lng)
-      ),
-      sprintf(
-        'http://staticmap.openstreetmap.de/staticmap.php?center=%s,%s&zoom=17&size=360x150&maptype=mapnik&markers=%s,%s,red-pushpin',
-        rawurlencode($lat),
-        rawurlencode($lng),
-        rawurlencode($lat),
-        rawurlencode($lng)
-      ),
-    ];
-
-    foreach ($urls as $url) {
-      try {
-        $response = $this->httpClient->request('GET', $url, [
-          'headers' => [
-            'User-Agent' => 'Mozilla/5.0 PhilipFreres/1.0',
-            'Accept' => 'image/png,image/jpeg,image/*,*/*',
-          ],
-          'timeout' => 15,
-          'max_redirects' => 5,
-        ]);
-
-        $statusCode = $response->getStatusCode();
-
-        if ($statusCode !== 200) {
-          continue;
-        }
-
-        $content = $response->getContent(false);
-
-        if (!$content || strlen($content) < 1000) {
-          continue;
-        }
-
-        $contentType = $response->getHeaders(false)['content-type'][0] ?? 'image/png';
-
-        if (!str_contains($contentType, 'image')) {
-          continue;
-        }
-
-        if (str_contains($contentType, 'jpeg') || str_contains($contentType, 'jpg')) {
-          return 'data:image/jpeg;base64,' . base64_encode($content);
-        }
-
-        return 'data:image/png;base64,' . base64_encode($content);
-      } catch (\Throwable $e) {
-        continue;
-      }
+    if (!is_numeric($lat) || !is_numeric($lng)) {
+      return null;
     }
 
-    return null;
+    if (trim($this->geoapifyApiKey) === '') {
+      return $this->buildFallbackMapSvg($lat, $lng);
+    }
+
+    try {
+      $query = http_build_query([
+        'style' => 'osm-bright',
+        'width' => 720,
+        'height' => 300,
+        'center' => 'lonlat:' . $lng . ',' . $lat,
+        'zoom' => 16,
+        'marker' => 'lonlat:' . $lng . ',' . $lat . ';color:#e11d48;size:medium',
+        'apiKey' => trim($this->geoapifyApiKey),
+      ], '', '&', PHP_QUERY_RFC3986);
+
+      $url = 'https://maps.geoapify.com/v1/staticmap?' . $query;
+
+      $response = $this->httpClient->request('GET', $url, [
+        'timeout' => 20,
+        'headers' => [
+          'Accept' => 'image/png,image/*,*/*',
+          'User-Agent' => 'PhilipFreres/1.0',
+        ],
+      ]);
+
+      $statusCode = $response->getStatusCode();
+      $content = $response->getContent(false);
+      $contentType = $response->getHeaders(false)['content-type'][0] ?? '';
+
+      if (
+        $statusCode !== 200 ||
+        !$content ||
+        strlen($content) < 1000 ||
+        !str_contains($contentType, 'image')
+      ) {
+        return $this->buildFallbackMapSvg($lat, $lng);
+      }
+
+      return 'data:image/png;base64,' . base64_encode($content);
+    } catch (\Throwable) {
+      return $this->buildFallbackMapSvg($lat, $lng);
+    }
+  }
+
+  private function buildFallbackMapSvg(string $lat, string $lng): string
+  {
+    $svg = <<<SVG
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="150" viewBox="0 0 360 150">
+  <rect width="360" height="150" fill="#f6f8fb"/>
+  <path d="M0 35 H360 M0 75 H360 M0 115 H360 M70 0 V150 M145 0 V150 M220 0 V150 M295 0 V150"
+        stroke="#d8dee8" stroke-width="1"/>
+  <circle cx="180" cy="72" r="12" fill="#e11d48"/>
+  <circle cx="180" cy="72" r="5" fill="#ffffff"/>
+  <text x="180" y="112" text-anchor="middle" font-family="DejaVu Sans, Arial" font-size="12" fill="#1f2937">
+    Position GPS
+  </text>
+  <text x="180" y="130" text-anchor="middle" font-family="DejaVu Sans, Arial" font-size="10" fill="#6b7280">
+    $lat, $lng
+  </text>
+</svg>
+SVG;
+
+    return 'data:image/svg+xml;base64,' . base64_encode($svg);
   }
 
   #[Route('/geocode', name: 'app_administrateur_chantier_geocode', methods: ['GET'])]
