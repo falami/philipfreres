@@ -23,9 +23,11 @@ class PdfManager
     private function createPdf(string $html, string $orientation): Dompdf
     {
         $dompdf = new Dompdf($this->options);
-        $dompdf->loadHtml($html);
+        $dompdf->loadHtml($html, 'UTF-8');
         $dompdf->setPaper('A4', $orientation);
         $dompdf->render();
+
+        $this->addPageNumbers($dompdf, $orientation);
 
         return $dompdf;
     }
@@ -162,5 +164,30 @@ class PdfManager
         $response->headers->set('Accept-Ranges', 'bytes');
 
         return $response;
+    }
+
+    private function addPageNumbers(Dompdf $dompdf, string $orientation = 'portrait'): void
+    {
+        $canvas = $dompdf->getCanvas();
+        $fontMetrics = $dompdf->getFontMetrics();
+
+        $font = $fontMetrics->getFont('DejaVu Sans', 'normal');
+
+        if ($orientation === 'landscape') {
+            $x = 760;
+            $y = 570;
+        } else {
+            $x = 500;
+            $y = 810;
+        }
+
+        $canvas->page_text(
+            $x,
+            $y,
+            'Page {PAGE_NUM} / {PAGE_COUNT}',
+            $font,
+            8,
+            [0.42, 0.45, 0.50]
+        );
     }
 }

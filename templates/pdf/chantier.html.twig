@@ -415,7 +415,7 @@
   <table class="w-100">
     <tr>
       <td>{{ entite.nom ?: 'Entité' }} - Compte rendu de chantier</td>
-      <td class="text-right">Page <script type="text/php">if (isset($pdf)) { $pdf->page_script('echo $PAGE_NUM." / ".$PAGE_COUNT;'); }</script></td>
+      <td class="text-right"></td>
     </tr>
   </table>
 </div>
@@ -807,7 +807,6 @@
             <strong>Date :</strong> {{ p.datePriseVueApres ? p.datePriseVueApres|date('d/m/Y') : '-' }}<br>
             <strong>Adresse :</strong> {{ p.adresseApres ?: '-' }}<br>
             <strong>GPS :</strong> {{ p.latitudeApres and p.longitudeApres ? p.latitudeApres ~ ', ' ~ p.longitudeApres : '-' }}<br>
-            <strong>Source :</strong> {{ p.sourceLocalisationApres ?: '-' }}
           </td>
         </tr>
 
