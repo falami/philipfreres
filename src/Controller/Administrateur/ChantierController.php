@@ -267,6 +267,12 @@ final class ChantierController extends AbstractController
               sizeH: 1200,
               oldFilename: $photoEntity->getPhotoAvant()
             );
+
+            if ($photoEntity->getPhotoAvant()) {
+              $this->normalizeJpegOrientation(
+                rtrim($uploadPath, '/') . '/' . $photoEntity->getPhotoAvant()
+              );
+            }
           }
 
           $apresFile = $photoForm->get('apresFile')->getData();
@@ -281,6 +287,12 @@ final class ChantierController extends AbstractController
               sizeH: 1200,
               oldFilename: $photoEntity->getPhotoApres()
             );
+
+            if ($photoEntity->getPhotoApres()) {
+              $this->normalizeJpegOrientation(
+                rtrim($uploadPath, '/') . '/' . $photoEntity->getPhotoApres()
+              );
+            }
           }
 
           if (!$photoEntity->getLatitudeAvant() || !$photoEntity->getLongitudeAvant()) {
@@ -666,5 +678,56 @@ final class ChantierController extends AbstractController
         'message' => 'Erreur lors du reverse geocoding.'
       ], 500);
     }
+  }
+
+
+  private function normalizeJpegOrientation(string $absolutePath): void
+  {
+    if (!is_file($absolutePath)) {
+      return;
+    }
+
+    $mime = mime_content_type($absolutePath);
+
+    if (!in_array($mime, ['image/jpeg', 'image/jpg'], true)) {
+      return;
+    }
+
+    if (!function_exists('exif_read_data') || !function_exists('imagecreatefromjpeg')) {
+      return;
+    }
+
+    $exif = @exif_read_data($absolutePath);
+
+    if (empty($exif['Orientation'])) {
+      return;
+    }
+
+    $image = @imagecreatefromjpeg($absolutePath);
+
+    if (!$image) {
+      return;
+    }
+
+    switch ((int) $exif['Orientation']) {
+      case 3:
+        $image = imagerotate($image, 180, 0);
+        break;
+
+      case 6:
+        $image = imagerotate($image, -90, 0);
+        break;
+
+      case 8:
+        $image = imagerotate($image, 90, 0);
+        break;
+
+      default:
+        imagedestroy($image);
+        return;
+    }
+
+    imagejpeg($image, $absolutePath, 92);
+    imagedestroy($image);
   }
 }
