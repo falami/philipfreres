@@ -281,6 +281,28 @@
               Clique sur la carte ou déplace le marqueur pour ajuster précisément le point de la photo après.
             </div>
 
+
+            <div class="live-location-panel js-live-location-panel d-none">
+              <div class="fw-bold mb-1">
+                <i class="bi bi-bullseye me-1"></i> Repositionnement sur la photo avant
+              </div>
+
+              <div>
+                Distance au point avant :
+                <span class="js-live-distance live-distance-warn">-</span>
+              </div>
+
+              <div class="small text-muted js-live-accuracy mt-1">
+                Précision GPS : -
+              </div>
+
+              <button type="button"
+                      class="btn btn-success btn-sm fw-bold mt-2 js-use-current-position"
+                      data-kind="apres">
+                <i class="bi bi-crosshair me-1"></i> Utiliser ma position actuelle
+              </button>
+            </div>
+
             <div class="photo-map js-photo-map" data-kind="apres"></div>
           </div>
         </div>

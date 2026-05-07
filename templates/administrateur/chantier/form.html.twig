@@ -1342,6 +1342,24 @@
           syncDate(finPrev, finReel);
         });
       }
+
+
+      function distanceMeters(lat1, lng1, lat2, lng2) {
+        const R = 6371000;
+        const toRad = deg => deg * Math.PI / 180;
+
+        const dLat = toRad(lat2 - lat1);
+        const dLng = toRad(lng2 - lng1);
+
+        const a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(toRad(lat1)) *
+          Math.cos(toRad(lat2)) *
+          Math.sin(dLng / 2) *
+          Math.sin(dLng / 2);
+
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      }
       
       async function initPhotoMaps(scope = document) {
         const items = [];
@@ -1407,6 +1425,136 @@
             const marker = L.marker([defaultLat, defaultLng], {
               draggable: true
             }).addTo(map);
+
+
+            let liveMarker = null;
+            let targetMarker = null;
+            let accuracyCircle = null;
+            let watchId = null;
+
+            const livePanel = item.querySelector('.js-live-location-panel');
+            const liveDistance = item.querySelector('.js-live-distance');
+            const liveAccuracy = item.querySelector('.js-live-accuracy');
+            const useCurrentBtn = item.querySelector(`.js-use-current-position[data-kind="${kind}"]`);
+
+            const avantLatInput = item.querySelector('.js-photo-lat-avant');
+            const avantLngInput = item.querySelector('.js-photo-lng-avant');
+
+            function updateDistanceDisplay(distance, accuracy = null) {
+              if (!liveDistance) return;
+
+              liveDistance.textContent = distance < 1000
+                ? `${Math.round(distance)} m`
+                : `${(distance / 1000).toFixed(2)} km`;
+
+              liveDistance.classList.remove('live-distance-ok', 'live-distance-warn', 'live-distance-bad');
+
+              if (distance <= 5) {
+                liveDistance.classList.add('live-distance-ok');
+              } else if (distance <= 20) {
+                liveDistance.classList.add('live-distance-warn');
+              } else {
+                liveDistance.classList.add('live-distance-bad');
+              }
+
+              if (liveAccuracy) {
+                liveAccuracy.textContent = accuracy
+                  ? `Précision GPS : ±${Math.round(accuracy)} m`
+                  : 'Précision GPS : -';
+              }
+            }
+
+            function startLivePositionForAfterMap() {
+              if (kind !== 'apres') return;
+              if (!navigator.geolocation) return;
+
+              const avantLat = parseFloat(avantLatInput?.value || '');
+              const avantLng = parseFloat(avantLngInput?.value || '');
+
+              if (!Number.isFinite(avantLat) || !Number.isFinite(avantLng)) {
+                return;
+              }
+
+              livePanel?.classList.remove('d-none');
+
+              targetMarker = L.marker([avantLat, avantLng], {
+                draggable: false,
+                opacity: 0.95
+              }).addTo(map);
+
+              targetMarker.bindPopup('Point de référence : photo avant');
+
+              watchId = navigator.geolocation.watchPosition(
+                position => {
+                  const currentLat = position.coords.latitude;
+                  const currentLng = position.coords.longitude;
+                  const accuracy = position.coords.accuracy;
+
+                  if (!liveMarker) {
+                    liveMarker = L.circleMarker([currentLat, currentLng], {
+                      radius: 8,
+                      weight: 3,
+                      fillOpacity: 0.85
+                    }).addTo(map);
+
+                    liveMarker.bindPopup('Votre position actuelle');
+                  } else {
+                    liveMarker.setLatLng([currentLat, currentLng]);
+                  }
+
+                  if (!accuracyCircle) {
+                    accuracyCircle = L.circle([currentLat, currentLng], {
+                      radius: accuracy || 0,
+                      weight: 1,
+                      fillOpacity: 0.08
+                    }).addTo(map);
+                  } else {
+                    accuracyCircle.setLatLng([currentLat, currentLng]);
+                    accuracyCircle.setRadius(accuracy || 0);
+                  }
+
+                  const distance = distanceMeters(currentLat, currentLng, avantLat, avantLng);
+                  updateDistanceDisplay(distance, accuracy);
+                },
+                () => {
+                  if (liveAccuracy) {
+                    liveAccuracy.textContent = 'Position actuelle indisponible.';
+                  }
+                },
+                {
+                  enableHighAccuracy: true,
+                  maximumAge: 2000,
+                  timeout: 10000
+                }
+              );
+            }
+
+            useCurrentBtn?.addEventListener('click', async () => {
+              if (!navigator.geolocation) {
+                alert('La géolocalisation n’est pas disponible sur cet appareil.');
+                return;
+              }
+
+              navigator.geolocation.getCurrentPosition(
+                async position => {
+                  await setCoords(
+                    position.coords.latitude,
+                    position.coords.longitude,
+                    'gps_apres',
+                    true,
+                    true
+                  );
+                },
+                () => alert('Impossible de récupérer votre position actuelle.'),
+                {
+                  enableHighAccuracy: true,
+                  timeout: 10000,
+                  maximumAge: 0
+                }
+              );
+            });
+
+            startLivePositionForAfterMap();
 
             if (!hasCoords) {
               marker.setOpacity(0.55);
