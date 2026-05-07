@@ -37,9 +37,27 @@
 
         
         <a class="nav-link" href="{{ path('app_administrateur_fuel_dashboard', {'entite': entite.id}) }}"><i class="bi bi-speedometer2 me-2"></i>{{ 'navbar.dashboard.title'|trans }}</a>
-        <a class="nav-link" href="{{ path('app_administrateur_fuel_calendar_global', {'entite': entite.id}) }}"><i class="bi bi-calendar4-week  me-2"></i>{{ 'navbar.calendar.title'|trans }}</a>
-        <a class="nav-link" href="{{ path('app_administrateur_calendrier_index', {'entite': entite.id}) }}"><i class="bi bi-calendar4-week  me-2"></i>{{ 'navbar.ressource.title'|trans }}</a>
-        <a class="nav-link" href="{{ path('app_administrateur_fuel_map', {'entite': entite.id}) }}"><i class="bi bi-globe-americas me-2"></i>{{ 'navbar.map.title'|trans }}</a>
+
+
+        {# ===== CANTIER ===== #}
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-graph-up-arrow"></i> Analyse
+          </a>
+          <ul class="dropdown-menu">
+
+
+            <li><a class="dropdown-item" href="{{ path('app_administrateur_fuel_calendar_global', {'entite': entite.id}) }}"><i class="bi bi-calendar4-week me-2"></i>{{ 'navbar.calendar.title'|trans }}</a></li>
+            <li><a class="dropdown-item" href="{{ path('app_administrateur_calendrier_index', {'entite': entite.id}) }}"><i class="bi bi-calendar4-week me-2"></i>{{ 'navbar.ressource.title'|trans }}</a></li>
+            <li><a class="dropdown-item" href="{{ path('app_administrateur_fuel_map', {'entite': entite.id}) }}"><i class="bi bi-globe-americas me-2"></i>{{ 'navbar.map.title'|trans }}</a></li>
+            {#<li><a class="dropdown-item" href="{{ path('app_administrateur_planning_employes_index', {'entite': entite.id}) }}"><i class="bi bi-calendar3 me-2"></i>{{ 'navbar.utilisateur.planning'|trans }}</a></li>
+
+            <li><hr class="dropdown-divider"></li>#}
+          </ul>
+        </li>
+
+
+
 
         {# ===== GESTION ===== #}
         <li class="nav-item dropdown">
@@ -59,6 +77,48 @@
             <li><a class="dropdown-item" href="{{ path('app_administrateur_tce_import', {'entite': entite.id}) }}"><i class="bi bi-box-arrow-in-down me-2"></i>{{ 'navbar.tce.import'|trans }}</a></li>
 
 
+          </ul>
+        </li>
+
+
+        {# ===== RESSOURCES ===== #}
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-recycle"></i> Ressources
+          </a>
+          <ul class="dropdown-menu">
+
+
+            <li><a class="dropdown-item" href="{{ path('app_administrateur_dechet_index', {'entite': entite.id}) }}"><i class="bi bi-car-front me-2"></i>{{ 'navbar.truck.title'|trans }}</a></li>
+            <li><a class="dropdown-item" href="{{ path('app_administrateur_dechet_ajouter', {'entite': entite.id}) }}"><i class="bi bi-plus-circle me-2"></i>{{ 'navbar.truck.add'|trans }}</a></li>
+            {#<li><a class="dropdown-item" href="{{ path('app_administrateur_planning_employes_index', {'entite': entite.id}) }}"><i class="bi bi-calendar3 me-2"></i>{{ 'navbar.utilisateur.planning'|trans }}</a></li>
+            #}
+            <li><hr class="dropdown-divider"></li>
+
+            <li><a class="dropdown-item" href="{{ path('app_administrateur_dechet_index', {'entite': entite.id}) }}"><i class="bi bi-tools me-2"></i>{{ 'navbar.materiel.title'|trans }}</a></li>
+            <li><a class="dropdown-item" href="{{ path('app_administrateur_dechet_ajouter', {'entite': entite.id}) }}"><i class="bi bi-plus-circle me-2"></i>{{ 'navbar.materiel.add'|trans }}</a></li>
+            <li><hr class="dropdown-divider"></li>
+
+            <li><a class="dropdown-item" href="{{ path('app_administrateur_dechet_index', {'entite': entite.id}) }}"><i class="bi bi-recycle me-2"></i>{{ 'navbar.dechet.title'|trans }}</a></li>
+            <li><a class="dropdown-item" href="{{ path('app_administrateur_dechet_ajouter', {'entite': entite.id}) }}"><i class="bi bi-plus-circle me-2"></i>{{ 'navbar.dechet.add'|trans }}</a></li>
+          </ul>
+        </li>
+
+
+
+        {# ===== CANTIER ===== #}
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-cone-striped"></i> Chantier
+          </a>
+          <ul class="dropdown-menu">
+
+
+            <li><a class="dropdown-item" href="{{ path('app_administrateur_chantier_index', {'entite': entite.id}) }}"><i class="bi bi-cone-striped me-2"></i>{{ 'navbar.chantier.list'|trans }}</a></li>
+            <li><a class="dropdown-item" href="{{ path('app_administrateur_chantier_ajouter', {'entite': entite.id}) }}"><i class="bi bi-plus-circle me-2"></i>{{ 'navbar.chantier.add'|trans }}</a></li>
+            {#<li><a class="dropdown-item" href="{{ path('app_administrateur_planning_employes_index', {'entite': entite.id}) }}"><i class="bi bi-calendar3 me-2"></i>{{ 'navbar.utilisateur.planning'|trans }}</a></li>
+
+            <li><hr class="dropdown-divider"></li>#}
           </ul>
         </li>
 
