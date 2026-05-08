@@ -72,10 +72,17 @@ class Chantier
     #[ORM\OrderBy(['ordre' => 'ASC', 'id' => 'ASC'])]
     private Collection $zones;
 
+    #[ORM\ManyToMany(targetEntity: Utilisateur::class)]
+    #[ORM\JoinTable(name: 'chantier_utilisateur_affecte')]
+    #[ORM\JoinColumn(name: 'chantier_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
+    #[ORM\InverseJoinColumn(name: 'utilisateur_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
+    private Collection $utilisateursAffectes;
+
     public function __construct()
     {
         $this->dateCreation = new \DateTimeImmutable();
         $this->zones = new ArrayCollection();
+        $this->utilisateursAffectes = new ArrayCollection();
     }
 
     #[ORM\PrePersist]
@@ -472,5 +479,32 @@ class Chantier
         $jours = $this->getDureeReelleJoursOuvres();
 
         return $jours !== null ? $jours * 7 : null;
+    }
+
+
+    public function getUtilisateursAffectes(): Collection
+    {
+        return $this->utilisateursAffectes;
+    }
+
+    public function addUtilisateursAffecte(Utilisateur $utilisateur): static
+    {
+        if (!$this->utilisateursAffectes->contains($utilisateur)) {
+            $this->utilisateursAffectes->add($utilisateur);
+        }
+
+        return $this;
+    }
+
+    public function removeUtilisateursAffecte(Utilisateur $utilisateur): static
+    {
+        $this->utilisateursAffectes->removeElement($utilisateur);
+
+        return $this;
+    }
+
+    public function isAffecteA(Utilisateur $utilisateur): bool
+    {
+        return $this->utilisateursAffectes->contains($utilisateur);
     }
 }

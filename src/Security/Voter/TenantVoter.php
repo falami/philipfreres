@@ -45,14 +45,20 @@ final class TenantVoter extends Voter
 
     $roleMap = [
       TenantPermission::EMPLOYE => UtilisateurEntite::TENANT_EMPLOYE,
+      TenantPermission::CHEF => UtilisateurEntite::TENANT_CHEF,
+
+      // accès chantier pour les chefs + admins
+      TenantPermission::CHANTIER_MANAGE => UtilisateurEntite::TENANT_CHEF,
     ];
 
     if (isset($roleMap[$attribute])) {
-      return $membership->hasRole($roleMap[$attribute]);
+      return $membership->hasRole($roleMap[$attribute]) || $isAdmin;
     }
 
     return in_array($attribute, self::ADMIN_ONLY, true) ? $isAdmin : false;
   }
+
+
 
 
 
@@ -61,9 +67,6 @@ final class TenantVoter extends Voter
     TenantPermission::ENGIN_MANAGE,
     TenantPermission::ADMIN_DASHBOARD_MANAGE,
     TenantPermission::USERS_MANAGE,
-    TenantPermission::CHANTIER_MANAGE,
     TenantPermission::MATERIEL_MANAGE,
-
-
   ];
 }

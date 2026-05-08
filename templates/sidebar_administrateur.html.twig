@@ -15,6 +15,7 @@
 
 	{% set canAdmin    = is_granted('ENTITE_ADMIN', entite) %}
 	{% set canEmploye  = is_granted('ENTITE_EMPLOYE', entite) %}
+	{% set canChef  	 = is_granted('ENTITE_CHEF', entite) %}
 
 	<ul class="nav flex-column">
 	
@@ -311,6 +312,41 @@
 
 
 		<hr class="mt-3 mb-1">
+		<center>PRODUIT</center>
+		<hr class="mt-1 mb-1">
+
+		<li class="nav-item">
+			<button class="nav-link dropdown-toggle {% if
+					app.request.attributes.get('_route') == 'app_administrateur_produit_index' or
+					app.request.attributes.get('_route') == 'app_administrateur_produit_ajouter' or
+					app.request.attributes.get('_route') == 'app_administrateur_produit_modifier' %}text-theme-secondaire{% else %}text-white{% endif %}" data-bs-toggle="collapse" data-bs-target="#submenuProduit" aria-expanded="{% if app.request.attributes.get('_route') in [
+										'app_administrateur_produit_index', 'app_administrateur_produit_ajouter', 'app_administrateur_produit_modifier'
+										] %}true{% else %}false{% endif %}">
+				<i class="bi bi-car-front"></i>
+				{{ 'navbar.produit.title'|trans }}
+			</button>
+
+			<div class="collapse {% if
+					app.request.attributes.get('_route') == 'app_administrateur_produit_index' or
+					app.request.attributes.get('_route') == 'app_administrateur_produit_ajouter' or
+					app.request.attributes.get('_route') == 'app_administrateur_produit_modifier' %}show{% endif %}" id="submenuProduit">
+				<ul class="list-unstyled badge fs-6 large fw-normal text-bg-light text-dark w-100">
+					<li>
+						<a href="{{ path('app_administrateur_produit_index', {'entite' : entite.id}) }}">
+							<span class="{% if app.request.attributes.get('_route') == 'app_administrateur_produit_index' %}text-theme-secondaire{% endif %}">{{ 'navbar.produit.list'|trans }}</span>
+						</a>
+					</li>
+										<li>
+						<a href="{{ path('app_administrateur_produit_ajouter', {'entite' : entite.id}) }}">
+							<span class="{% if app.request.attributes.get('_route') == 'app_administrateur_produit_ajouter' %}text-theme-secondaire{% endif %}">{{ 'navbar.produit.add'|trans }}</span>
+						</a>
+					</li>
+				</ul>
+			</div>
+		</li>
+
+
+		<hr class="mt-3 mb-1">
 		<center>RESSOURCES</center>
 		<hr class="mt-1 mb-1">
 
@@ -419,6 +455,10 @@
 		</li>
 
 
+		{% endif %}
+
+		{% if canAdmin or canChef %}
+
 		<hr class="mt-3 mb-1">
 		<center>CHANTIER</center>
 		<hr class="mt-1 mb-1">
@@ -446,79 +486,16 @@
 							<span class="{% if app.request.attributes.get('_route') == 'app_administrateur_chantier_index' %}text-theme-secondaire{% endif %}">{{ 'navbar.chantier.list'|trans }}</span>
 						</a>
 					</li>
+					{% if canAdmin %}
 					<li>
 						<a href="{{ path('app_administrateur_chantier_ajouter', {'entite' : entite.id}) }}">
 							<span class="{% if app.request.attributes.get('_route') == 'app_administrateur_chantier_ajouter' %}text-theme-secondaire{% endif %}">{{ 'navbar.chantier.add'|trans }}</span>
 						</a>
 					</li>
+					{% endif %}
 				</ul>
 			</div>
 		</li>
-
-		<hr class="mt-3 mb-1">
-		<center>PRODUIT</center>
-		<hr class="mt-1 mb-1">
-
-		<li class="nav-item">
-			<button class="nav-link dropdown-toggle {% if
-					app.request.attributes.get('_route') == 'app_administrateur_produit_index' or
-					app.request.attributes.get('_route') == 'app_administrateur_produit_ajouter' or
-					app.request.attributes.get('_route') == 'app_administrateur_produit_modifier' %}text-theme-secondaire{% else %}text-white{% endif %}" data-bs-toggle="collapse" data-bs-target="#submenuProduit" aria-expanded="{% if app.request.attributes.get('_route') in [
-										'app_administrateur_produit_index', 'app_administrateur_produit_ajouter', 'app_administrateur_produit_modifier'
-										] %}true{% else %}false{% endif %}">
-				<i class="bi bi-car-front"></i>
-				{{ 'navbar.produit.title'|trans }}
-			</button>
-
-			<div class="collapse {% if
-					app.request.attributes.get('_route') == 'app_administrateur_produit_index' or
-					app.request.attributes.get('_route') == 'app_administrateur_produit_ajouter' or
-					app.request.attributes.get('_route') == 'app_administrateur_produit_modifier' %}show{% endif %}" id="submenuProduit">
-				<ul class="list-unstyled badge fs-6 large fw-normal text-bg-light text-dark w-100">
-					<li>
-						<a href="{{ path('app_administrateur_produit_index', {'entite' : entite.id}) }}">
-							<span class="{% if app.request.attributes.get('_route') == 'app_administrateur_produit_index' %}text-theme-secondaire{% endif %}">{{ 'navbar.produit.list'|trans }}</span>
-						</a>
-					</li>
-										<li>
-						<a href="{{ path('app_administrateur_produit_ajouter', {'entite' : entite.id}) }}">
-							<span class="{% if app.request.attributes.get('_route') == 'app_administrateur_produit_ajouter' %}text-theme-secondaire{% endif %}">{{ 'navbar.produit.add'|trans }}</span>
-						</a>
-					</li>
-				</ul>
-			</div>
-		</li>
-
-
-
-
-
-
-
-		
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 		{#<li class="nav-item">
 			<a href="{{ path('app_administrateur_dashboard_index', {'entite' : entite.id}) }}">

@@ -13,6 +13,9 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use App\Entity\Utilisateur;
+use App\Repository\UtilisateurRepository;
+use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 
 class ChantierType extends AbstractType
 {
@@ -20,7 +23,6 @@ class ChantierType extends AbstractType
   {
     /** @var Entite|null $entite */
     $entite = $o['entite'];
-
     $b
       ->add('nom', TextType::class, [
         'label' => 'Nom du chantier',
@@ -118,7 +120,30 @@ class ChantierType extends AbstractType
           'label' => false,
           'entite' => $entite,
         ],
+      ])
+    ;
+    if ($o['can_manage_affectations']) {
+      $b->add('utilisateursAffectes', EntityType::class, [
+        'class' => Utilisateur::class,
+        'label' => 'Utilisateurs autorisés à modifier ce chantier',
+        'required' => false,
+        'multiple' => true,
+        'expanded' => false,
+        'by_reference' => false,
+        'choice_label' => fn(Utilisateur $u) => trim(($u->getPrenom() ?: '') . ' ' . ($u->getNom() ?: '')),
+        'query_builder' => function (UtilisateurRepository $repo) use ($entite) {
+          return $repo->createQueryBuilder('u')
+            ->andWhere('u.entite = :entite')
+            ->setParameter('entite', $entite)
+            ->orderBy('u.nom', 'ASC')
+            ->addOrderBy('u.prenom', 'ASC');
+        },
+        'attr' => [
+          'class' => 'form-select',
+        ],
+        'help' => 'Ces utilisateurs pourront voir et modifier ce chantier, sauf s’il est en brouillon.',
       ]);
+    }
   }
 
   public function configureOptions(OptionsResolver $r): void
@@ -126,8 +151,9 @@ class ChantierType extends AbstractType
     $r->setDefaults([
       'data_class' => Chantier::class,
       'entite' => null,
+      'can_manage_affectations' => false,
     ]);
 
-    $r->setAllowedTypes('entite', ['null', Entite::class]);
+    $r->setAllowedTypes('can_manage_affectations', 'bool');
   }
 }

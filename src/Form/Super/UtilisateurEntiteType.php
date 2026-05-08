@@ -39,8 +39,9 @@ final class UtilisateurEntiteType extends AbstractType
         'multiple' => true,
         'expanded' => false,
         'choices' => [
-          'Employé'        => UtilisateurEntite::TENANT_EMPLOYE,
-          'Administrateur' => UtilisateurEntite::TENANT_ADMIN,
+          'Employé'           => UtilisateurEntite::TENANT_EMPLOYE,
+          'Administrateur'    => UtilisateurEntite::TENANT_ADMIN,
+          'Chef de chantier'  => UtilisateurEntite::TENANT_CHEF,
         ],
         'attr' => ['class' => 'form-select'],
         // Optionnel mais pratique : au minimum TENANT_EMPLOYE si vide

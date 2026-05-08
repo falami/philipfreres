@@ -20,6 +20,7 @@ use App\Repository\EnginRepository;
 use App\Repository\MaterielRepository;
 use App\Repository\DechetRepository;
 use App\Repository\UtilisateurRepository;
+use App\Enum\ChantierStatut;
 
 #[Route('/administrateur/{entite}/chantier')]
 #[IsGranted(TenantPermission::CHANTIER_MANAGE, subject: 'entite')]
@@ -46,6 +47,14 @@ final class ChantierController extends AbstractController
   #[Route('/ajax', name: 'app_administrateur_chantier_ajax', methods: ['POST'])]
   public function ajax(Entite $entite, Request $request, ChantierRepository $repo): JsonResponse
   {
+
+    /** @var Utilisateur $user */
+    $user = $this->getUser();
+
+    $isTenantAdmin = $this->isTenantAdmin($entite);
+
+
+
     $draw   = $request->request->getInt('draw', 0);
     $start  = max(0, $request->request->getInt('start', 0));
     $length = $request->request->getInt('length', 25);
@@ -62,6 +71,9 @@ final class ChantierController extends AbstractController
     // 🔀 Fusion recherche DataTables + champ custom
     $search = trim($searchDT . ' ' . $searchCustom);
 
+
+    $qb = $repo->createVisibleListQb($entite, $user, $isTenantAdmin, $search);
+
     // 🔃 ORDER
     $order = (array) $request->request->all('order');
     $col   = (int) ($order[0]['column'] ?? 0);
@@ -76,8 +88,6 @@ final class ChantierController extends AbstractController
       5 => 'c.statut',
     ];
 
-    // 🔨 QueryBuilder de base
-    $qb = $repo->createListQb($entite, $search);
 
     // =========================
     // ✅ FILTRES DYNAMIQUES
@@ -113,10 +123,10 @@ final class ChantierController extends AbstractController
     // COUNT
     // =========================
 
-    $recordsTotal = $repo->countForEntite($entite);
+    $recordsTotal = $repo->countVisibleForUser($entite, $user, $isTenantAdmin);
 
-    $qbCount = $repo->createListQb($entite, $search)
-      ->select('COUNT(c.id)');
+    $qbCount = $repo->createVisibleListQb($entite, $user, $isTenantAdmin, $search)
+      ->select('COUNT(DISTINCT c.id)');
 
     if ($statutFilter !== 'all') {
       $qbCount->andWhere('c.statut = :statut')
@@ -204,18 +214,21 @@ final class ChantierController extends AbstractController
     /** @var Utilisateur $user */
     $user = $this->getUser();
 
-    $isEdit = (bool) $chantier;
+    $isEdit = $chantier !== null;
 
     if (!$chantier) {
+      $this->denyUnlessCanAdminChantier($entite);
+
       $chantier = new Chantier();
       $chantier->setEntite($entite);
       $chantier->setCreateur($user);
-    } elseif ($chantier->getEntite()?->getId() !== $entite->getId()) {
-      throw $this->createNotFoundException();
+    } else {
+      $this->denyUnlessCanAccessChantier($entite, $chantier);
     }
 
     $form = $this->createForm(ChantierType::class, $chantier, [
       'entite' => $entite,
+      'can_manage_affectations' => $this->isTenantAdmin($entite),
     ]);
 
     $form->handleRequest($request);
@@ -530,9 +543,7 @@ final class ChantierController extends AbstractController
   #[Route('/{id}', name: 'app_administrateur_chantier_show', requirements: ['id' => '\d+'], methods: ['GET'])]
   public function show(Entite $entite, Chantier $chantier): Response
   {
-    if ($chantier->getEntite()?->getId() !== $entite->getId()) {
-      throw $this->createNotFoundException();
-    }
+    $this->denyUnlessCanAccessChantier($entite, $chantier);
 
     return $this->render('administrateur/chantier/show.html.twig', [
       'entite' => $entite,
@@ -563,9 +574,7 @@ final class ChantierController extends AbstractController
   #[Route('/{id}/pdf', name: 'app_administrateur_chantier_pdf', methods: ['GET'])]
   public function pdf(Entite $entite, Chantier $chantier): Response
   {
-    if ($chantier->getEntite()?->getId() !== $entite->getId()) {
-      throw $this->createNotFoundException();
-    }
+    $this->denyUnlessCanAccessChantier($entite, $chantier);
 
     $photoMaps = [];
 
@@ -764,6 +773,46 @@ SVG;
         'ok' => false,
         'message' => 'Erreur lors du reverse geocoding.'
       ], 500);
+    }
+  }
+
+
+  private function isTenantAdmin(Entite $entite): bool
+  {
+    return $this->isGranted(TenantPermission::ADMIN, $entite);
+  }
+
+  private function canAccessChantier(Entite $entite, Chantier $chantier): bool
+  {
+    if ($chantier->getEntite()?->getId() !== $entite->getId()) {
+      return false;
+    }
+
+    if ($this->isTenantAdmin($entite)) {
+      return true;
+    }
+
+    if ($chantier->getStatut() === ChantierStatut::BROUILLON) {
+      return false;
+    }
+
+    /** @var Utilisateur $user */
+    $user = $this->getUser();
+
+    return $chantier->isAffecteA($user);
+  }
+
+  private function denyUnlessCanAccessChantier(Entite $entite, Chantier $chantier): void
+  {
+    if (!$this->canAccessChantier($entite, $chantier)) {
+      throw $this->createAccessDeniedException('Vous n’avez pas accès à ce chantier.');
+    }
+  }
+
+  private function denyUnlessCanAdminChantier(Entite $entite): void
+  {
+    if (!$this->isTenantAdmin($entite)) {
+      throw $this->createAccessDeniedException('Seul un administrateur peut créer, supprimer ou affecter un chantier.');
     }
   }
 }

@@ -11,6 +11,7 @@ class UtilisateurEntite
 {
     // ✅ Rôles tenant (JSON)
     public const TENANT_EMPLOYE     = 'TENANT_EMPLOYE';
+    public const TENANT_CHEF     = 'TENANT_CHEF';
     public const TENANT_ADMIN       = 'TENANT_ADMIN';
 
     // ✅ Status

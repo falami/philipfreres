@@ -9,6 +9,7 @@ final class TenantPermission
   public const ACCESS      = 'ENTITE_ACCESS';
   public const ADMIN       = 'ENTITE_ADMIN';
   public const EMPLOYE     = 'ENTITE_EMPLOYE';
+  public const CHEF        = 'ENTITE_CHEF';
 
   public const UTILISATEUR_MANAGE = 'UTILISATEUR_MANAGE';
   public const ENGIN_MANAGE = 'ENGIN_MANAGE';
@@ -18,6 +19,7 @@ final class TenantPermission
 
 
   public const MATERIEL_MANAGE = 'MATERIEL_MANAGE';
+  public const TENANT_CHEF_DE_CHANTIER = 'TENANT_CHEF_DE_CHANTIER';
 
 
 
@@ -32,6 +34,7 @@ final class TenantPermission
     self::ACCESS,
     self::ADMIN,
     self::EMPLOYE,
+    self::CHEF,
 
     self::UTILISATEUR_MANAGE,
     self::CHANTIER_MANAGE,
@@ -39,5 +42,6 @@ final class TenantPermission
     self::ADMIN_DASHBOARD_MANAGE,
     self::USERS_MANAGE,
     self::MATERIEL_MANAGE,
+    self::TENANT_CHEF_DE_CHANTIER,
   ];
 }

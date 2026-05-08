@@ -81,6 +81,14 @@ final class RedirectAfterLogin
       ]));
     }
 
+    if ($ue->hasRole(UtilisateurEntite::TENANT_CHEF)) {
+      return new RedirectResponse($this->router->generate('app_administrateur_chantier_index', [
+        'entite' => $entiteId,
+      ]));
+    }
+
+
+
     if ($ue->hasRole(UtilisateurEntite::TENANT_EMPLOYE)) {
       return new RedirectResponse($this->router->generate('app_employe_access_denied', [
         'entite' => $entiteId,

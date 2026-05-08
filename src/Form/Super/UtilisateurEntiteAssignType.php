@@ -42,8 +42,9 @@ final class UtilisateurEntiteAssignType extends AbstractType
         'multiple' => true,        // <- JSON roles
         'expanded' => false,
         'choices' => [
-          'Employé'      => UtilisateurEntite::TENANT_EMPLOYE,
-          'Administrateur' => UtilisateurEntite::TENANT_ADMIN,
+          'Employé'           => UtilisateurEntite::TENANT_EMPLOYE,
+          'Administrateur'    => UtilisateurEntite::TENANT_ADMIN,
+          'Chef de chantier'  => UtilisateurEntite::TENANT_CHEF,
         ],
         'attr' => ['class' => 'form-select'],
       ])

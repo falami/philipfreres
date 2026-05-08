@@ -35,6 +35,7 @@ final class UtilisateurType extends AbstractType
     // ✅ Rôle “dans l’entité” (UtilisateurEntite.role)
     $choices = [
       'Employé'      => UtilisateurEntite::TENANT_EMPLOYE,
+      'Chef de chantier'      => UtilisateurEntite::TENANT_CHEF,
     ];
 
     if (($o['can_set_high_roles'] ?? false) === true) {
