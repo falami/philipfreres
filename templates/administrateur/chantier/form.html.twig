@@ -665,6 +665,86 @@
     .leaflet-container {
       z-index: 1;
     }
+
+
+
+    .zone-search-box{
+      padding: .85rem;
+      border-bottom: 1px solid var(--stroke);
+      background:
+        radial-gradient(700px 160px at 10% 0%, rgba(255,193,7,.10), transparent 60%),
+        #fff;
+    }
+
+    .zone-search-input-wrap{
+      position: relative;
+    }
+
+    .zone-search-input-wrap i{
+      position: absolute;
+      left: .9rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      z-index: 2;
+    }
+
+    .zone-search-input{
+      padding-left: 2.5rem !important;
+      padding-right: 2.5rem !important;
+    }
+
+    .zone-search-clear{
+      position: absolute;
+      right: .45rem;
+      top: 50%;
+      transform: translateY(-50%);
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+    }
+
+    .zone-search-clear:hover{
+      background: rgba(15,23,42,.06);
+      color: var(--ink);
+    }
+
+    .zone-search-results{
+      display:flex;
+      flex-wrap:wrap;
+      gap:.45rem;
+      margin-top:.65rem;
+    }
+
+    .zone-search-result{
+      border:1px solid rgba(15,23,42,.10);
+      background:rgba(248,250,252,.95);
+      border-radius:999px;
+      padding:.35rem .65rem;
+      font-size:.82rem;
+      font-weight:700;
+      color:var(--ink);
+      cursor:pointer;
+    }
+
+    .zone-search-result:hover{
+      background:rgba(255,193,7,.14);
+      border-color:rgba(255,193,7,.35);
+    }
+
+    .zone-item.zone-search-highlight{
+      box-shadow:0 0 0 .25rem rgba(255,193,7,.25), 0 18px 45px rgba(15,23,42,.14) !important;
+      border-color:rgba(255,193,7,.60) !important;
+    }
+
+    .zone-search-empty-result{
+      font-size:.86rem;
+      color:var(--muted);
+      margin-top:.65rem;
+    }
   </style>
 {% endblock %}
 
@@ -829,6 +909,29 @@
                     data-collection-holder="#zones-holder">
               <i class="bi bi-plus-circle me-1"></i> Ajouter un sous-chantier
             </button>
+          </div>
+
+
+
+
+          <div class="zone-search-box">
+            <div class="zone-search-input-wrap">
+              <i class="bi bi-search"></i>
+
+              <input
+                type="text"
+                id="zoneSearchInput"
+                class="form-control zone-search-input"
+                placeholder="Rechercher un sous-chantier ou une parcelle..."
+                autocomplete="off"
+              >
+
+              <button type="button" id="zoneSearchClear" class="zone-search-clear d-none" title="Effacer">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
+
+            <div id="zoneSearchResults" class="zone-search-results"></div>
           </div>
 
           <div class="p-1 p-md-2">
@@ -1893,6 +1996,7 @@
           initZoneTitles(item);
           initZoneSortable();
           updateZoneOrders();
+          renderZoneSearchResults(document.getElementById('zoneSearchInput')?.value || '');
         }
 
         initPhotoUploadUI(item);
@@ -2353,6 +2457,165 @@
         updatePhotoOrders();
       });
 
+
+      function normalizeSearchText(value) {
+        return String(value || '')
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase()
+          .trim();
+      }
+
+      function getZoneSearchData() {
+        return [...document.querySelectorAll('#zones-holder > .zone-item')].map((item, index) => {
+          const nomInput = item.querySelector('.js-zone-nom-input');
+          const parcelleInput = item.querySelector('.js-zone-parcelle-input');
+
+          const nom = (nomInput?.value || '').trim() || 'Sous-chantier';
+          const parcelle = (parcelleInput?.value || '').trim() || 'Sans parcelle';
+
+          return {
+            item,
+            index,
+            nom,
+            parcelle,
+            searchable: normalizeSearchText(`${nom} ${parcelle}`)
+          };
+        });
+      }
+
+      function openAndScrollToZone(zoneItem) {
+        if (!zoneItem) return;
+
+        const collapseEl = zoneItem.querySelector('.zone-collapse.collapse');
+        const toggleBtn = zoneItem.querySelector('[data-bs-toggle="collapse"]');
+
+        if (collapseEl && window.bootstrap) {
+          bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false }).show();
+        } else if (toggleBtn && toggleBtn.getAttribute('aria-expanded') !== 'true') {
+          toggleBtn.click();
+        }
+
+        zoneItem.classList.add('zone-search-highlight');
+
+        setTimeout(() => {
+          zoneItem.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }, 180);
+
+        setTimeout(() => {
+          zoneItem.classList.remove('zone-search-highlight');
+        }, 2200);
+
+        setTimeout(() => {
+          zoneItem.querySelectorAll('.js-photo-map').forEach(mapEl => {
+            if (mapEl._leafletMap) {
+              mapEl._leafletMap.invalidateSize(true);
+            }
+          });
+        }, 450);
+      }
+
+      function renderZoneSearchResults(query = '') {
+        const resultsEl = document.getElementById('zoneSearchResults');
+        const clearBtn = document.getElementById('zoneSearchClear');
+
+        if (!resultsEl) return;
+
+        const normalizedQuery = normalizeSearchText(query);
+        resultsEl.innerHTML = '';
+
+        clearBtn?.classList.toggle('d-none', normalizedQuery === '');
+
+        if (normalizedQuery === '') {
+          return;
+        }
+
+        const zones = getZoneSearchData();
+        const matches = zones
+          .filter(zone => zone.searchable.includes(normalizedQuery))
+          .slice(0, 8);
+
+        if (!matches.length) {
+          resultsEl.innerHTML = `
+            <div class="zone-search-empty-result">
+              <i class="bi bi-info-circle me-1"></i>
+              Aucun sous-chantier ou parcelle trouvé.
+            </div>
+          `;
+          return;
+        }
+
+        matches.forEach(zone => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'zone-search-result';
+          btn.innerHTML = `
+            <i class="bi bi-pin-map me-1"></i>
+            ${zone.index + 1}. ${zone.nom}
+            <span class="text-muted fw-semibold">· ${zone.parcelle}</span>
+          `;
+
+          btn.addEventListener('click', () => {
+            openAndScrollToZone(zone.item);
+          });
+
+          resultsEl.appendChild(btn);
+        });
+      }
+
+      function initZoneSearch() {
+        const input = document.getElementById('zoneSearchInput');
+        const clearBtn = document.getElementById('zoneSearchClear');
+
+        if (!input || input.dataset.zoneSearchInit === '1') return;
+        input.dataset.zoneSearchInit = '1';
+
+        let timeout = null;
+
+        input.addEventListener('input', () => {
+          clearTimeout(timeout);
+          timeout = setTimeout(() => {
+            renderZoneSearchResults(input.value);
+          }, 120);
+        });
+
+        input.addEventListener('keydown', e => {
+          if (e.key !== 'Enter') return;
+
+          e.preventDefault();
+
+          const first = document.querySelector('#zoneSearchResults .zone-search-result');
+          first?.click();
+        });
+
+        clearBtn?.addEventListener('click', () => {
+          input.value = '';
+          renderZoneSearchResults('');
+          input.focus();
+        });
+
+        document.addEventListener('input', e => {
+          if (
+            e.target.classList.contains('js-zone-nom-input') ||
+            e.target.classList.contains('js-zone-parcelle-input')
+          ) {
+            renderZoneSearchResults(input.value);
+          }
+        });
+
+        document.addEventListener('change', e => {
+          if (
+            e.target.classList.contains('js-zone-nom-input') ||
+            e.target.classList.contains('js-zone-parcelle-input')
+          ) {
+            renderZoneSearchResults(input.value);
+          }
+        });
+      }
+
       initWidgets(document);
       initRealDatesDefaults();
       initZoneRealDatesDefaults(document);
@@ -2361,6 +2624,7 @@
       bindRemoveButtons(document);
       ensureEmptyPlaceholders();
       initZoneTitles(document);
+      initZoneSearch();
       initZoneSortable();
       updateZoneOrders();
       initPhotoSortable();
