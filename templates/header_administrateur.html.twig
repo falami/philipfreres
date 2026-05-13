@@ -158,6 +158,20 @@
         {% endif %}
 
 
+        {% if is_granted('ENTITE_CHEF', entite) %}
+          <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-cone-striped"></i> Chantier
+          </a>
+          <ul class="dropdown-menu">
+
+
+            <li><a class="dropdown-item" href="{{ path('app_administrateur_chantier_index', {'entite': entite.id}) }}"><i class="bi bi-cone-striped me-2"></i>{{ 'navbar.chantier.list'|trans }}</a></li>
+          </ul>
+        </li>
+
+
+        {% endif %}
 
 
         {% if is_granted('ENTITE_EMPLOYE', entite) %}
