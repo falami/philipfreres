@@ -15,7 +15,7 @@ use Symfony\Component\HttpFoundation\{JsonResponse, RedirectResponse, Request, R
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use App\Entity\UtilisateurExternalId;
 use App\Enum\ExternalProvider;
 use App\Service\Carburant\FuelKey;
@@ -108,7 +108,7 @@ final class TransactionCarteAlxController extends AbstractController
     $data = array_map(function (TransactionCarteAlx $t) use ($entite, $em) {
       $engin = $t->getEngin();
 
-      $codeAgent = FuelKey::norm($t->getCodeAgent());
+      $codeAgent = FuelKey::norm($t->getAgent());
 
       $externalUser = null;
 
@@ -282,5 +282,104 @@ final class TransactionCarteAlxController extends AbstractController
       'entite' => $entite,
       'form' => $form->createView(),
     ]);
+  }
+
+  #[Route('/export-all', name: 'export_all', methods: ['POST'])]
+  public function exportAll(Entite $entite, Request $request, EntityManagerInterface $em): StreamedResponse
+  {
+    $searchV = trim((string) $request->request->get('search', ''));
+
+    $orderColIdx = (int) $request->request->get('orderColumn', 0);
+    $orderDir = strtolower((string) $request->request->get('orderDir', 'desc')) === 'asc' ? 'ASC' : 'DESC';
+
+    $orderMap = [
+      0 => 't.id',
+      1 => 't.journee',
+      2 => 't.horaire',
+      3 => 't.vehicule',
+      4 => 't.agent',
+      5 => 'e.nom',
+      6 => 'u.nom',
+      7 => 't.quantite',
+      8 => 't.prixUnitaire',
+      9 => 't.cuve',
+    ];
+
+    $orderBy = $orderMap[$orderColIdx] ?? 't.id';
+
+    $qb = $em->getRepository(TransactionCarteAlx::class)
+      ->createQueryBuilder('t')
+      ->leftJoin('t.engin', 'e')
+      ->leftJoin('t.utilisateur', 'u')
+      ->addSelect('e', 'u')
+      ->andWhere('t.entite = :entite')
+      ->setParameter('entite', $entite);
+
+    if ($searchV !== '') {
+      $qb->andWhere('
+      t.vehicule LIKE :q
+      OR t.agent LIKE :q
+      OR t.codeVeh LIKE :q
+      OR t.codeAgent LIKE :q
+      OR e.nom LIKE :q
+      OR u.nom LIKE :q
+      OR u.prenom LIKE :q
+      OR u.email LIKE :q
+    ')
+        ->setParameter('q', '%' . $searchV . '%');
+    }
+
+    $rows = $qb
+      ->orderBy($orderBy, $orderDir)
+      ->addOrderBy('t.id', 'DESC')
+      ->getQuery()
+      ->toIterable();
+
+    $filename = 'transactions_carte_alx_' . date('Ymd_His') . '.csv';
+
+    $response = new StreamedResponse(function () use ($rows) {
+      $out = fopen('php://output', 'w');
+
+      fwrite($out, "\xEF\xBB\xBF");
+
+      fputcsv($out, [
+        'ID',
+        'Journée',
+        'Horaire',
+        'Véhicule import',
+        'Agent import',
+        'Véhicule lié',
+        'Employé lié',
+        'Quantité',
+        'Prix unitaire',
+        'Cuve',
+      ], ';');
+
+      foreach ($rows as $t) {
+        /** @var TransactionCarteAlx $t */
+        $engin = $t->getEngin();
+        $utilisateur = $t->getUtilisateur();
+
+        fputcsv($out, [
+          $t->getId(),
+          $t->getJournee()?->format('d/m/Y') ?? '',
+          $t->getHoraire()?->format('H:i') ?? '',
+          $t->getVehicule() ?? '',
+          $t->getAgent() ?? '',
+          $engin?->getNom() ?? '',
+          $utilisateur ? trim(($utilisateur->getPrenom() ?? '') . ' ' . ($utilisateur->getNom() ?? '')) : '',
+          $t->getQuantite() ?? '',
+          $t->getPrixUnitaire() ?? '',
+          $t->getCuve() ?? '',
+        ], ';');
+      }
+
+      fclose($out);
+    });
+
+    $response->headers->set('Content-Type', 'text/csv; charset=UTF-8');
+    $response->headers->set('Content-Disposition', 'attachment; filename="' . $filename . '"');
+
+    return $response;
   }
 }
