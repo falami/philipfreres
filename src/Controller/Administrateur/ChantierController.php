@@ -2,7 +2,7 @@
 
 namespace App\Controller\Administrateur;
 
-use App\Entity\{Chantier, ChantierPhoto, Dechet, Entite, Utilisateur, Engin, Materiel};
+use App\Entity\{Chantier, Dechet, Entite, Utilisateur, Engin, Materiel};
 use App\Form\Administrateur\ChantierType;
 use App\Repository\ChantierRepository;
 use App\Security\Permission\TenantPermission;
@@ -99,8 +99,18 @@ final class ChantierController extends AbstractController
     }
 
     if ($semaineFilter !== '') {
-      $qb->andWhere('WEEK(c.dateDebutPrevisionnelle, 3) = :semaine')
-        ->setParameter('semaine', (int) $semaineFilter);
+      $year = (int) date('Y');
+      $week = (int) $semaineFilter;
+
+      $startOfWeek = new \DateTimeImmutable();
+      $startOfWeek = $startOfWeek->setISODate($year, $week)->setTime(0, 0, 0);
+
+      $endOfWeek = $startOfWeek->modify('+7 days');
+
+      $qb->andWhere('c.dateDebutPrevisionnelle >= :startWeek')
+        ->andWhere('c.dateDebutPrevisionnelle < :endWeek')
+        ->setParameter('startWeek', $startOfWeek)
+        ->setParameter('endWeek', $endOfWeek);
     }
 
     if ($villeFilter !== '') {
@@ -134,8 +144,18 @@ final class ChantierController extends AbstractController
     }
 
     if ($semaineFilter !== '') {
-      $qbCount->andWhere('WEEK(c.dateDebutPrevisionnelle, 3) = :semaine')
-        ->setParameter('semaine', (int) $semaineFilter);
+      $year = (int) date('Y');
+      $week = (int) $semaineFilter;
+
+      $startOfWeek = new \DateTimeImmutable();
+      $startOfWeek = $startOfWeek->setISODate($year, $week)->setTime(0, 0, 0);
+
+      $endOfWeek = $startOfWeek->modify('+7 days');
+
+      $qbCount->andWhere('c.dateDebutPrevisionnelle >= :startWeek')
+        ->andWhere('c.dateDebutPrevisionnelle < :endWeek')
+        ->setParameter('startWeek', $startOfWeek)
+        ->setParameter('endWeek', $endOfWeek);
     }
 
     if ($villeFilter !== '') {
@@ -157,9 +177,19 @@ final class ChantierController extends AbstractController
       $nbEngins = $chantier->getNbRessourcesEngins();
       $nbMateriels = $chantier->getNbRessourcesMateriels();
 
+      $utilisateursAffectes = $chantier->getUtilisateursAffectes();
+
+      $chefChantier = $utilisateursAffectes->isEmpty()
+        ? '<span class="badge-soft badge-soft-dark">Non défini</span>'
+        : implode('<br>', array_map(
+          fn($u) => '<span class="badge-soft badge-soft-primary">' . trim(($u->getPrenom() ?? '') . ' ' . ($u->getNom() ?? '')) . '</span>',
+          $utilisateursAffectes->toArray()
+        ));
+
       $data[] = [
         'id' => $chantier->getId(),
         'nom' => $chantier->getNom(),
+        'chefChantier' => $chefChantier,
         'ville' => $chantier->getVille() ?: '-',
         'semaine' => $chantier->getSemainePrevisionnelle() ?: '-',
         'periode' => ($chantier->getDateDebutPrevisionnelle()?->format('d/m/Y H:i') ?? '-')

@@ -10,8 +10,6 @@ use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
 use Twig\Environment;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Symfony\Component\Mime\Part\DataPart;
-use Symfony\Component\Mime\Part\File;
 
 final class MailerManager
 {
