@@ -25,12 +25,12 @@ final class EmailVerifier
             ['id' => $user->getId()]          // param de la route
         );
 
-        $from = new Address('no-reply@jeroensnow.fr', 'Jeroensnow');
+        $from = new Address('no-reply@philipfreres.com', 'Jeroensnow');
 
         $email = (new TemplatedEmail())
             ->from($from)
             ->sender($from)                   // header Sender
-            ->returnPath('no-reply@jeroensnow.fr')
+            ->returnPath('no-reply@philipfreres.com')
             ->to($user->getEmail())
             ->subject('Confirmez votre adresse e-mail')
             ->htmlTemplate('emails/verifieMail.html.twig')

@@ -84,8 +84,8 @@ final class RegistrationController extends AbstractController
             $emailVerifier->sendEmailConfirmation($user);
 
             $mailerManager->sendMailContext(
-                'no-reply@jeroensnow.fr',
-                'contact@jeroensnow.fr',
+                'no-reply@philipfreres.com',
+                'no-reply@philipfreres.com',
                 'Inscription d\'un nouveau compte : ' . $user->getEmail(),
                 'emails/inscriptionCompte.html.twig',
                 ['adherent' => $user]
@@ -124,8 +124,8 @@ final class RegistrationController extends AbstractController
         $emailVerifier->sendEmailConfirmation($user);
 
         $mailerManager->sendMailContext(
-            'no-reply@jeroensnow.fr',
-            'contact@jeroensnow.fr',
+            'no-reply@philipfreres.com',
+            'no-reply@philipfreres.com',
             'Création d\'un nouveau compte : ' . $user->getEmail(),
             'emails/creationCompte.html.twig',
             ['adherent' => $user]

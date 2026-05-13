@@ -115,7 +115,7 @@ final class ResetPasswordController extends AbstractController
         ], UrlGeneratorInterface::ABSOLUTE_URL);
 
         $email = (new TemplatedEmail())
-            ->from(new Address('no-reply@jeroensnow.fr', 'Jeroensnow'))
+            ->from(new Address('no-reply@philipfreres.com', 'Jeroensnow'))
             ->to(new Address($user->getEmail(), trim(($user->getPrenom() ?? '') . ' ' . ($user->getNom() ?? ''))))
             ->subject('Réinitialisation de votre mot de passe')
             ->htmlTemplate('reset_password/email.html.twig')

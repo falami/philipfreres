@@ -843,7 +843,7 @@ final class FuelMapController extends AbstractController
         'addressdetails' => 0,
       ],
       'headers' => [
-        'User-Agent' => 'PhilipFreresFuel/1.0 (contact: contact@jeroensnow.fr)',
+        'User-Agent' => 'PhilipFreresFuel/1.0 (contact: no-reply@philipfreres.com)',
         'Referer' => 'https://jeroensnow.fr',
         'Accept' => 'application/json',
       ],
@@ -895,7 +895,7 @@ final class FuelMapController extends AbstractController
           'addressdetails' => 0,
         ],
         'headers' => [
-          'User-Agent' => 'PhilipFreresFuel/1.0 (https://jeroensnow.fr; contact@jeroensnow.fr)',
+          'User-Agent' => 'PhilipFreresFuel/1.0 (https://jeroensnow.fr; no-reply@philipfreres.com)',
           'Referer' => 'https://jeroensnow.fr',
           'Accept' => 'application/json',
         ],

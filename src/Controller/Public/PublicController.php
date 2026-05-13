@@ -64,9 +64,9 @@ final class PublicController extends AbstractController
             $data = $form->getData();
 
             $email = (new Email())
-                ->from(new Address('no-reply@jeroensnow.fr', 'Philip Frères'))
+                ->from(new Address('no-reply@philipfreres.com', 'Philip Frères'))
                 ->replyTo($data['email'])
-                ->to('contact@jeroensnow.fr')
+                ->to('no-reply@philipfreres.com')
                 ->subject('Nouveau message de contact — ' . $data['nom'])
                 ->text("Nom : {$data['nom']}\nEmail : {$data['email']}\n\nMessage :\n{$data['message']}");
 

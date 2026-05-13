@@ -8,7 +8,7 @@ class NominatimGeocoder
 {
     public function __construct(
         private HttpClientInterface $client,
-        private string $userAgent = 'jeroensnow/1.0 (contact@jeroensnow.fr)'
+        private string $userAgent = 'jeroensnow/1.0 (no-reply@philipfreres.com)'
     ) {}
 
     /**

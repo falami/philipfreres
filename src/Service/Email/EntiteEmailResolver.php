@@ -8,7 +8,7 @@ use Symfony\Component\Mime\Address;
 final class EntiteEmailResolver
 {
   public function __construct(
-    private string $defaultFromEmail = 'contact@jeroensnow.fr',
+    private string $defaultFromEmail = 'no-reply@philipfreres.com',
     private string $defaultFromName  = 'Philip Frères',
   ) {}
 
