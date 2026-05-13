@@ -158,30 +158,13 @@ final class MailerManager
      */
     private function resolveFromAddress(?Entite $entite): Address
     {
-        $fallbackEmail = 'contact@jeroensnow.fr';
-        $fallbackName  = 'Philip Frères';
+        $name = 'Philip Frères';
 
-        $name  = $fallbackName;
-        $email = $fallbackEmail;
-
-        if ($entite) {
-            if (method_exists($entite, 'getNom') && $entite->getNom()) {
-                $name = (string) $entite->getNom();
-            }
-
-            // ⚠️ adapte ces getters à TON Entite (je laisse plusieurs possibilités)
-            if (method_exists($entite, 'getEmail') && $entite->getEmail()) {
-                $email = (string) $entite->getEmail();
-            } /*elseif (method_exists($entite, 'getEmailContact') && $entite->getEmailContact()) {
-                $email = (string) $entite->getEmailContact();
-            } elseif (method_exists($entite, 'getEmailCommercial') && $entite->getEmailCommercial()) {
-                $email = (string) $entite->getEmailCommercial();
-            } elseif (method_exists($entite, 'getEmailFacturation') && $entite->getEmailFacturation()) {
-                $email = (string) $entite->getEmailFacturation();
-            }*/
+        if ($entite && method_exists($entite, 'getNom') && $entite->getNom()) {
+            $name = (string) $entite->getNom();
         }
 
-        return new Address($email, $name);
+        return new Address('no-reply@philipfreres.com', $name);
     }
 
 
