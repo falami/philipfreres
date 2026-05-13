@@ -3,12 +3,13 @@
 namespace App\Entity;
 
 use App\Repository\EnginRepository;
+use App\Entity\EnginUsageReleve;
 use App\Enum\EnginType;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
+use App\Enum\EnginCompteurType;
 
 #[ORM\Entity(repositoryClass: EnginRepository::class)]
 class Engin
@@ -82,6 +83,17 @@ class Engin
     #[ORM\OneToMany(targetEntity: Note::class, mappedBy: 'engin')]
     private Collection $notes;
 
+
+    #[ORM\Column(enumType: EnginCompteurType::class, options: ['default' => 'heure'])]
+    private EnginCompteurType $compteurType = EnginCompteurType::HEURE;
+
+    /**
+     * @var Collection<int, EnginUsageReleve>
+     */
+    #[ORM\OneToMany(targetEntity: EnginUsageReleve::class, mappedBy: 'engin', orphanRemoval: true)]
+    #[ORM\OrderBy(['dateReleve' => 'DESC', 'id' => 'DESC'])]
+    private Collection $usageReleves;
+
     public function __construct()
     {
         $this->dateCreation = new \DateTimeImmutable();
@@ -90,6 +102,7 @@ class Engin
         $this->transactionCarteTotals = new ArrayCollection();
         $this->externalIds = new ArrayCollection();
         $this->notes = new ArrayCollection();
+        $this->usageReleves = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -339,6 +352,46 @@ class Engin
             // set the owning side to null (unless already changed)
             if ($note->getEngin() === $this) {
                 $note->setEngin(null);
+            }
+        }
+
+        return $this;
+    }
+
+    public function getCompteurType(): EnginCompteurType
+    {
+        return $this->compteurType;
+    }
+
+    public function setCompteurType(EnginCompteurType $compteurType): static
+    {
+        $this->compteurType = $compteurType;
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, EnginUsageReleve>
+     */
+    public function getUsageReleves(): Collection
+    {
+        return $this->usageReleves;
+    }
+
+    public function addUsageRelef(EnginUsageReleve $usageRelef): static
+    {
+        if (!$this->usageReleves->contains($usageRelef)) {
+            $this->usageReleves->add($usageRelef);
+            $usageRelef->setEngin($this);
+        }
+
+        return $this;
+    }
+
+    public function removeUsageRelef(EnginUsageReleve $usageRelef): static
+    {
+        if ($this->usageReleves->removeElement($usageRelef)) {
+            if ($usageRelef->getEngin() === $this) {
+                $usageRelef->setEngin(null);
             }
         }
 

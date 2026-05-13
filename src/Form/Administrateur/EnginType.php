@@ -19,6 +19,7 @@ use Symfony\Component\Validator\Constraints\{
     Length,
     Positive,
 };
+use App\Enum\EnginCompteurType;
 
 class EnginType extends AbstractType
 {
@@ -89,6 +90,14 @@ class EnginType extends AbstractType
                     'placeholder' => 'AA-123-AA',
                     'maxlength' => 12,
                 ],
+            ])
+            ->add('compteurType', EnumType::class, [
+                'class' => EnginCompteurType::class,
+                'label' => '*Calcul de l’utilisation',
+                'required' => true,
+                'choice_label' => fn(EnginCompteurType $e) => $e->label(),
+                'choice_translation_domain' => false,
+                'attr' => ['class' => 'form-select'],
             ]);
     }
 

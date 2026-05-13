@@ -1,0 +1,14 @@
+{# templates/administrateur/engin_usage/_actions.html.twig #}
+<div class="btn-group btn-group-sm user-actions" role="group">
+  
+  <button type="button"
+          class="btn btn-light user-main delete-btn"
+          data-bs-toggle="modal"
+          data-bs-target="#deleteModal"
+          data-url="{{ path('app_administrateur_engin_usage_delete', { entite: entite.id, id: releveId }) }}"
+          data-token="{{ csrf_token('delete_usage_' ~ releveId) }}"
+          title="Supprimer">
+    <i class="bi bi-trash"></i>
+  </button>
+  
+</div>

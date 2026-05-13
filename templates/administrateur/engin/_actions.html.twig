@@ -38,6 +38,24 @@
 
     <li><hr class="dropdown-divider"></li>
 
+
+
+    <li>
+      <a class="dropdown-item d-flex align-items-center"
+        href="{{ path('app_administrateur_engin_usage_ajouter', { entite: entite.id, enginId: engin.id }) }}">
+        <i class="bi bi-plus-circle me-2"></i> Ajouter relevé
+      </a>
+    </li>
+
+    <li>
+      <a class="dropdown-item d-flex align-items-center"
+        href="{{ path('app_administrateur_engin_usage_dashboard', { entite: entite.id, enginId: engin.id }) }}">
+        <i class="bi bi-graph-up-arrow me-2"></i> Dashboard utilisation
+      </a>
+    </li>
+
+    <li><hr class="dropdown-divider"></li>
+
     {# ✅ Supprimer (modal si tu l'as, sinon confirm) #}
     {# Option A : si tu as déjà un deleteModal générique (comme utilisateurs) #}
     <li>
