@@ -10,6 +10,7 @@ enum SousCategorieProduit: string
   case ETHANOL = 'ethanol';
   case ADBLUE = 'adblue';
   case GNR = 'gnr'; // Ce que tu as cité
+  case HVO100 = 'HVO100'; // Ce que tu as cité
 
     // --- ROUTE ---
   case PEAGE = 'peage';
@@ -37,13 +38,14 @@ enum SousCategorieProduit: string
       self::ACCESSOIRE => 'Accessoires Voiture',
       self::BOUTIQUE => 'Boutique',
       self::GNR => 'GNR',
+      self::HVO100 => 'HVO 100',
     };
   }
 
   public function getParentCategory(): CategorieProduit
   {
     return match ($this) {
-      self::GASOIL, self::ESSENCE, self::GNR, self::ETHANOL, self::ADBLUE => CategorieProduit::CARBURANT,
+      self::GASOIL, self::ESSENCE, self::GNR, self::ETHANOL, self::ADBLUE, self::HVO100 => CategorieProduit::CARBURANT,
       self::PEAGE, self::PARKING => CategorieProduit::ROUTE,
       self::LUBRIFIANT, self::LAVAGE => CategorieProduit::ENTRETIEN,
       self::ACCESSOIRE => CategorieProduit::ACCESSOIRE,
