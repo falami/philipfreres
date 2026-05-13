@@ -18,6 +18,7 @@ use App\Entity\UtilisateurExternalId;
 use App\Enum\ExternalProvider;
 use App\Service\Carburant\FuelKey;
 
+
 #[Route('/administrateur/{entite}/transaction/carte/total', name: 'app_administrateur_tct_')]
 #[IsGranted(TenantPermission::ENGIN_MANAGE, subject: 'entite')] // ⚠️ adapte la permission si tu en as une dédiée
 final class TransactionCarteTotalController extends AbstractController
@@ -385,6 +386,160 @@ final class TransactionCarteTotalController extends AbstractController
     });
 
     $filename = 'transactions_carte_total_' . date('Ymd_His') . '.csv';
+
+    $response->headers->set('Content-Type', 'text/csv; charset=UTF-8');
+    $response->headers->set('Content-Disposition', 'attachment; filename="' . $filename . '"');
+
+    return $response;
+  }
+
+  #[Route('/export-all-full', name: 'export_all_full', methods: ['POST'])]
+  public function exportAllFull(Entite $entite, Request $request, EntityManagerInterface $em): StreamedResponse
+  {
+    $searchV = trim((string) $request->request->get('search', ''));
+
+    $qb = $em->getRepository(TransactionCarteTotal::class)
+      ->createQueryBuilder('t')
+      ->leftJoin('t.engin', 'e')
+      ->leftJoin('t.utilisateur', 'u')
+      ->addSelect('e', 'u')
+      ->andWhere('t.entite = :entite')
+      ->setParameter('entite', $entite);
+
+    if ($searchV !== '') {
+      $qb->andWhere('
+      t.numeroCarte LIKE :q
+      OR t.produit LIKE :q
+      OR t.ville LIKE :q
+      OR t.immatriculationVehicule LIKE :q
+      OR t.codeConducteur LIKE :q
+      OR e.nom LIKE :q
+      OR u.nom LIKE :q
+      OR u.prenom LIKE :q
+      OR u.email LIKE :q
+    ')
+        ->setParameter('q', '%' . $searchV . '%');
+    }
+
+    $rows = $qb
+      ->orderBy('t.id', 'DESC')
+      ->getQuery()
+      ->toIterable();
+
+    $filename = 'transactions_carte_total_complet_' . date('Ymd_His') . '.csv';
+
+    $response = new StreamedResponse(function () use ($rows) {
+      $out = fopen('php://output', 'w');
+      fwrite($out, "\xEF\xBB\xBF");
+
+      fputcsv($out, [
+        'ID',
+        'Entité ID',
+        'Compte client',
+        'Raison sociale',
+        'Compte support',
+        'Division',
+        'Type support',
+        'Numéro carte',
+        'Rang',
+        'EVID',
+        'Nom personnalisé carte',
+        'Information complémentaire',
+        'Code conducteur',
+        'Immatriculation véhicule',
+        'Collaborateur nom',
+        'Collaborateur prénom',
+        'Kilométrage',
+        'Numéro transaction',
+        'Date transaction',
+        'Heure transaction',
+        'Pays',
+        'Ville',
+        'Code postal',
+        'Adresse',
+        'Catégorie produit',
+        'Produit',
+        'Statut',
+        'Numéro facture',
+        'Quantité',
+        'Unité',
+        'Prix unitaire EUR',
+        'TVA %',
+        'Remise EUR',
+        'Montant HT EUR',
+        'Montant TVA EUR',
+        'Montant TTC EUR',
+        'Fichier source',
+        'Ligne source',
+        'Import key',
+        'Importé le',
+        'Provider',
+        'Engin ID',
+        'Engin nom',
+        'Utilisateur ID',
+        'Utilisateur prénom',
+        'Utilisateur nom',
+        'Utilisateur email',
+      ], ';');
+
+      foreach ($rows as $t) {
+        /** @var TransactionCarteTotal $t */
+        $engin = $t->getEngin();
+        $utilisateur = $t->getUtilisateur();
+
+        fputcsv($out, [
+          $t->getId(),
+          $t->getEntite()?->getId(),
+          $t->getCompteClient() ?? '',
+          $t->getRaisonSociale() ?? '',
+          $t->getCompteSupport() ?? '',
+          $t->getDivision() ?? '',
+          $t->getTypeSupport() ?? '',
+          $t->getNumeroCarte() ?? '',
+          $t->getRang() ?? '',
+          $t->getEvid() ?? '',
+          $t->getNomPersonnaliseCarte() ?? '',
+          $t->getInformationComplementaire() ?? '',
+          $t->getCodeConducteur() ?? '',
+          $t->getImmatriculationVehicule() ?? '',
+          method_exists($t, 'getCollaborateurNom') ? ($t->getCollaborateurNom() ?? '') : '',
+          method_exists($t, 'getCollaborateurPrenom') ? ($t->getCollaborateurPrenom() ?? '') : '',
+          $t->getKilometrage() ?? '',
+          $t->getNumeroTransaction() ?? '',
+          $t->getDateTransaction()?->format('d/m/Y') ?? '',
+          $t->getHeureTransaction()?->format('H:i:s') ?? '',
+          $t->getPays() ?? '',
+          $t->getVille() ?? '',
+          $t->getCodePostal() ?? '',
+          $t->getAdresse() ?? '',
+          $t->getCategorieLibelleProduit() ?? '',
+          $t->getProduit() ?? '',
+          $t->getStatut() ?? '',
+          $t->getNumeroFacture() ?? '',
+          $t->getQuantite() ?? '',
+          $t->getUnite() ?? '',
+          $t->getPrixUnitaireEur() ?? '',
+          $t->getTauxTvaPercent() ?? '',
+          $t->getMontantRemiseEur() ?? '',
+          $t->getMontantHtEur() ?? '',
+          $t->getMontantTvaEur() ?? '',
+          $t->getMontantTtcEur() ?? '',
+          $t->getSourceFilename() ?? '',
+          $t->getSourceRow() ?? '',
+          $t->getImportKey() ?? '',
+          $t->getImportedAt()?->format('d/m/Y H:i:s') ?? '',
+          $t->getProvider()->value,
+          $engin?->getId() ?? '',
+          $engin?->getNom() ?? '',
+          $utilisateur?->getId() ?? '',
+          $utilisateur?->getPrenom() ?? '',
+          $utilisateur?->getNom() ?? '',
+          $utilisateur?->getEmail() ?? '',
+        ], ';');
+      }
+
+      fclose($out);
+    });
 
     $response->headers->set('Content-Type', 'text/csv; charset=UTF-8');
     $response->headers->set('Content-Disposition', 'attachment; filename="' . $filename . '"');

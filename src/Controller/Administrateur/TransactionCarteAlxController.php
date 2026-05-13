@@ -382,4 +382,112 @@ final class TransactionCarteAlxController extends AbstractController
 
     return $response;
   }
+
+
+  #[Route('/export-all-full', name: 'export_all_full', methods: ['POST'])]
+  public function exportAllFull(Entite $entite, Request $request, EntityManagerInterface $em): StreamedResponse
+  {
+    $searchV = trim((string) $request->request->get('search', ''));
+
+    $qb = $em->getRepository(TransactionCarteAlx::class)
+      ->createQueryBuilder('t')
+      ->leftJoin('t.engin', 'e')
+      ->leftJoin('t.utilisateur', 'u')
+      ->addSelect('e', 'u')
+      ->andWhere('t.entite = :entite')
+      ->setParameter('entite', $entite);
+
+    if ($searchV !== '') {
+      $qb->andWhere('
+      t.vehicule LIKE :q
+      OR t.agent LIKE :q
+      OR t.codeVeh LIKE :q
+      OR t.codeAgent LIKE :q
+      OR e.nom LIKE :q
+      OR u.nom LIKE :q
+      OR u.prenom LIKE :q
+      OR u.email LIKE :q
+    ')
+        ->setParameter('q', '%' . $searchV . '%');
+    }
+
+    $rows = $qb
+      ->orderBy('t.id', 'DESC')
+      ->getQuery()
+      ->toIterable();
+
+    $filename = 'transactions_carte_alx_complet_' . date('Ymd_His') . '.csv';
+
+    $response = new StreamedResponse(function () use ($rows) {
+      $out = fopen('php://output', 'w');
+      fwrite($out, "\xEF\xBB\xBF");
+
+      fputcsv($out, [
+        'ID',
+        'Entité ID',
+        'Journée',
+        'Horaire',
+        'Véhicule import',
+        'Code véhicule',
+        'Code agent',
+        'Agent import',
+        'Opération',
+        'Cuve',
+        'Quantité',
+        'Prix unitaire',
+        'Compteur',
+        'Fichier source',
+        'Ligne source',
+        'Import key',
+        'Importé le',
+        'Provider',
+        'Engin ID',
+        'Engin nom',
+        'Utilisateur ID',
+        'Utilisateur prénom',
+        'Utilisateur nom',
+        'Utilisateur email',
+      ], ';');
+
+      foreach ($rows as $t) {
+        /** @var TransactionCarteAlx $t */
+        $engin = $t->getEngin();
+        $utilisateur = $t->getUtilisateur();
+
+        fputcsv($out, [
+          $t->getId(),
+          $t->getEntite()?->getId(),
+          $t->getJournee()?->format('d/m/Y') ?? '',
+          $t->getHoraire()?->format('H:i:s') ?? '',
+          $t->getVehicule() ?? '',
+          $t->getCodeVeh() ?? '',
+          $t->getCodeAgent() ?? '',
+          $t->getAgent() ?? '',
+          $t->getOperation() ?? '',
+          $t->getCuve() ?? '',
+          $t->getQuantite() ?? '',
+          $t->getPrixUnitaire() ?? '',
+          $t->getCompteur() ?? '',
+          $t->getSourceFilename() ?? '',
+          $t->getSourceRow() ?? '',
+          $t->getImportKey() ?? '',
+          $t->getImportedAt()?->format('d/m/Y H:i:s') ?? '',
+          $t->getProvider()->value,
+          $engin?->getId() ?? '',
+          $engin?->getNom() ?? '',
+          $utilisateur?->getId() ?? '',
+          $utilisateur?->getPrenom() ?? '',
+          $utilisateur?->getNom() ?? '',
+          $utilisateur?->getEmail() ?? '',
+        ], ';');
+      }
+
+      fclose($out);
+    });
+
+    $response->headers->set('Content-Type', 'text/csv; charset=UTF-8');
+    $response->headers->set('Content-Disposition', 'attachment; filename="' . $filename . '"');
+
+    return $response;
+  }
 }

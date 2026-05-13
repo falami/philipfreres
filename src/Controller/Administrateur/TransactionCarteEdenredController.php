@@ -12,6 +12,7 @@ use Symfony\Component\HttpFoundation\{Request, Response, JsonResponse, RedirectR
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 #[Route('/administrateur/{entite}/transaction/carte/edenred', name: 'app_administrateur_tce_')]
 #[IsGranted(TenantPermission::ENGIN_MANAGE, subject: 'entite')]
@@ -292,5 +293,187 @@ final class TransactionCarteEdenredController extends AbstractController
       'entite' => $entite,
       'form' => $form->createView(),
     ]);
+  }
+
+  #[Route('/export-all', name: 'export_all', methods: ['POST'])]
+  public function exportAll(Entite $entite, Request $request, EntityManagerInterface $em): StreamedResponse
+  {
+    $searchV = trim((string) $request->request->get('search', ''));
+
+    $qb = $em->getRepository(TransactionCarteEdenred::class)
+      ->createQueryBuilder('t')
+      ->leftJoin('t.engin', 'e')
+      ->leftJoin('t.utilisateur', 'u')
+      ->addSelect('e', 'u')
+      ->andWhere('t.entite = :entite')
+      ->setParameter('entite', $entite);
+
+    if ($searchV !== '') {
+      $qb->andWhere('
+      t.numeroTransaction LIKE :q
+      OR t.carteNumero LIKE :q
+      OR t.produit LIKE :q
+      OR t.siteLibelle LIKE :q
+      OR t.siteLibelleCourt LIKE :q
+      OR t.codeVehicule LIKE :q
+      OR t.codeChauffeur LIKE :q
+      OR e.nom LIKE :q
+      OR u.nom LIKE :q
+      OR u.prenom LIKE :q
+      OR u.email LIKE :q
+    ')
+        ->setParameter('q', '%' . $searchV . '%');
+    }
+
+    $rows = $qb
+      ->orderBy('t.id', 'DESC')
+      ->getQuery()
+      ->toIterable();
+
+    $filename = 'transactions_carte_edenred_' . date('Ymd_His') . '.csv';
+
+    $response = new StreamedResponse(function () use ($rows) {
+      $out = fopen('php://output', 'w');
+      fwrite($out, "\xEF\xBB\xBF");
+
+      fputcsv($out, [
+        'ID',
+        'Date',
+        'Transaction',
+        'Carte',
+        'Produit',
+        'Quantité',
+        'Site',
+        'Véhicule',
+        'Employé',
+        'TTC',
+      ], ';');
+
+      foreach ($rows as $t) {
+        /** @var TransactionCarteEdenred $t */
+        $engin = $t->getEngin();
+        $utilisateur = $t->getUtilisateur();
+
+        fputcsv($out, [
+          $t->getId(),
+          $t->getDateTransaction()?->format('d/m/Y') ?? '',
+          $t->getNumeroTransaction() ?? '',
+          $t->getCarteNumero() ?? '',
+          $t->getProduit() ?? '',
+          $t->getQuantite() !== null ? number_format(((float) $t->getQuantite()) / 100, 2, ',', ' ') : '',
+          $t->getSiteLibelleCourt() ?: ($t->getSiteLibelle() ?? ''),
+          $engin?->getNom() ?? '',
+          $utilisateur ? trim(($utilisateur->getPrenom() ?? '') . ' ' . ($utilisateur->getNom() ?? '')) : '',
+          $t->getMontantTtc() ?? '',
+        ], ';');
+      }
+
+      fclose($out);
+    });
+
+    $response->headers->set('Content-Type', 'text/csv; charset=UTF-8');
+    $response->headers->set('Content-Disposition', 'attachment; filename="' . $filename . '"');
+
+    return $response;
+  }
+
+  #[Route('/export-all-full', name: 'export_all_full', methods: ['POST'])]
+  public function exportAllFull(Entite $entite, Request $request, EntityManagerInterface $em): StreamedResponse
+  {
+    $searchV = trim((string) $request->request->get('search', ''));
+
+    $qb = $em->getRepository(TransactionCarteEdenred::class)
+      ->createQueryBuilder('t')
+      ->leftJoin('t.engin', 'e')
+      ->leftJoin('t.utilisateur', 'u')
+      ->addSelect('e', 'u')
+      ->andWhere('t.entite = :entite')
+      ->setParameter('entite', $entite);
+
+    if ($searchV !== '') {
+      $qb->andWhere('
+      t.numeroTransaction LIKE :q
+      OR t.carteNumero LIKE :q
+      OR t.produit LIKE :q
+      OR t.siteLibelle LIKE :q
+      OR t.siteLibelleCourt LIKE :q
+      OR t.codeVehicule LIKE :q
+      OR t.codeChauffeur LIKE :q
+      OR e.nom LIKE :q
+      OR u.nom LIKE :q
+      OR u.prenom LIKE :q
+      OR u.email LIKE :q
+    ')
+        ->setParameter('q', '%' . $searchV . '%');
+    }
+
+    $rows = $qb
+      ->orderBy('t.id', 'DESC')
+      ->getQuery()
+      ->toIterable();
+
+    $filename = 'transactions_carte_edenred_complet_' . date('Ymd_His') . '.csv';
+
+    $response = new StreamedResponse(function () use ($rows) {
+      $out = fopen('php://output', 'w');
+      fwrite($out, "\xEF\xBB\xBF");
+
+      fputcsv($out, [
+        'ID',
+        'Entité ID',
+        'Date transaction',
+        'Numéro transaction',
+        'Carte',
+        'Produit',
+        'Quantité',
+        'Site court',
+        'Site',
+        'Code véhicule',
+        'Immatriculation',
+        'Code chauffeur',
+        'Montant TTC',
+        'Engin ID',
+        'Engin nom',
+        'Utilisateur ID',
+        'Utilisateur prénom',
+        'Utilisateur nom',
+        'Utilisateur email',
+      ], ';');
+
+      foreach ($rows as $t) {
+        /** @var TransactionCarteEdenred $t */
+        $engin = $t->getEngin();
+        $utilisateur = $t->getUtilisateur();
+
+        fputcsv($out, [
+          $t->getId(),
+          $t->getEntite()?->getId(),
+          $t->getDateTransaction()?->format('d/m/Y') ?? '',
+          $t->getNumeroTransaction() ?? '',
+          $t->getCarteNumero() ?? '',
+          $t->getProduit() ?? '',
+          $t->getQuantite() ?? '',
+          $t->getSiteLibelleCourt() ?? '',
+          $t->getSiteLibelle() ?? '',
+          $t->getCodeVehicule() ?? '',
+          $t->getImmatriculation() ?? '',
+          $t->getCodeChauffeur() ?? '',
+          $t->getMontantTtc() ?? '',
+          $engin?->getId() ?? '',
+          $engin?->getNom() ?? '',
+          $utilisateur?->getId() ?? '',
+          $utilisateur?->getPrenom() ?? '',
+          $utilisateur?->getNom() ?? '',
+          $utilisateur?->getEmail() ?? '',
+        ], ';');
+      }
+
+      fclose($out);
+    });
+
+    $response->headers->set('Content-Type', 'text/csv; charset=UTF-8');
+    $response->headers->set('Content-Disposition', 'attachment; filename="' . $filename . '"');
+
+    return $response;
   }
 }
