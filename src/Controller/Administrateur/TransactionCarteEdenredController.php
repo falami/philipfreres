@@ -49,8 +49,11 @@ final class TransactionCarteEdenredController extends AbstractController
       2 => 't.numeroTransaction',
       3 => 't.carteNumero',
       4 => 't.produit',
-      5 => 't.siteLibelleCourt',
-      6 => 't.montantTtc',
+      5 => 't.quantite',
+      6 => 't.siteLibelleCourt',
+      7 => 'e.nom',
+      8 => 'u.nom',
+      9 => 't.montantTtc',
     ];
     $orderBy = $orderMap[$orderColIdx] ?? 't.id';
 
@@ -63,6 +66,9 @@ final class TransactionCarteEdenredController extends AbstractController
       ->getQuery()->getSingleScalarResult();
 
     $qb = $repo->createQueryBuilder('t')
+      ->leftJoin('t.engin', 'e')
+      ->leftJoin('t.utilisateur', 'u')
+      ->addSelect('e', 'u')
       ->andWhere('t.entite = :entite')
       ->setParameter('entite', $entite);
 
@@ -77,6 +83,14 @@ final class TransactionCarteEdenredController extends AbstractController
                 OR t.siteLibelleCourt LIKE :q
                 OR t.immatriculation LIKE :q
                 OR t.numeroFacture LIKE :q
+                OR t.quantite LIKE :q
+                OR t.codeVehicule LIKE :q
+                OR t.codeChauffeur LIKE :q
+                OR e.nom LIKE :q
+                OR e.immatriculation LIKE :q
+                OR u.nom LIKE :q
+                OR u.prenom LIKE :q
+                OR u.email LIKE :q
             ')->setParameter('q', '%' . $searchV . '%');
     }
 
@@ -95,14 +109,47 @@ final class TransactionCarteEdenredController extends AbstractController
       ->getQuery()->getResult();
 
     $data = array_map(function (TransactionCarteEdenred $t) use ($entite) {
+      $engin = $t->getEngin();
+      $utilisateur = $t->getUtilisateur();
+
       return [
         'id' => $t->getId(),
         'date' => $t->getDateTransaction()?->format('d/m/Y') ?? '—',
         'numTxn' => $t->getNumeroTransaction() ?: '—',
         'carte' => $t->getCarteNumero() ?: '—',
         'produit' => $t->getProduit() ?: '—',
+
+        'quantite' => $t->getQuantite() !== null
+          ? number_format(((float) $t->getQuantite()) / 100, 2, ',', ' ') . ' L'
+          : '—',
+
         'site' => $t->getSiteLibelleCourt() ?: ($t->getSiteLibelle() ?: '—'),
-        'ttc' => $t->getMontantTtc() ?? '—',
+
+        'engin' => $engin
+          ? sprintf(
+            '<span class="badge text-bg-success"><i class="bi bi-truck me-1"></i>%s</span>',
+            htmlspecialchars($engin->getNom() ?? 'Véhicule', ENT_QUOTES, 'UTF-8')
+          )
+          : sprintf(
+            '<span class="badge text-bg-light text-muted"><i class="bi bi-question-circle me-1"></i>%s</span>',
+            htmlspecialchars($t->getCodeVehicule() ?: $t->getImmatriculation() ?: 'Non lié', ENT_QUOTES, 'UTF-8')
+          ),
+
+        'utilisateur' => $utilisateur
+          ? sprintf(
+            '<span class="badge text-bg-primary"><i class="bi bi-person-check me-1"></i>%s %s</span>',
+            htmlspecialchars($utilisateur->getPrenom() ?? '', ENT_QUOTES, 'UTF-8'),
+            htmlspecialchars($utilisateur->getNom() ?? '', ENT_QUOTES, 'UTF-8')
+          )
+          : sprintf(
+            '<span class="badge text-bg-light text-muted"><i class="bi bi-person-x me-1"></i>%s</span>',
+            htmlspecialchars($t->getCodeChauffeur() ?: 'Non lié', ENT_QUOTES, 'UTF-8')
+          ),
+
+        'ttc' => $t->getMontantTtc() !== null
+          ? number_format((float) $t->getMontantTtc(), 2, ',', ' ')
+          : '—',
+
         'actions' => $this->renderView('administrateur/transaction/carte/edenred/_actions.html.twig', [
           't' => $t,
           'entite' => $entite,

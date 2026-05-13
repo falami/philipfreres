@@ -178,8 +178,10 @@
           <th>#</th>
           <th>Journée</th>
           <th>Horaire</th>
-          <th>Véhicule</th>
-          <th>Agent</th>
+          <th>Véhicule import</th>
+          <th>Agent import</th>
+          <th>Véhicule lié</th>
+          <th>Employé lié</th>
           <th class="text-end">Qté</th>
           <th class="text-end">PU</th>
           <th class="text-end">Cuve</th>
@@ -249,14 +251,16 @@
         {data:'horaire'},
         {data:'vehicule'},
         {data:'agent'},
+        {data:'engin'},
+        {data:'utilisateur'},
         {data:'quantite'},
         {data:'prix'},
         {data:'cuve'},
         {data:'actions'}
       ],
       columnDefs:[
-        {targets:[5,6,7,8], className:'text-end'},
-        {targets:8, className:'action-column text-end', orderable:false, searchable:false},
+        {targets:[7,8,9], className:'text-end'},
+        {targets:10, className:'action-column text-end', orderable:false, searchable:false},
         {type:'num', targets:0}
       ],
 

@@ -16,6 +16,10 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
+use App\Entity\UtilisateurExternalId;
+use App\Enum\ExternalProvider;
+use App\Service\Carburant\FuelKey;
+
 #[Route('/administrateur/{entite}/transaction/carte/alx', name: 'app_administrateur_tca_')]
 #[IsGranted(TenantPermission::ENGIN_MANAGE, subject: 'entite')]
 final class TransactionCarteAlxController extends AbstractController
@@ -45,15 +49,19 @@ final class TransactionCarteAlxController extends AbstractController
     $orderColIdx = isset($order[0]['column']) ? (int)$order[0]['column'] : 0;
     $orderDir = strtolower($order[0]['dir'] ?? 'desc') === 'asc' ? 'ASC' : 'DESC';
 
+
+
     $orderMap = [
       0 => 't.id',
       1 => 't.journee',
       2 => 't.horaire',
       3 => 't.vehicule',
       4 => 't.agent',
-      5 => 't.quantite',
-      6 => 't.prixUnitaire',
-      7 => 't.cuve',
+      5 => 'e.nom',
+      6 => 'u.nom',
+      7 => 't.quantite',
+      8 => 't.prix',
+      9 => 't.cuve',
     ];
     $orderBy = $orderMap[$orderColIdx] ?? 't.id';
 
@@ -67,6 +75,9 @@ final class TransactionCarteAlxController extends AbstractController
 
     $qb = $repo->createQueryBuilder('t')
       ->andWhere('t.entite = :entite')
+      ->leftJoin('t.engin', 'e')
+      ->leftJoin('t.utilisateur', 'u')
+      ->addSelect('e', 'u')
       ->setParameter('entite', $entite);
 
     if ($searchV !== '') {
@@ -94,7 +105,24 @@ final class TransactionCarteAlxController extends AbstractController
       ->setMaxResults($length)
       ->getQuery()->getResult();
 
-    $data = array_map(function (TransactionCarteAlx $t) use ($entite) {
+    $data = array_map(function (TransactionCarteAlx $t) use ($entite, $em) {
+      $engin = $t->getEngin();
+
+      $codeAgent = FuelKey::norm($t->getCodeAgent());
+
+      $externalUser = null;
+
+      if ($codeAgent) {
+        $externalUser = $em
+          ->getRepository(UtilisateurExternalId::class)
+          ->findOneBy([
+            'provider' => ExternalProvider::ALX,
+            'value' => $codeAgent,
+            'active' => true,
+          ]);
+      }
+
+      $utilisateur = $t->getUtilisateur() ?: $externalUser?->getUtilisateur();
       return [
         'id' => $t->getId(),
         'journee' => $t->getJournee()?->format('d/m/Y') ?? '-',
@@ -104,6 +132,23 @@ final class TransactionCarteAlxController extends AbstractController
         'quantite' => $t->getQuantite() ?? '-',
         'prix' => $t->getPrixUnitaire() ?? '-',
         'cuve' => $t->getCuve() ?? '-',
+        'engin' => $engin
+          ? sprintf(
+            '<span class="badge text-bg-success"><i class="bi bi-truck me-1"></i>%s</span>',
+            htmlspecialchars($engin->getNom() ?? 'Véhicule', ENT_QUOTES, 'UTF-8')
+          )
+          : '<span class="badge text-bg-light text-muted"><i class="bi bi-question-circle me-1"></i>Non lié</span>',
+
+        'utilisateur' => $utilisateur
+          ? sprintf(
+            '<span class="badge text-bg-primary"><i class="bi bi-person-check me-1"></i>%s</span>',
+            htmlspecialchars(
+              trim(($utilisateur->getPrenom() ?? '') . ' ' . ($utilisateur->getNom() ?? '')),
+              ENT_QUOTES,
+              'UTF-8'
+            )
+          )
+          : '<span class="badge text-bg-light text-muted"><i class="bi bi-person-x me-1"></i>Non lié</span>',
         'actions' => $this->renderView('administrateur/transaction/carte/alx/_actions.html.twig', [
           't' => $t,
           'entite' => $entite,

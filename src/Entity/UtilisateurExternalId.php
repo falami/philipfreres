@@ -47,7 +47,7 @@ class UtilisateurExternalId
   public function __construct(ExternalProvider $provider, string $value)
   {
     $this->provider = $provider;
-    $this->value = trim($value);
+    $this->value = FuelKey::norm($value) ?? trim($value);
     $this->createdAt = new \DateTimeImmutable();
     $this->active = true;
   }

@@ -172,7 +172,10 @@
           <th>Heure</th>
           <th>Carte</th>
           <th>Produit</th>
+          <th class="text-end">Quantité</th>
           <th>Ville</th>
+          <th>Véhicule</th>
+          <th>Employé</th>
           <th class="text-end">TTC (€)</th>
           <th class="text-end"></th>
         </tr>
@@ -271,13 +274,16 @@
         {data:'heure'},
         {data:'carte'},
         {data:'produit'},
+        {data:'quantite'},
         {data:'ville'},
+        {data:'engin'},
+        {data:'utilisateur'},
         {data:'ttc'},
         {data:'actions'}
       ],
       columnDefs:[
-        {targets:6, className:'text-end', orderable:true},
-        {targets:7, className:'action-column text-end', orderable:false, searchable:false},
+        {targets:[5,9], className:'text-end', orderable:true},
+        {targets:10, className:'action-column text-end', orderable:false, searchable:false},
         {type:'num', targets:0}
       ],
 

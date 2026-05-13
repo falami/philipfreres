@@ -14,6 +14,9 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use App\Entity\UtilisateurExternalId;
+use App\Enum\ExternalProvider;
+use App\Service\Carburant\FuelKey;
 
 #[Route('/administrateur/{entite}/transaction/carte/total', name: 'app_administrateur_tct_')]
 #[IsGranted(TenantPermission::ENGIN_MANAGE, subject: 'entite')] // ⚠️ adapte la permission si tu en as une dédiée
@@ -50,8 +53,11 @@ final class TransactionCarteTotalController extends AbstractController
       2 => 't.heureTransaction',
       3 => 't.numeroCarte',
       4 => 't.produit',
-      5 => 't.ville',
-      6 => 't.montantTtcEur',
+      5 => 't.quantite',
+      6 => 't.ville',
+      7 => 'e.nom',
+      8 => 'u.nom',
+      9 => 't.montantTtcEur',
     ];
     $orderBy = $orderMap[$orderColIdx] ?? 't.id';
 
@@ -67,7 +73,10 @@ final class TransactionCarteTotalController extends AbstractController
     // base query
     $qb = $repo->createQueryBuilder('t')
       ->andWhere('t.entite = :entite')
-      ->setParameter('entite', $entite);
+      ->setParameter('entite', $entite)
+      ->leftJoin('t.engin', 'e')
+      ->leftJoin('t.utilisateur', 'u')
+      ->addSelect('e', 'u');
 
     // search (large)
     if ($searchV !== '') {
@@ -80,6 +89,14 @@ final class TransactionCarteTotalController extends AbstractController
                 OR t.ville LIKE :q
                 OR t.pays LIKE :q
                 OR t.numeroFacture LIKE :q
+                OR t.quantite LIKE :q
+                OR t.codeConducteur LIKE :q
+                OR t.immatriculationVehicule LIKE :q
+                OR e.nom LIKE :q
+                OR e.immatriculation LIKE :q
+                OR u.nom LIKE :q
+                OR u.prenom LIKE :q
+                OR u.email LIKE :q
             ')
         ->setParameter('q', '%' . $searchV . '%');
     }
@@ -99,9 +116,25 @@ final class TransactionCarteTotalController extends AbstractController
       ->setMaxResults($length)
       ->getQuery()->getResult();
 
-    $data = array_map(function (TransactionCarteTotal $t) use ($entite) {
+    $data = array_map(function (TransactionCarteTotal $t) use ($entite, $em) {
       $date = $t->getDateTransaction()?->format('d/m/Y') ?? '—';
       $heure = $t->getHeureTransaction()?->format('H:i') ?? '—';
+      $engin = $t->getEngin();
+      $codeConducteur = FuelKey::norm($t->getCodeConducteur());
+
+      $externalUser = null;
+
+      if ($codeConducteur) {
+        $externalUser = $em
+          ->getRepository(UtilisateurExternalId::class)
+          ->findOneBy([
+            'provider' => ExternalProvider::TOTAL,
+            'value' => $codeConducteur,
+            'active' => true,
+          ]);
+      }
+
+      $utilisateur = $t->getUtilisateur() ?: $externalUser?->getUtilisateur();
 
       return [
         'id' => $t->getId(),
@@ -111,6 +144,32 @@ final class TransactionCarteTotalController extends AbstractController
         'produit' => $t->getProduit() ?: '—',
         'ville' => $t->getVille() ?: '—',
         'ttc' => $t->getMontantTtcEur() ?? '—',
+        'quantite' => $t->getQuantite() !== null
+          ? number_format(
+            ((float) $t->getQuantite()),
+            2,
+            ',',
+            ' '
+          ) . ' ' . ($t->getUnite() ?: 'L')
+          : '—',
+
+        'engin' => $engin
+          ? sprintf(
+            '<span class="badge text-bg-success"><i class="bi bi-truck me-1"></i>%s</span>',
+            htmlspecialchars($engin->getNom() ?? 'Véhicule', ENT_QUOTES, 'UTF-8')
+          )
+          : '<span class="text-muted">—</span>',
+
+        'utilisateur' => $utilisateur
+          ? sprintf(
+            '<span class="badge text-bg-primary"><i class="bi bi-person-check me-1"></i>%s</span>',
+            htmlspecialchars(
+              trim(($utilisateur->getPrenom() ?? '') . ' ' . ($utilisateur->getNom() ?? '')),
+              ENT_QUOTES,
+              'UTF-8'
+            )
+          )
+          : '<span class="badge text-bg-light text-muted"><i class="bi bi-person-x me-1"></i>Non lié</span>',
         'actions' => $this->renderView('administrateur/transaction/carte/total/_actions.html.twig', [
           't' => $t,
           'entite' => $entite,

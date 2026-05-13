@@ -163,7 +163,10 @@
           <th>Txn</th>
           <th>Carte</th>
           <th>Produit</th>
+          <th class="text-end">Quantité</th>
           <th>Site</th>
+          <th>Véhicule</th>
+          <th>Employé</th>
           <th class="text-end">TTC (€)</th>
           <th class="text-end"></th>
         </tr>
@@ -225,13 +228,16 @@
         {data:'numTxn'},
         {data:'carte'},
         {data:'produit'},
+        {data:'quantite'},
         {data:'site'},
+        {data:'engin'},
+        {data:'utilisateur'},
         {data:'ttc'},
         {data:'actions'}
       ],
       columnDefs:[
-        {targets:6, className:'text-end'},
-        {targets:7, className:'action-column text-end', orderable:false, searchable:false},
+        {targets:[5,9], className:'text-end'},
+        {targets:10, className:'action-column text-end', orderable:false, searchable:false},
         {type:'num', targets:0}
       ],
       initComplete:function(){
