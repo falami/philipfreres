@@ -139,9 +139,10 @@
 
             <li><a class="dropdown-item" href="{{ path('app_administrateur_utilisateur_index', {'entite': entite.id}) }}"><i class="bi bi-person-workspace me-2"></i>{{ 'navbar.utilisateur.list'|trans }}</a></li>
             <li><a class="dropdown-item" href="{{ path('app_administrateur_utilisateur_ajouter', {'entite': entite.id}) }}"><i class="bi bi-person-add me-2"></i>{{ 'navbar.utilisateur.add'|trans }}</a></li>
-            {#<li><a class="dropdown-item" href="{{ path('app_administrateur_planning_employes_index', {'entite': entite.id}) }}"><i class="bi bi-calendar3 me-2"></i>{{ 'navbar.utilisateur.planning'|trans }}</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{{ path('app_administrateur_utilisateur_external_id_all_index', {'entite': entite.id}) }}"><i class="bi bi-calendar3 me-2"></i>{{ 'navbar.utilisateur.externalId'|trans }}</a></li>
 
-            <li><hr class="dropdown-divider"></li>#}
+            
           </ul>
         </li>
 
@@ -154,6 +155,7 @@
           <ul class="dropdown-menu">
             <li><a class="dropdown-item" href="{{ path('app_administrateur_engin_index', {'entite': entite.id}) }}"><i class="bi bi-truck me-2"></i>{{ 'navbar.truck.list'|trans }}</a></li>
             <li><a class="dropdown-item" href="{{ path('app_administrateur_engin_ajouter', {'entite': entite.id}) }}"><i class="bi bi-plus-square me-2"></i>{{ 'navbar.truck.add'|trans }}</a></li>
+            <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item" href="{{ path('app_administrateur_engin_external_id_all_index', {'entite': entite.id}) }}"><i class="bi bi-arrows-angle-contract me-2"></i>{{ 'navbar.truck.externalId'|trans }}</a></li>
             <li><a class="dropdown-item" href="{{ path('app_administrateur_engin_usage_index', {'entite': entite.id}) }}"><i class="bi bi-speedometer2 me-2"></i>{{ 'navbar.truck.kilometrage'|trans }}</a></li>
           </ul>
