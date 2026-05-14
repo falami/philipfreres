@@ -132,12 +132,12 @@
         {# ===== COMPTES ===== #}
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-            <i class="bi bi-people"></i> Comptes
+            <i class="bi bi-people"></i> Employés
           </a>
           <ul class="dropdown-menu">
 
 
-            <li><a class="dropdown-item" href="{{ path('app_administrateur_utilisateur_index', {'entite': entite.id}) }}"><i class="bi bi-person-workspace me-2"></i>{{ 'navbar.utilisateur.title'|trans }}</a></li>
+            <li><a class="dropdown-item" href="{{ path('app_administrateur_utilisateur_index', {'entite': entite.id}) }}"><i class="bi bi-person-workspace me-2"></i>{{ 'navbar.utilisateur.list'|trans }}</a></li>
             <li><a class="dropdown-item" href="{{ path('app_administrateur_utilisateur_ajouter', {'entite': entite.id}) }}"><i class="bi bi-person-add me-2"></i>{{ 'navbar.utilisateur.add'|trans }}</a></li>
             {#<li><a class="dropdown-item" href="{{ path('app_administrateur_planning_employes_index', {'entite': entite.id}) }}"><i class="bi bi-calendar3 me-2"></i>{{ 'navbar.utilisateur.planning'|trans }}</a></li>
 
