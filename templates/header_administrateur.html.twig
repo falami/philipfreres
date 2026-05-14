@@ -103,8 +103,8 @@
             <li><a class="dropdown-item" href="{{ path('app_administrateur_dechet_ajouter', {'entite': entite.id}) }}"><i class="bi bi-plus-circle me-2"></i>{{ 'navbar.dechet.add'|trans }}</a></li>
           </ul>
         </li>
-
-
+        {% endif %}
+        {% if is_granted('ENTITE_CHEF', entite) or is_granted('ENTITE_ADMIN', entite) %}
 
         {# ===== CANTIER ===== #}
         <li class="nav-item dropdown">
@@ -115,12 +115,18 @@
 
 
             <li><a class="dropdown-item" href="{{ path('app_administrateur_chantier_index', {'entite': entite.id}) }}"><i class="bi bi-cone-striped me-2"></i>{{ 'navbar.chantier.list'|trans }}</a></li>
+            {% if is_granted('ENTITE_ADMIN', entite) %}
             <li><a class="dropdown-item" href="{{ path('app_administrateur_chantier_ajouter', {'entite': entite.id}) }}"><i class="bi bi-plus-circle me-2"></i>{{ 'navbar.chantier.add'|trans }}</a></li>
+            {% endif %}
             {#<li><a class="dropdown-item" href="{{ path('app_administrateur_planning_employes_index', {'entite': entite.id}) }}"><i class="bi bi-calendar3 me-2"></i>{{ 'navbar.utilisateur.planning'|trans }}</a></li>
 
             <li><hr class="dropdown-divider"></li>#}
           </ul>
         </li>
+
+
+        {% endif %}
+        {% if is_granted('ENTITE_ADMIN', entite) %}
 
 
         {# ===== COMPTES ===== #}
@@ -146,7 +152,7 @@
             <i class="bi bi-truck"></i> Engin
           </a>
           <ul class="dropdown-menu">
-            <li><a class="dropdown-item" href="{{ path('app_administrateur_engin_index', {'entite': entite.id}) }}"><i class="bi bi-truck me-2"></i>{{ 'navbar.truck.title'|trans }}</a></li>
+            <li><a class="dropdown-item" href="{{ path('app_administrateur_engin_index', {'entite': entite.id}) }}"><i class="bi bi-truck me-2"></i>{{ 'navbar.truck.list'|trans }}</a></li>
             <li><a class="dropdown-item" href="{{ path('app_administrateur_engin_ajouter', {'entite': entite.id}) }}"><i class="bi bi-plus-square me-2"></i>{{ 'navbar.truck.add'|trans }}</a></li>
             <li><a class="dropdown-item" href="{{ path('app_administrateur_engin_external_id_all_index', {'entite': entite.id}) }}"><i class="bi bi-arrows-angle-contract me-2"></i>{{ 'navbar.truck.externalId'|trans }}</a></li>
             <li><a class="dropdown-item" href="{{ path('app_administrateur_engin_usage_index', {'entite': entite.id}) }}"><i class="bi bi-speedometer2 me-2"></i>{{ 'navbar.truck.kilometrage'|trans }}</a></li>
@@ -158,18 +164,6 @@
         {% endif %}
 
 
-        {% if is_granted('ENTITE_CHEF', entite) %}
-          <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-            <i class="bi bi-cone-striped"></i> Chantier
-          </a>
-          <ul class="dropdown-menu">
-            <li><a class="dropdown-item" href="{{ path('app_administrateur_chantier_index', {'entite': entite.id}) }}"><i class="bi bi-cone-striped me-2"></i>{{ 'navbar.chantier.list'|trans }}</a></li>
-          </ul>
-        </li>
-
-
-        {% endif %}
 
 
         {% if is_granted('ENTITE_EMPLOYE', entite) %}
