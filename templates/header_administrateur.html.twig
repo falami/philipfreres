@@ -148,8 +148,8 @@
           <ul class="dropdown-menu">
             <li><a class="dropdown-item" href="{{ path('app_administrateur_engin_index', {'entite': entite.id}) }}"><i class="bi bi-truck me-2"></i>{{ 'navbar.truck.title'|trans }}</a></li>
             <li><a class="dropdown-item" href="{{ path('app_administrateur_engin_ajouter', {'entite': entite.id}) }}"><i class="bi bi-plus-square me-2"></i>{{ 'navbar.truck.add'|trans }}</a></li>
-            {#<li><a class="dropdown-item" href="{{ path('app_TENANT_EMPLOYE_sessions', {'entite': entite.id}) }}"><i class="bi bi-calendar3 me-2"></i>{{ 'navbar.mySessions'|trans }}</a></li>
-            <li><a class="dropdown-item" href="{{ path('app_TENANT_EMPLOYE_positioning_list', {'entite': entite.id}) }}"><i class="bi bi-clipboard2-check me-2"></i>{{ 'navbar.quizPositioningTrainee.title'|trans }}</a></li>#}
+            <li><a class="dropdown-item" href="{{ path('app_administrateur_engin_external_id_all_index', {'entite': entite.id}) }}"><i class="bi bi-arrows-angle-contract me-2"></i>{{ 'navbar.truck.externalId'|trans }}</a></li>
+            <li><a class="dropdown-item" href="{{ path('app_administrateur_engin_usage_index', {'entite': entite.id}) }}"><i class="bi bi-speedometer2 me-2"></i>{{ 'navbar.truck.kilometrage'|trans }}</a></li>
           </ul>
         </li>
 

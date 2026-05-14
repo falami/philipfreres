@@ -431,6 +431,7 @@ navbar:
     list: "Lister"
     add: "Ajouter"
     externalId: "Correspondance"
+    kilometrage: "Kilometrage"
 
   materiel:
     title: "Matériel"

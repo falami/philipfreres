@@ -355,18 +355,26 @@
 					app.request.attributes.get('_route') == 'app_administrateur_engin_index' or
 					app.request.attributes.get('_route') == 'app_administrateur_engin_ajouter' or
 					app.request.attributes.get('_route') == 'app_administrateur_engin_modifier' or
-					app.request.attributes.get('_route') == 'app_administrateur_engin_external_id_all_index' %}text-theme-secondaire{% else %}text-white{% endif %}" data-bs-toggle="collapse" data-bs-target="#submenuEngin" aria-expanded="{% if app.request.attributes.get('_route') in [
-										'app_administrateur_engin_index', 'app_administrateur_engin_ajouter', 'app_administrateur_engin_modifier', 'app_administrateur_engin_external_id_all_index'
+					app.request.attributes.get('_route') == 'app_administrateur_engin_external_id_all_index' or
+					app.request.attributes.get('_route') == 'app_administrateur_engin_usage_index' %}text-theme-secondaire{% else %}text-white{% endif %}" data-bs-toggle="collapse" data-bs-target="#submenuEngin" aria-expanded="{% if app.request.attributes.get('_route') in [
+										'app_administrateur_engin_index', 
+										'app_administrateur_engin_ajouter', 
+										'app_administrateur_engin_modifier', 
+										'app_administrateur_engin_external_id_all_index',
+										'app_administrateur_engin_usage_index'
 										] %}true{% else %}false{% endif %}">
 				<i class="bi bi-car-front"></i>
 				{{ 'navbar.truck.title'|trans }}
 			</button>
 
+			
+
 			<div class="collapse {% if
 					app.request.attributes.get('_route') == 'app_administrateur_engin_index' or
 					app.request.attributes.get('_route') == 'app_administrateur_engin_ajouter' or
 					app.request.attributes.get('_route') == 'app_administrateur_engin_modifier' or
-					app.request.attributes.get('_route') == 'app_administrateur_engin_external_id_all_index' %}show{% endif %}" id="submenuEngin">
+					app.request.attributes.get('_route') == 'app_administrateur_engin_external_id_all_index' or
+					app.request.attributes.get('_route') == 'app_administrateur_engin_usage_index' %}show{% endif %}" id="submenuEngin">
 				<ul class="list-unstyled badge fs-6 large fw-normal text-bg-light text-dark w-100">
 					<li>
 						<a href="{{ path('app_administrateur_engin_index', {'entite' : entite.id}) }}">
@@ -382,6 +390,12 @@
 					<li>
 						<a href="{{ path('app_administrateur_engin_external_id_all_index', {'entite' : entite.id}) }}">
 							<span class="{% if app.request.attributes.get('_route') == 'app_administrateur_engin_external_id_all_index' %}text-theme-secondaire{% endif %}">{{ 'navbar.truck.externalId'|trans }}</span>
+						</a>
+					</li>
+
+					<li>
+						<a href="{{ path('app_administrateur_engin_usage_index', {'entite' : entite.id}) }}">
+							<span class="{% if app.request.attributes.get('_route') == 'app_administrateur_engin_usage_index' %}text-theme-secondaire{% endif %}">{{ 'navbar.truck.kilometrage'|trans }}</span>
 						</a>
 					</li>
 				</ul>
