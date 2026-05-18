@@ -121,7 +121,7 @@ final class TransactionCarteEdenredController extends AbstractController
         'produit' => $t->getProduit() ?: '—',
 
         'quantite' => $t->getQuantite() !== null
-          ? number_format(((float) $t->getQuantite()) / 100, 2, ',', ' ') . ' L'
+          ? number_format((float) $t->getQuantite(), 2, ',', ' ') . ' L'
           : '—',
 
         'site' => $t->getSiteLibelleCourt() ?: ($t->getSiteLibelle() ?: '—'),
@@ -360,7 +360,7 @@ final class TransactionCarteEdenredController extends AbstractController
           $t->getNumeroTransaction() ?? '',
           $t->getCarteNumero() ?? '',
           $t->getProduit() ?? '',
-          $t->getQuantite() !== null ? number_format(((float) $t->getQuantite()) / 100, 2, ',', ' ') : '',
+          $t->getQuantite() !== null ? number_format((float) $t->getQuantite(), 2, ',', ' ') : '',
           $t->getSiteLibelleCourt() ?: ($t->getSiteLibelle() ?? ''),
           $engin?->getNom() ?? '',
           $utilisateur ? trim(($utilisateur->getPrenom() ?? '') . ' ' . ($utilisateur->getNom() ?? '')) : '',
