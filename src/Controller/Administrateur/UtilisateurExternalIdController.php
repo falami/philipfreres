@@ -11,13 +11,16 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\{Request, Response};
 use Symfony\Component\Routing\Attribute\Route;
+use App\Service\Carburant\TotalUtilisateurRematcher;
 
 #[Route('/administrateur/{entite}/utilisateurs/{utilisateur}/external-ids', name: 'app_administrateur_utilisateur_external_id_')]
 final class UtilisateurExternalIdController extends AbstractController
 {
+
   public function __construct(
     private readonly EntityManagerInterface $em,
     private readonly UtilisateurExternalIdRepository $repo,
+    private readonly TotalUtilisateurRematcher $totalUtilisateurRematcher,
   ) {}
 
   #[Route('', name: 'index', methods: ['GET'])]
@@ -44,6 +47,11 @@ final class UtilisateurExternalIdController extends AbstractController
     if ($form->isSubmitted() && $form->isValid()) {
       $this->em->persist($item);
       $this->em->flush();
+
+      if ($item->getProvider() === ExternalProvider::TOTAL) {
+        $nb = $this->totalUtilisateurRematcher->rematchForEntite($entite);
+        $this->addFlash('info', $nb . ' transactions TOTAL rematchées.');
+      }
 
       $this->addFlash('success', 'Identifiant externe ajouté.');
       return $this->redirectToRoute('app_administrateur_utilisateur_external_id_index', [
@@ -73,6 +81,11 @@ final class UtilisateurExternalIdController extends AbstractController
 
     if ($form->isSubmitted() && $form->isValid()) {
       $this->em->flush();
+
+      if ($item->getProvider() === ExternalProvider::TOTAL) {
+        $nb = $this->totalUtilisateurRematcher->rematchForEntite($entite);
+        $this->addFlash('info', $nb . ' transactions TOTAL rematchées.');
+      }
 
       $this->addFlash('success', 'Identifiant externe mis à jour.');
       return $this->redirectToRoute('app_administrateur_utilisateur_external_id_index', [
@@ -108,6 +121,12 @@ final class UtilisateurExternalIdController extends AbstractController
     $note = trim((string) $request->request->get('note'));
     $item->disable($note !== '' ? $note : null);
     $this->em->flush();
+
+
+    if ($item->getProvider() === ExternalProvider::TOTAL) {
+      $nb = $this->totalUtilisateurRematcher->rematchForEntite($entite);
+      $this->addFlash('info', $nb . ' transactions TOTAL rematchées.');
+    }
 
     $this->addFlash('success', 'Identifiant externe désactivé.');
     return $this->redirectToRoute('app_administrateur_utilisateur_external_id_index', [

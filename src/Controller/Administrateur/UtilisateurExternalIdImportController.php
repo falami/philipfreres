@@ -15,12 +15,16 @@ use Symfony\Component\HttpFoundation\{Request, Response};
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use App\Service\Carburant\TotalUtilisateurRematcher;
 
 #[Route('/administrateur/{entite}/utilisateur-external-id', name: 'app_administrateur_utilisateur_external_id_')]
 #[IsGranted(TenantPermission::UTILISATEUR_MANAGE, subject: 'entite')]
 final class UtilisateurExternalIdImportController extends AbstractController
 {
-  public function __construct(private readonly UtilisateurExternalIdExcelImporter $importer) {}
+  public function __construct(
+    private readonly UtilisateurExternalIdExcelImporter $importer,
+    private readonly TotalUtilisateurRematcher $totalUtilisateurRematcher,
+  ) {}
 
   #[Route('/import', name: 'import', methods: ['GET', 'POST'])]
   public function import(Entite $entite, Request $request): Response
@@ -44,6 +48,9 @@ final class UtilisateurExternalIdImportController extends AbstractController
       }
 
       $result = $this->importer->import($entite, $me, $file);
+
+      $nb = $this->totalUtilisateurRematcher->rematchForEntite($entite);
+      $this->addFlash('info', $nb . ' transactions TOTAL rematchées.');
 
       if (!empty($result['errors'])) {
         $this->addFlash('warning', sprintf(
