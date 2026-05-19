@@ -133,7 +133,7 @@ final class TransactionCarteEdenredController extends AbstractController
           )
           : sprintf(
             '<span class="badge text-bg-light text-muted"><i class="bi bi-question-circle me-1"></i>%s</span>',
-            htmlspecialchars($t->getCodeChauffeur() ?: $t->getImmatriculation() ?: 'Non lié', ENT_QUOTES, 'UTF-8')
+            htmlspecialchars($t->getKilometrage() ?: $t->getCodeChauffeur() ?: $t->getImmatriculation() ?: 'Non lié', ENT_QUOTES, 'UTF-8')
           ),
 
         'utilisateur' => $utilisateur

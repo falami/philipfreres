@@ -806,8 +806,8 @@ final class TransactionCarteEdenredExcelImporter
     $carteEmbossage     = $this->cleanQuoted($row['carte_embossage'] ?? null);
 
     // mapping compatible sans modifier l'entité
-    $this->setIf($t, 'codeVehicule', $codeChauffeur ?? $carteAnalytique);
-    $this->setIf($t, 'codeChauffeur', $codeVehicule ?? $carteEmbossage ?? $carteIntituleImmat);
+    $this->setIf($t, 'codeVehicule', $codeVehicule ?? $carteAnalytique);
+    $this->setIf($t, 'codeChauffeur', $codeChauffeur ?? $carteEmbossage ?? $carteIntituleImmat);
     $this->setIf($t, 'immatriculation', $immatriculation ?? $carteIntituleImmat);
 
     $this->setIf($t, 'kilometrage', $this->cleanQuoted($row['kilometrage'] ?? null));
