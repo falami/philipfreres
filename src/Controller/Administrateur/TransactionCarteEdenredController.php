@@ -133,7 +133,7 @@ final class TransactionCarteEdenredController extends AbstractController
           )
           : sprintf(
             '<span class="badge text-bg-light text-muted"><i class="bi bi-question-circle me-1"></i>%s</span>',
-            htmlspecialchars($t->getCodeVehicule() ?: $t->getImmatriculation() ?: 'Non lié', ENT_QUOTES, 'UTF-8')
+            htmlspecialchars($t->getCodeChauffeur() ?: $t->getImmatriculation() ?: 'Non lié', ENT_QUOTES, 'UTF-8')
           ),
 
         'utilisateur' => $utilisateur
@@ -144,7 +144,7 @@ final class TransactionCarteEdenredController extends AbstractController
           )
           : sprintf(
             '<span class="badge text-bg-light text-muted"><i class="bi bi-person-x me-1"></i>%s</span>',
-            htmlspecialchars($t->getCodeChauffeur() ?: 'Non lié', ENT_QUOTES, 'UTF-8')
+            htmlspecialchars($t->getCodeVehicule() ?: 'Non lié', ENT_QUOTES, 'UTF-8')
           ),
 
         'ttc' => $t->getMontantTtc() !== null
@@ -362,8 +362,8 @@ final class TransactionCarteEdenredController extends AbstractController
           $t->getProduit() ?? '',
           $t->getQuantite() !== null ? number_format((float) $t->getQuantite(), 2, ',', ' ') : '',
           $t->getSiteLibelleCourt() ?: ($t->getSiteLibelle() ?? ''),
-          $engin?->getNom() ?? '',
-          $utilisateur ? trim(($utilisateur->getPrenom() ?? '') . ' ' . ($utilisateur->getNom() ?? '')) : '',
+          $engin?->getNom() ?: ($t->getCodeChauffeur() ?: $t->getImmatriculation() ?: ''),
+          $utilisateur ? trim(($utilisateur->getPrenom() ?? '') . ' ' . ($utilisateur->getNom() ?? '')) : ($t->getCodeVehicule() ?: ''),
           $t->getMontantTtc() ?? '',
         ], ';');
       }
