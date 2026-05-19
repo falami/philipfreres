@@ -15,12 +15,17 @@ use Symfony\Component\HttpFoundation\{Request, Response};
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use App\Service\Carburant\EdenredRematcher;
 
 #[Route('/administrateur/{entite}/engin-external-id', name: 'app_administrateur_engin_external_id_')]
 #[IsGranted(TenantPermission::ENGIN_MANAGE, subject: 'entite')]
 final class EnginExternalIdImportController extends AbstractController
 {
-  public function __construct(private readonly EnginExternalIdExcelImporter $importer) {}
+
+  public function __construct(
+    private readonly EnginExternalIdExcelImporter $importer,
+    private readonly EdenredRematcher $edenredRematcher,
+  ) {}
 
   #[Route('/import', name: 'import', methods: ['GET', 'POST'])]
   public function import(Entite $entite, Request $request): Response
@@ -44,6 +49,9 @@ final class EnginExternalIdImportController extends AbstractController
       }
 
       $result = $this->importer->import($entite, $me, $file);
+
+      $nb = $this->edenredRematcher->rematchForEntite($entite);
+      $this->addFlash('info', $nb . ' transactions EDENRED rematchées.');
 
       if (!empty($result['errors'])) {
         $this->addFlash('warning', sprintf(

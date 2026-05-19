@@ -13,14 +13,17 @@ use Symfony\Component\HttpFoundation\{Request, Response};
 use Symfony\Component\Routing\Attribute\Route;
 use App\Security\Permission\TenantPermission;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use App\Service\Carburant\EdenredRematcher;
 
 #[Route('/administrateur/{entite}/engins/{engin}/external-ids', name: 'app_administrateur_engin_external_id_')]
 #[IsGranted(TenantPermission::ENGIN_MANAGE, subject: 'entite')]
 final class EnginExternalIdController extends AbstractController
 {
+
   public function __construct(
     private readonly EntityManagerInterface $em,
     private readonly EnginExternalIdRepository $repo,
+    private readonly EdenredRematcher $edenredRematcher,
   ) {}
 
   #[Route('', name: 'index', methods: ['GET'])]
@@ -48,6 +51,11 @@ final class EnginExternalIdController extends AbstractController
     if ($form->isSubmitted() && $form->isValid()) {
       $this->em->persist($item);
       $this->em->flush();
+
+      if ($item->getProvider() === ExternalProvider::EDENRED) {
+        $nb = $this->edenredRematcher->rematchForEntite($entite);
+        $this->addFlash('info', $nb . ' transactions EDENRED rematchées.');
+      }
 
       $this->addFlash('success', 'Identifiant externe ajouté.');
       return $this->redirectToRoute('app_administrateur_engin_external_id_index', [
@@ -77,6 +85,11 @@ final class EnginExternalIdController extends AbstractController
 
     if ($form->isSubmitted() && $form->isValid()) {
       $this->em->flush();
+
+      if ($item->getProvider() === ExternalProvider::EDENRED) {
+        $nb = $this->edenredRematcher->rematchForEntite($entite);
+        $this->addFlash('info', $nb . ' transactions EDENRED rematchées.');
+      }
 
       $this->addFlash('success', 'Identifiant externe mis à jour.');
       return $this->redirectToRoute('app_administrateur_engin_external_id_index', [
@@ -112,6 +125,11 @@ final class EnginExternalIdController extends AbstractController
     $note = trim((string) $request->request->get('note'));
     $item->disable($note !== '' ? $note : null);
     $this->em->flush();
+
+    if ($item->getProvider() === ExternalProvider::EDENRED) {
+      $nb = $this->edenredRematcher->rematchForEntite($entite);
+      $this->addFlash('info', $nb . ' transactions EDENRED rematchées.');
+    }
 
     $this->addFlash('success', 'Identifiant externe désactivé.');
     return $this->redirectToRoute('app_administrateur_engin_external_id_index', [
