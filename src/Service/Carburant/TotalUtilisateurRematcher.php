@@ -28,6 +28,10 @@ final class TotalUtilisateurRematcher
     foreach ($rows as $t) {
       $code = FuelKey::norm($t->getCodeConducteur());
 
+      if (!$code) {
+        continue;
+      }
+
       $user = null;
 
       if ($code) {
