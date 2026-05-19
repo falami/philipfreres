@@ -50,28 +50,16 @@ final class EnginMatcher
 
   public function matchForEdenred(Entite $entite, TransactionCarteEdenred $t): ?Engin
   {
-    // 1) Chez EDENRED, dans tes fichiers, le code engin est dans "kilometrage"
     $codeEngin = FuelKey::norm($t->getKilometrage());
+
     if ($codeEngin) {
       $engin = $this->extRepo->findActiveEnginByProviderValue($entite, ExternalProvider::EDENRED, $codeEngin);
       if ($engin) return $engin;
-
-      $engin = $this->findByLegacyName($entite, 'nomEdenred', $codeEngin);
-      if ($engin) return $engin;
     }
 
-    // 2) Fallback plaque si présente
     $plate = FuelKey::normPlate($t->getImmatriculation());
     if ($plate) {
-      $engin = $this->findByPlate($entite, $plate);
-      if ($engin) return $engin;
-    }
-
-    // 3) Fallback code_chauffeur, mais seulement en dernier
-    $codeChauffeur = FuelKey::norm($t->getCodeChauffeur());
-    if ($codeChauffeur) {
-      $engin = $this->extRepo->findActiveEnginByProviderValue($entite, ExternalProvider::EDENRED, $codeChauffeur);
-      if ($engin) return $engin;
+      return $this->findByPlate($entite, $plate);
     }
 
     return null;
