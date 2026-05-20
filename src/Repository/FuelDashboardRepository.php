@@ -261,8 +261,8 @@ final class FuelDashboardRepository
         (
           x.provider = 'edenred'
           AND (
-            LOWER(TRIM(x.label)) IN ('sp95 - e10', 'sp98', 'ssp 100')
-            OR REPLACE(LOWER(TRIM(x.label)), ' ', '') IN ('sp95-e10', 'sp95e10', 'ssp100')
+            LOWER(TRIM(x.label)) IN ('sp95 - e10', 'sp98', 'ssp 100', 'sp95')
+            OR REPLACE(LOWER(TRIM(x.label)), ' ', '') IN ('sp95-e10', 'sp95e10', 'ssp100', 'sp95')
           )
         )
         OR
