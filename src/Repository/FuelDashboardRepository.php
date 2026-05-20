@@ -253,13 +253,40 @@ final class FuelDashboardRepository
 
     // ===== Par fournisseur
     // provider = alx/total/edenred → label en UPPER pour l'affichage
-    $byProv = $this->db->fetchAllAssociative("
-      SELECT UPPER(x.provider) AS label, SUM(x.amount_cents) AS v
-      FROM ($sqlBase) x
-      WHERE $where
-      GROUP BY x.provider
-      ORDER BY v DESC
-    ", $params);
+    // ===== Essence uniquement par fournisseur
+    // EDENRED : SP95 - E10, SP98, SSP 100
+    // TOTAL   : Sans Plomb, Super
+    $whereEssence = $where . "
+      AND (
+        (
+          x.provider = 'edenred'
+          AND (
+            LOWER(TRIM(x.label)) IN ('sp95 - e10', 'sp98', 'ssp 100')
+            OR REPLACE(LOWER(TRIM(x.label)), ' ', '') IN ('sp95-e10', 'sp95e10', 'ssp100')
+          )
+        )
+        OR
+        (
+          x.provider = 'total'
+          AND (
+            LOWER(TRIM(x.label)) = 'sans plomb'
+            OR LOWER(TRIM(x.label)) LIKE 'sans plomb%'
+            OR LOWER(TRIM(x.label)) = 'super'
+            OR LOWER(TRIM(x.label)) LIKE 'super%'
+          )
+        )
+      )
+    ";
+
+    $byEssenceEngin = $this->db->fetchAllAssociative("
+    SELECT COALESCE(x.engin_label, '(Non rattaché)') AS label,
+          SUM(x.amount_cents) AS v
+    FROM ($sqlBase) x
+    WHERE $whereEssence
+    GROUP BY COALESCE(x.engin_label, '(Non rattaché)')
+    ORDER BY v DESC
+    LIMIT 10
+  ", $params);
 
     // ===== Trend mensuelle
     $trend = $this->db->fetchAllAssociative("
@@ -341,7 +368,7 @@ final class FuelDashboardRepository
         'cnt_unmatched_employe' => (int) ($k['cnt_unmatched_employe'] ?? 0),
       ],
       'charts' => [
-        'byProvider' => $byProv,
+        'gasolineByEngin' => $byEssenceEngin,
         'trendMonthly' => $trend,
         'topEngins' => $topEng,
 
