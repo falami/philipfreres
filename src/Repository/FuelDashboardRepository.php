@@ -441,6 +441,7 @@ final class FuelDashboardRepository
     return "
   /* ===================== ALX ===================== */
   SELECT
+    t.id AS source_id,
     'alx' AS provider,
     t.id,
     t.entite_id,
@@ -493,6 +494,7 @@ final class FuelDashboardRepository
 
   /* ===================== TOTAL ===================== */
   SELECT
+    t.id AS source_id,
     'total' AS provider,
     t.id,
     t.entite_id,
@@ -541,6 +543,7 @@ final class FuelDashboardRepository
 
   /* ===================== EDENRED ===================== */
   SELECT
+    t.id AS source_id,
     'edenred' AS provider,
     t.id,
     t.entite_id,
@@ -589,6 +592,7 @@ final class FuelDashboardRepository
 
   /* ===================== MANUAL / NOTES ===================== */
   SELECT
+    n.id AS source_id,
     'note' AS provider,
     n.id,
     n.entite_id,

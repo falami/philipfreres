@@ -1332,6 +1332,7 @@ body{
 
               <th class="text-end">Quantité</th>
               <th class="text-end">Montant (TTC)</th>
+              <th class="text-end"></th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -2185,9 +2186,18 @@ body{
         { data:'qty', className:'text-end',
           render:(d)=> `<span class="money">${numFR(d || 0, 2)}</span>`
         },
-        { data:'amount_cents', className:'text-end',
+        { 
+          data:'amount_cents', 
+          className:'text-end',
           render:(d)=> `<span class="money">${money(d)}</span>`
         },
+        {
+          data: 'actions',
+          className: 'text-end',
+          orderable: false,
+          searchable: false,
+          render: (d) => d || '<span class="text-muted">—</span>'
+        }
         
       ],
       order:[[0,'desc']]

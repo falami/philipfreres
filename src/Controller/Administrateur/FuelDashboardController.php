@@ -104,7 +104,7 @@ final class FuelDashboardController extends AbstractController
     [$rows, $total, $filtered] = $this->repo->fetchRows($entite, $f, $start, $length, $orderBy, $dir, $search);
 
 
-    $data = array_map(function (array $r) {
+    $data = array_map(function (array $r) use ($entite) {
       $catVal  = $r['produit_cat'] ?? null;   // ✅
       $sousVal = $r['produit_sous'] ?? null;  // ✅
 
@@ -134,6 +134,27 @@ final class FuelDashboardController extends AbstractController
         default => '-',
       };
 
+      $id = (int)($r['source_id'] ?? 0);
+
+      $editUrl = match ($providerRaw) {
+        'alx' => $id > 0 ? $this->generateUrl('app_administrateur_tca_edit', [
+          'entite' => $entite->getId(),
+          'id' => $id,
+        ]) : null,
+
+        'total' => $id > 0 ? $this->generateUrl('app_administrateur_tct_edit', [
+          'entite' => $entite->getId(),
+          'id' => $id,
+        ]) : null,
+
+        'edenred' => $id > 0 ? $this->generateUrl('app_administrateur_tce_edit', [
+          'entite' => $entite->getId(),
+          'id' => $id,
+        ]) : null,
+
+        default => null,
+      };
+
       return [
         'date' => $r['date_tx'] ? (new \DateTimeImmutable($r['date_tx']))->format('d/m/Y') : '-',
         'provider' => $providerLabel,
@@ -145,6 +166,15 @@ final class FuelDashboardController extends AbstractController
 
         'qty' => (float)($r['qty'] ?? 0),
         'amount_cents' => (int)($r['amount_cents'] ?? 0),
+
+        'actions' => $editUrl
+          ? sprintf(
+            '<a href="%s" class="btn btn-sm btn-outline-primary rounded-pill fw-bold" title="Modifier">
+        <i class="bi bi-pencil-square"></i>
+      </a>',
+            htmlspecialchars($editUrl, ENT_QUOTES, 'UTF-8')
+          )
+          : '<span class="text-muted">—</span>',
       ];
     }, $rows);
 
