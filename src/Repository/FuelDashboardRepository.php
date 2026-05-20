@@ -263,66 +263,65 @@ final class FuelDashboardRepository
     $whereEssence = $this->essenceWhere($where);
 
     $byEssenceEngin = $this->db->fetchAllAssociative("
-      SELECT 
-        COALESCE(x.engin_id, 0) AS filter_id,
-        COALESCE(x.engin_label, '(Non rattaché)') AS label,
-        SUM(x.amount_cents) AS v
-      FROM ($sqlBase) x
-      WHERE $whereEssence
-      GROUP BY COALESCE(x.engin_id, 0), COALESCE(x.engin_label, '(Non rattaché)')
-      ORDER BY v DESC
-      LIMIT 10
-    ", $params);
+  SELECT 
+    COALESCE(x.engin_id, 0) AS filter_id,
+    COALESCE(x.engin_label, '(Non rattaché)') AS label,
+    SUM(x.qty) AS v
+  FROM ($sqlBase) x
+  WHERE $whereEssence
+  GROUP BY COALESCE(x.engin_id, 0), COALESCE(x.engin_label, '(Non rattaché)')
+  ORDER BY v DESC
+  LIMIT 10
+", $params);
 
-    // ===== Trend mensuelle
     $trend = $this->db->fetchAllAssociative("
-      SELECT DATE_FORMAT(x.date_tx, '%Y-%m') AS ym, SUM(x.amount_cents) AS amount_cents
-      FROM ($sqlBase) x
-      WHERE $where
-      GROUP BY DATE_FORMAT(x.date_tx, '%Y-%m')
-      ORDER BY ym ASC
-    ", $params);
+  SELECT DATE_FORMAT(x.date_tx, '%Y-%m') AS ym,
+         SUM(x.qty) AS qty
+  FROM ($sqlBase) x
+  WHERE $where
+  GROUP BY DATE_FORMAT(x.date_tx, '%Y-%m')
+  ORDER BY ym ASC
+", $params);
 
-    // ===== Top engins
     $topEng = $this->db->fetchAllAssociative("
-      SELECT COALESCE(x.engin_label,'(Non rattaché)') AS label, SUM(x.amount_cents) AS v
-      FROM ($sqlBase) x
-      WHERE $where
-      GROUP BY COALESCE(x.engin_label,'(Non rattaché)')
-      ORDER BY v DESC
-      LIMIT 10
-    ", $params);
+  SELECT COALESCE(x.engin_label,'(Non rattaché)') AS label,
+         SUM(x.qty) AS v
+  FROM ($sqlBase) x
+  WHERE $where
+  GROUP BY COALESCE(x.engin_label,'(Non rattaché)')
+  ORDER BY v DESC
+  LIMIT 10
+", $params);
 
-    // ===== (Nouveau) Top employés TTC (uniquement rattachés)
     $byEmp = $this->db->fetchAllAssociative("
-      SELECT COALESCE(x.employe_label,'(Non rattaché)') AS label, SUM(x.amount_cents) AS v
-      FROM ($sqlBase) x
-      WHERE $where
-      GROUP BY COALESCE(x.employe_label,'(Non rattaché)')
-      ORDER BY v DESC
-      LIMIT 10
-    ", $params);
+  SELECT COALESCE(x.employe_label,'(Non rattaché)') AS label,
+         SUM(x.qty) AS v
+  FROM ($sqlBase) x
+  WHERE $where
+  GROUP BY COALESCE(x.employe_label,'(Non rattaché)')
+  ORDER BY v DESC
+  LIMIT 10
+", $params);
 
-    // ===== (Nouveau) Empilé TTC par employé/fournisseur
     $byEmpProvAmount = $this->db->fetchAllAssociative("
-      SELECT
-        COALESCE(x.employe_label,'(Non rattaché)') AS label,
-        SUM(CASE WHEN x.provider = 'alx' THEN x.amount_cents ELSE 0 END) AS alx,
-        SUM(CASE WHEN x.provider = 'total' THEN x.amount_cents ELSE 0 END) AS total,
-        SUM(CASE WHEN x.provider = 'edenred' THEN x.amount_cents ELSE 0 END) AS edenred,
-        SUM(CASE WHEN x.provider = 'note' THEN x.amount_cents ELSE 0 END) AS note
-      FROM ($sqlBase) x
-      WHERE $where
-      GROUP BY COALESCE(x.employe_label,'(Non rattaché)')
-      ORDER BY
-        (
-          SUM(CASE WHEN x.provider = 'alx' THEN x.amount_cents ELSE 0 END)
-          + SUM(CASE WHEN x.provider = 'total' THEN x.amount_cents ELSE 0 END)
-          + SUM(CASE WHEN x.provider = 'edenred' THEN x.amount_cents ELSE 0 END)
-          + SUM(CASE WHEN x.provider = 'note' THEN x.amount_cents ELSE 0 END)
-        ) DESC
-      LIMIT 10
-    ", $params);
+  SELECT
+    COALESCE(x.employe_label,'(Non rattaché)') AS label,
+    SUM(CASE WHEN x.provider = 'alx' THEN x.qty ELSE 0 END) AS alx,
+    SUM(CASE WHEN x.provider = 'total' THEN x.qty ELSE 0 END) AS total,
+    SUM(CASE WHEN x.provider = 'edenred' THEN x.qty ELSE 0 END) AS edenred,
+    SUM(CASE WHEN x.provider = 'note' THEN x.qty ELSE 0 END) AS note
+  FROM ($sqlBase) x
+  WHERE $where
+  GROUP BY COALESCE(x.employe_label,'(Non rattaché)')
+  ORDER BY
+    (
+      SUM(CASE WHEN x.provider = 'alx' THEN x.qty ELSE 0 END)
+      + SUM(CASE WHEN x.provider = 'total' THEN x.qty ELSE 0 END)
+      + SUM(CASE WHEN x.provider = 'edenred' THEN x.qty ELSE 0 END)
+      + SUM(CASE WHEN x.provider = 'note' THEN x.qty ELSE 0 END)
+    ) DESC
+  LIMIT 10
+", $params);
 
     // ===== (Nouveau) Empilé QTY par employé/fournisseur
     $byEmpProvQty = $this->db->fetchAllAssociative("

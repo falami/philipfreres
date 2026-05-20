@@ -7,7 +7,7 @@ use App\Entity\EnginUsageReleve;
 use App\Entity\Entite;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\{DateType, MoneyType, NumberType, TextareaType, TextType};
+use Symfony\Component\Form\Extension\Core\Type\{DateType, NumberType};
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 

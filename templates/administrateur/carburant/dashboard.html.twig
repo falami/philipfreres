@@ -1332,7 +1332,7 @@ body{
 
               <th class="text-end">Quantité</th>
               <th class="text-end">Montant (TTC)</th>
-              <th class="text-end"></th>
+              <th class="text-end"><i class="bi bi-list-check"></i></th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -1423,6 +1423,10 @@ body{
 
   function lastDayOfMonth(year, month1to12){
     return new Date(year, month1to12, 0).getDate();
+  }
+
+  function qty(v){
+    return numFR(Number(v || 0), 2);
   }
 
   function setRangeIso(isoStart, isoEnd){
@@ -1904,15 +1908,15 @@ body{
 
   function applyCharts(c){
     const trendLabels = (c.trendMonthly||[]).map(x=>x.ym);
-    const trendVals   = (c.trendMonthly||[]).map(x=>Number(x.amount_cents||0));
+    const trendVals = (c.trendMonthly || []).map(x => Number(x.qty || 0));
 
     chTrend = ensureChart(chTrend, document.getElementById('chTrend'), {
       type:'line',
-      data:{ labels: trendLabels, datasets:[{ label:'Carburant TTC', data: trendVals }]},
+      data:{ labels: trendLabels, datasets:[{ label:'Quantité', data: trendVals }]},
       options:{
         responsive:true, maintainAspectRatio:false,
-        plugins:{ legend:{position:'bottom'}, tooltip:{ callbacks:{ label:(ctx)=> money(ctx.parsed.y||0) } } },
-        scales:{ y:{ ticks:{ callback:(v)=> money(v) } } }
+        plugins:{ legend:{position:'bottom'}, tooltip:{ callbacks:{ label:(ctx)=> qty(ctx.parsed.y || 0) } } },
+        scales:{ y:{ ticks:{ callback:(v)=> qty(v) } } }
       }
     });
 
@@ -1954,7 +1958,7 @@ body{
           legend: { display: false },
           tooltip: {
             callbacks: {
-              label: (ctx) => money(ctx.parsed.y || 0)
+              label: (ctx) => qty(ctx.parsed.y || 0)
             }
           }
         },
@@ -1969,7 +1973,7 @@ body{
           y: {
             beginAtZero: true,
             ticks: {
-              callback: (v) => money(v)
+              callback: (v) => qty(v)
             }
           }
         }
@@ -1984,8 +1988,8 @@ body{
       },
       options:{
         responsive:true, maintainAspectRatio:false,
-        plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:(ctx)=> money(ctx.parsed.y||0) } } },
-        scales:{ y:{ ticks:{ callback:(v)=> money(v) } } }
+        plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:(ctx)=> qty(ctx.parsed.y || 0) } } },
+        scales:{ y:{ ticks:{ callback:(v)=> qty(v) } } }
       }
     });
 
@@ -2000,7 +2004,7 @@ body{
         responsive: true, maintainAspectRatio: false,
         plugins: {
           legend: { display: false },
-          tooltip: { callbacks: { label: (ctx) => money(ctx.parsed.y || 0) } }
+          tooltip: { callbacks: { label: (ctx) => qty(ctx.parsed.y || 0) } }
         },
         scales: { y: { ticks: { callback: (v) => money(v) } } }
       }
@@ -2030,11 +2034,16 @@ body{
         responsive: true, maintainAspectRatio: false,
         plugins: {
           legend: { position: 'bottom' },
-          tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label} : ${money(ctx.parsed.y || 0)}` } }
+          tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label} : ${qty(ctx.parsed.y || 0)}` } }
         },
         scales: {
           x: { stacked: true },
-          y: { stacked: true, ticks: { callback: (v) => money(v) } }
+          y: {
+            stacked: true,
+            ticks: {
+              callback: (v) => qty(v)
+            }
+          }
         }
       }
     });
