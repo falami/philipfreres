@@ -1851,6 +1851,47 @@ body{
     document.getElementById('kpiAvg').textContent = money(avg);
   }
 
+
+  function resetDashboardFilters(){
+    $start.value = "{{ start }}";
+    $end.value = "{{ end }}";
+    fp.setDate([dateFromIso("{{ start }}"), dateFromIso("{{ end }}")], true);
+
+    setAll('.fuel-filter-prov', true);
+    setAll('.fuel-filter-engin', true);
+    setAll('.fuel-filter-emp', true);
+    setAll('.fuel-filter-cat', true);
+    setAll('.fuel-filter-sous', true);
+
+    $('input[data-filter]').val('').trigger('input');
+
+    updateCounts();
+    refresh();
+  }
+
+  function applyOnlyCheckboxFilter(selector, value){
+    setAll(selector, false);
+
+    const checkbox = document.querySelector(`${selector}[value="${CSS.escape(String(value))}"]`);
+
+    if (checkbox) {
+      checkbox.checked = true;
+    }
+
+    updateCounts();
+    refresh();
+  }
+
+  function chartClickOrReset(chart, elements, callback){
+    if (!elements.length) {
+      resetDashboardFilters();
+      return;
+    }
+
+    const index = elements[0].index;
+    callback(index);
+  }
+
   function applyCharts(c){
     const trendLabels = (c.trendMonthly||[]).map(x=>x.ym);
     const trendVals   = (c.trendMonthly||[]).map(x=>Number(x.amount_cents||0));
@@ -1865,13 +1906,15 @@ body{
       }
     });
 
+    const gasolineRows = c.gasolineByEngin || [];
+
     chProv = ensureChart(chProv, document.getElementById('chProv'), {
       type: 'bar',
       data: {
-        labels: (c.gasolineByEngin || []).map(x => x.label),
+        labels: gasolineRows.map(x => x.label),
         datasets: [{
           label: 'Essence TTC par engin',
-          data: (c.gasolineByEngin || []).map(x => Number(x.v || 0)),
+          data: gasolineRows.map(x => Number(x.v || 0)),
           borderRadius: 12,
           borderSkipped: false
         }]
@@ -1880,11 +1923,23 @@ body{
         responsive: true,
         maintainAspectRatio: false,
 
-        plugins: {
-          legend: {
-            display: false
-          },
+        onClick: (event, elements, chart) => {
+          chartClickOrReset(chart, elements, (index) => {
+            const row = gasolineRows[index];
+            if (!row) return;
 
+            const id = Number(row.filter_id || 0);
+
+            if (id === 0) {
+              applyOnlyCheckboxFilter('.fuel-filter-engin', '__NULL__');
+            } else {
+              applyOnlyCheckboxFilter('.fuel-filter-engin', id);
+            }
+          });
+        },
+
+        plugins: {
+          legend: { display: false },
           tooltip: {
             callbacks: {
               label: (ctx) => money(ctx.parsed.y || 0)
@@ -1899,7 +1954,6 @@ body{
               minRotation: 0
             }
           },
-
           y: {
             beginAtZero: true,
             ticks: {

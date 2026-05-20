@@ -279,14 +279,16 @@ final class FuelDashboardRepository
     ";
 
     $byEssenceEngin = $this->db->fetchAllAssociative("
-    SELECT COALESCE(x.engin_label, '(Non rattaché)') AS label,
-          SUM(x.amount_cents) AS v
-    FROM ($sqlBase) x
-    WHERE $whereEssence
-    GROUP BY COALESCE(x.engin_label, '(Non rattaché)')
-    ORDER BY v DESC
-    LIMIT 10
-  ", $params);
+      SELECT 
+        COALESCE(x.engin_id, 0) AS filter_id,
+        COALESCE(x.engin_label, '(Non rattaché)') AS label,
+        SUM(x.amount_cents) AS v
+      FROM ($sqlBase) x
+      WHERE $whereEssence
+      GROUP BY COALESCE(x.engin_id, 0), COALESCE(x.engin_label, '(Non rattaché)')
+      ORDER BY v DESC
+      LIMIT 10
+    ", $params);
 
     // ===== Trend mensuelle
     $trend = $this->db->fetchAllAssociative("
