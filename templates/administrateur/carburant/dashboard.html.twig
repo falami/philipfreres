@@ -1343,6 +1343,10 @@ body{
 
 <script>
 (function(){
+
+  let essenceOnly = false;
+
+
   if (window.flatpickr && window.flatpickr.l10ns?.fr) flatpickr.localize(flatpickr.l10ns.fr);
     // =========================
     // AUTO RELOAD (FULL AUTO) - DOIT ÊTRE DÉFINI AVANT flatpickr/setDate
@@ -1782,6 +1786,8 @@ body{
       dateStart: $start.value,
       dateEnd: $end.value,
 
+      essenceOnly,
+
       providersNone,
       providers,
 
@@ -1817,6 +1823,7 @@ body{
     if (filters.employeUncategorized) p.set('employeUncategorized', '1');
     if (filters.categorieUncategorized) p.set('categorieUncategorized', '1');
     if (filters.sousUncategorized) p.set('sousUncategorized', '1');
+    if (filters.essenceOnly) p.set('essenceOnly', '1');
 
     (filters.providers||[]).forEach(v => p.append('providers[]', v));
     (filters.enginIds||[]).forEach(id => p.append('enginIds[]', String(id)));
@@ -1853,6 +1860,8 @@ body{
 
 
   function resetDashboardFilters(){
+    essenceOnly = false;
+
     $start.value = "{{ start }}";
     $end.value = "{{ end }}";
     fp.setDate([dateFromIso("{{ start }}"), dateFromIso("{{ end }}")], true);
@@ -1927,6 +1936,8 @@ body{
           chartClickOrReset(chart, elements, (index) => {
             const row = gasolineRows[index];
             if (!row) return;
+
+            essenceOnly = true;
 
             const id = Number(row.filter_id || 0);
 
@@ -2060,11 +2071,14 @@ body{
 
   // DataTables
   let dt = null;
+  
 
   function dtFilters(d){
     const f = getFilters();
     d.dateStart = f.dateStart;
     d.dateEnd = f.dateEnd;
+
+    if (f.essenceOnly) d.essenceOnly = 1;
 
     if (f.providersNone) d.providersNone = 1;
     if (f.enginNone) d.enginNone = 1;
@@ -2234,6 +2248,8 @@ body{
       $start.value = "{{ start }}";
       $end.value = "{{ end }}";
       fp.setDate([dateFromIso("{{ start }}"), dateFromIso("{{ end }}")], true);
+
+      essenceOnly = false;
 
       // tout coché
       setAll('.fuel-filter-prov', true);

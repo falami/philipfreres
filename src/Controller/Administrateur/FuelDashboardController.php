@@ -193,6 +193,7 @@ final class FuelDashboardController extends AbstractController
     $employeUncategorized = (bool) $req->query->get('employeUncategorized', false);
     $categorieUncategorized = (bool) $req->query->get('categorieUncategorized', false);
     $sousUncategorized = (bool) $req->query->get('sousUncategorized', false);
+    $essenceOnly = (bool) $req->query->get('essenceOnly', false);
 
     // ✅ Providers
     $providers = $req->query->all('providers');
@@ -246,6 +247,8 @@ final class FuelDashboardController extends AbstractController
     return [
       'dateStart' => $ds,
       'dateEnd' => $de . ' 23:59:59',
+
+      'essenceOnly' => $essenceOnly,
 
       'providersNone' => $providersNone,
       'providers' => $providers,

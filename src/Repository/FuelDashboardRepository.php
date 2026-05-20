@@ -125,6 +125,10 @@ final class FuelDashboardRepository
     $length = max(1, min(500, $length));
     $start  = max(0, $start);
 
+    if (!empty($f['essenceOnly'])) {
+      $where = $this->essenceWhere($where);
+    }
+
     $sqlBase = $this->unionSql();
 
     $sql = "
@@ -256,27 +260,7 @@ final class FuelDashboardRepository
     // ===== Essence uniquement par fournisseur
     // EDENRED : SP95 - E10, SP98, SSP 100
     // TOTAL   : Sans Plomb, Super
-    $whereEssence = $where . "
-      AND (
-        (
-          x.provider = 'edenred'
-          AND (
-            LOWER(TRIM(x.label)) IN ('sp95 - e10', 'sp98', 'ssp 100', 'sp95')
-            OR REPLACE(LOWER(TRIM(x.label)), ' ', '') IN ('sp95-e10', 'sp95e10', 'ssp100', 'sp95')
-          )
-        )
-        OR
-        (
-          x.provider = 'total'
-          AND (
-            LOWER(TRIM(x.label)) = 'sans plomb'
-            OR LOWER(TRIM(x.label)) LIKE 'sans plomb%'
-            OR LOWER(TRIM(x.label)) = 'super'
-            OR LOWER(TRIM(x.label)) LIKE 'super%'
-          )
-        )
-      )
-    ";
+    $whereEssence = $this->essenceWhere($where);
 
     $byEssenceEngin = $this->db->fetchAllAssociative("
       SELECT 
@@ -1082,5 +1066,31 @@ final class FuelDashboardRepository
     }
 
     $where .= " AND (" . implode(' OR ', $parts) . ") ";
+  }
+
+
+  private function essenceWhere(string $where): string
+  {
+    return $where . "
+    AND (
+      (
+        x.provider = 'edenred'
+        AND (
+          LOWER(TRIM(x.label)) IN ('sp95 - e10', 'sp98', 'ssp 100', 'sp95')
+          OR REPLACE(LOWER(TRIM(x.label)), ' ', '') IN ('sp95-e10', 'sp95e10', 'ssp100', 'sp95')
+        )
+      )
+      OR
+      (
+        x.provider = 'total'
+        AND (
+          LOWER(TRIM(x.label)) = 'sans plomb'
+          OR LOWER(TRIM(x.label)) LIKE 'sans plomb%'
+          OR LOWER(TRIM(x.label)) = 'super'
+          OR LOWER(TRIM(x.label)) LIKE 'super%'
+        )
+      )
+    )
+  ";
   }
 }
