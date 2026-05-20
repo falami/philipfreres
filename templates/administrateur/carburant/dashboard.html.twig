@@ -1999,14 +1999,14 @@ body{
 
     chEmp = ensureChart(chEmp, document.getElementById('chEmp'), {
       type: 'bar',
-      data: { labels: empLabels, datasets: [{ label: 'TTC', data: empVals }] },
+      data: { labels: empLabels, datasets: [{ label: 'QUANTITE', data: empVals }] },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
           legend: { display: false },
           tooltip: { callbacks: { label: (ctx) => qty(ctx.parsed.y || 0) } }
         },
-        scales: { y: { ticks: { callback: (v) => money(v) } } }
+        scales: { y: { ticks: { callback: (v) => qty(v) } } }
       }
     });
 
