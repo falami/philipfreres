@@ -45,7 +45,7 @@ final class FuelAnalyticsRepository
         CONCAT('ALX-', a.id) AS tx_id,
         'ALX' AS provider,
         a.entite_id AS entite_id,
-        a.utilisateur_id AS utilisateur_id,
+        COALESCE(a.utilisateur_id, uea.utilisateur_id) AS utilisateur_id,
         a.engin_id AS engin_id,
         NULL AS produit_id,
         COALESCE(a.vehicule, 'ALX') AS label,
@@ -64,6 +64,10 @@ final class FuelAnalyticsRepository
         END AS end_at,
         'alx' AS source_type
     FROM transaction_carte_alx a
+    LEFT JOIN utilisateur_external_id uea
+      ON uea.provider = 'alx'
+      AND uea.active = 1
+      AND uea.value = LOWER(TRIM(a.agent))
 
     UNION ALL
 
@@ -71,7 +75,7 @@ final class FuelAnalyticsRepository
         CONCAT('EDENRED-', e.id) AS tx_id,
         'EDENRED' AS provider,
         e.entite_id AS entite_id,
-        e.utilisateur_id AS utilisateur_id,
+        COALESCE(e.utilisateur_id, uee.utilisateur_id) AS utilisateur_id,
         e.engin_id AS engin_id,
         NULL AS produit_id,
         COALESCE(e.produit, e.site_libelle, 'EDENRED') AS label,
@@ -82,6 +86,10 @@ final class FuelAnalyticsRepository
         DATE_ADD(e.date_transaction, INTERVAL 30 MINUTE) AS end_at,
         'edenred' AS source_type
     FROM transaction_carte_edenred e
+    LEFT JOIN utilisateur_external_id uee
+      ON uee.provider = 'edenred'
+      AND uee.active = 1
+      AND uee.value = LOWER(TRIM(e.code_vehicule))
 
     UNION ALL
 
@@ -89,7 +97,7 @@ final class FuelAnalyticsRepository
         CONCAT('TOTAL-', t.id) AS tx_id,
         'TOTAL' AS provider,
         t.entite_id AS entite_id,
-        t.utilisateur_id AS utilisateur_id,
+        COALESCE(t.utilisateur_id, uet.utilisateur_id) AS utilisateur_id,
         t.engin_id AS engin_id,
         NULL AS produit_id,
         COALESCE(t.produit, t.categorie_libelle_produit, 'TOTAL') AS label,
@@ -108,6 +116,10 @@ final class FuelAnalyticsRepository
         END AS end_at,
         'total' AS source_type
     FROM transaction_carte_total t
+    LEFT JOIN utilisateur_external_id uet
+      ON uet.provider = 'total'
+      AND uet.active = 1
+      AND uet.value = LOWER(TRIM(t.code_conducteur))
 )
 SQL;
   }
@@ -173,7 +185,10 @@ SQL;
                 u.source_type,
                 DATE(u.start_at) AS day_key,
                 COALESCE(u.utilisateur_id, 0) AS user_id,
-                COALESCE(CONCAT(usr.prenom, ' ', usr.nom), 'Non catégorisé') AS user_label,
+                COALESCE(
+                  NULLIF(TRIM(CONCAT(COALESCE(usr.prenom, ''), ' ', COALESCE(usr.nom, ''))), ''),
+                  'Non catégorisé'
+                ) AS user_label,
                 CASE WHEN u.engin_id IS NULL THEN 0 ELSE u.engin_id END AS engin_id,
                 COALESCE(eng.nom, 'Non catégorisé') AS engin_label
             ")

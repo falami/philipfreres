@@ -229,7 +229,11 @@ final class FuelCalendarRepository
       e.nom AS engin_label,
 
       COALESCE(t.utilisateur_id, ue.utilisateur_id) AS employe_id,
-      CONCAT(COALESCE(u.prenom,''),' ',COALESCE(u.nom,'')) AS employe_label
+
+      NULLIF(
+        TRIM(CONCAT(COALESCE(u.prenom,''),' ',COALESCE(u.nom,''))),
+        ''
+      ) AS employe_label
 
 
     FROM transaction_carte_alx t
@@ -277,7 +281,10 @@ final class FuelCalendarRepository
       e.nom AS engin_label,
 
       COALESCE(t.utilisateur_id, ue.utilisateur_id) AS employe_id,
-      CONCAT(COALESCE(u.prenom,''),' ',COALESCE(u.nom,'')) AS employe_label
+      NULLIF(
+        TRIM(CONCAT(COALESCE(u.prenom,''),' ',COALESCE(u.nom,''))),
+        ''
+      ) AS employe_label
 
 
     FROM transaction_carte_total t
@@ -325,7 +332,10 @@ final class FuelCalendarRepository
       e.nom AS engin_label,
 
       COALESCE(t.utilisateur_id, ue.utilisateur_id) AS employe_id,
-      CONCAT(COALESCE(u.prenom,''),' ',COALESCE(u.nom,'')) AS employe_label
+      NULLIF(
+        TRIM(CONCAT(COALESCE(u.prenom,''),' ',COALESCE(u.nom,''))),
+        ''
+      ) AS employe_label
 
 
     FROM transaction_carte_edenred t
