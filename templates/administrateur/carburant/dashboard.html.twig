@@ -1963,254 +1963,83 @@ body{
   }
 
   function applyCharts(c){
-    const trendRows = c.trendMonthly || [];
+  const trendRows = c.trendMonthly || [];
 
-    const trendLabels = [...new Set(trendRows.map(r => r.ym))];
+  const trendLabels = [...new Set(trendRows.map(r => r.ym))];
 
-    const wantedSous = {
-      essence: 'Essence',
-      gasoil: 'Gasoil',
-      gnr: 'GNR',
-      HVO100: 'HVO 100'
-    };
+  const wantedSous = {
+    essence: 'Essence',
+    gasoil: 'Gasoil',
+    gnr: 'GNR',
+    HVO100: 'HVO 100'
+  };
 
-    const trendTotalDataset = {
-      label: 'Total',
-      data: trendLabels.map(month => {
-        return trendRows
-          .filter(r => r.ym === month)
-          .reduce((sum, r) => sum + Number(r.qty || 0), 0);
-      }),
-      tension: .35,
-      borderWidth: 3,
-      pointRadius: 4,
-      pointHoverRadius: 6,
-      fill: false
-    };
+  const trendTotalDataset = {
+    label: 'Total',
+    data: trendLabels.map(month =>
+      trendRows
+        .filter(r => r.ym === month)
+        .reduce((sum, r) => sum + Number(r.qty || 0), 0)
+    ),
+    tension: .35,
+    borderWidth: 3,
+    pointRadius: 4,
+    pointHoverRadius: 6,
+    fill: false
+  };
 
-    const trendSousDatasets = Object.entries(wantedSous).map(([sousValue, sousLabel]) => ({
-      label: sousLabel,
-      data: trendLabels.map(month => {
-        return trendRows
-          .filter(r => r.ym === month && r.sous === sousValue)
-          .reduce((sum, r) => sum + Number(r.qty || 0), 0);
-      }),
-      tension: .35,
-      borderWidth: 2,
-      pointRadius: 3,
-      pointHoverRadius: 5,
-      fill: false
-    }));
+  const trendSousDatasets = Object.entries(wantedSous).map(([sousValue, sousLabel]) => ({
+    label: sousLabel,
+    data: trendLabels.map(month =>
+      trendRows
+        .filter(r => r.ym === month && r.sous === sousValue)
+        .reduce((sum, r) => sum + Number(r.qty || 0), 0)
+    ),
+    tension: .35,
+    borderWidth: 2,
+    pointRadius: 3,
+    pointHoverRadius: 5,
+    fill: false
+  }));
 
-    const trendDatasets = [
-      trendTotalDataset,
-      ...trendSousDatasets
-    ];
+  const trendDatasets = [
+    trendTotalDataset,
+    ...trendSousDatasets
+  ];
 
-    const gasolineRows = c.gasolineByEngin || [];
-
-    chProv = ensureChart(chProv, document.getElementById('chProv'), {
-      type: 'bar',
-      data: {
-        labels: gasolineRows.map(x => x.label),
-        datasets: [{
-          label: 'Essence TTC par engin',
-          data: gasolineRows.map(x => Number(x.v || 0)),
-          borderRadius: 12,
-          borderSkipped: false
-        }]
+  chTrend = ensureChart(chTrend, document.getElementById('chTrend'), {
+    type: 'line',
+    data: {
+      labels: trendLabels,
+      datasets: trendDatasets
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-
-        onClick: (event, elements, chart) => {
-          chartClickOrReset(chart, elements, (index) => {
-            const row = gasolineRows[index];
-            if (!row) return;
-
-            essenceOnly = true;
-
-            const id = Number(row.filter_id || 0);
-
-            if (id === 0) {
-              applyOnlyCheckboxFilter('.fuel-filter-engin', '__NULL__');
-            } else {
-              applyOnlyCheckboxFilter('.fuel-filter-engin', id);
-            }
-          });
-        },
-
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: (ctx) => qty(ctx.parsed.y || 0)
-            }
+      plugins: {
+        legend: { position: 'bottom' },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `${ctx.dataset.label} : ${qty(ctx.parsed.y || 0)}`
           }
-        },
-
-        scales: {
-          x: {
-            ticks: {
-              maxRotation: 45,
-              minRotation: 0
-            }
-          },
-          y: {
-            beginAtZero: true,
-            ticks: {
-              callback: (v) => qty(v)
-            }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: (v) => qty(v)
           }
         }
       }
-    });
+    }
+  });
 
-    const topEngRows = c.topEngins || [];
-    const engLabels = [...new Set(topEngRows.map(r => r.label))];
-    const sousLabels = [...new Set(topEngRows.map(r => r.sous_label || 'Non catégorisé'))];
-
-    const topEngDatasets = sousLabels.map(sous => ({
-      label: sous,
-      data: engLabels.map(engin => {
-        const row = topEngRows.find(r => r.label === engin && (r.sous_label || 'Non catégorisé') === sous);
-        return row ? Number(row.v || 0) : 0;
-      }),
-      stack: 'engin',
-      borderRadius: 8,
-      borderSkipped: false
-    }));
-
-    chEng = ensureChart(chEng, document.getElementById('chEng'), {
-      type: 'bar',
-      data: {
-        labels: engLabels,
-        datasets: topEngDatasets
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'bottom' },
-          tooltip: {
-            callbacks: {
-              label: (ctx) => `${ctx.dataset.label} : ${qty(ctx.parsed.y || 0)}`
-            }
-          }
-        },
-        scales: {
-          x: { stacked: true },
-          y: {
-            stacked: true,
-            beginAtZero: true,
-            ticks: { callback: (v) => qty(v) }
-          }
-        }
-      }
-    });
-
-        // ===== 1) Top employés (TTC) =====
-    const empLabels = (c.byEmployee || []).map(x => x.label);
-    const empVals   = (c.byEmployee || []).map(x => Number(x.v || 0));
-
-    chEmp = ensureChart(chEmp, document.getElementById('chEmp'), {
-      type: 'bar',
-      data: { labels: empLabels, datasets: [{ label: 'QUANTITE', data: empVals }] },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: { callbacks: { label: (ctx) => qty(ctx.parsed.y || 0) } }
-        },
-        scales: { y: { ticks: { callback: (v) => qty(v) } } }
-      }
-    });
-
-    // ===== 2) Dépenses empilées par employé (ALX/TOTAL/EDENRED) =====
-    const rowsA = (c.byEmployeeProviderAmount || []);
-    const labelsA = rowsA.map(r => r.label);
-
-    const dsAlxA = rowsA.map(r => Number(r.alx || 0));
-    const dsTotA = rowsA.map(r => Number(r.total || 0));
-    const dsEdeA = rowsA.map(r => Number(r.edenred || 0));
-    const dsNotA = rowsA.map(r => Number(r.note || 0));
-
-    chEmpProvAmount = ensureChart(chEmpProvAmount, document.getElementById('chEmpProvAmount'), {
-      type: 'bar',
-      data: {
-        labels: labelsA,
-        datasets: [
-          { label: 'ALX', data: dsAlxA, stack: 'amount' },
-          { label: 'TOTAL', data: dsTotA, stack: 'amount' },
-          { label: 'EDENRED', data: dsEdeA, stack: 'amount' },
-          { label: 'NOTE', data: dsNotA, stack: 'amount' },
-        ]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'bottom' },
-          tooltip: {
-            callbacks: {
-              label: (ctx) => `${ctx.dataset.label} : ${qty(ctx.parsed.y || 0)}`
-            }
-          }
-        },
-        scales: {
-          x: { stacked: true },
-          y: {
-            stacked: true,
-            ticks: {
-              callback: (v) => qty(v)
-            }
-          }
-        }
-      }
-    });
-
-    // ===== 3) Quantités empilées par employé (ALX/TOTAL/EDENRED) =====
-    const rowsQ = (c.byEmployeeProviderQty || []);
-    const labelsQ = rowsQ.map(r => r.label);
-
-    const dsAlxQ = rowsQ.map(r => Number(r.alx || 0));
-    const dsTotQ = rowsQ.map(r => Number(r.total || 0));
-    const dsEdeQ = rowsQ.map(r => Number(r.edenred || 0));
-    const dsNotQ = rowsQ.map(r => Number(r.note || 0));
-
-    chEmpProvQty = ensureChart(chEmpProvQty, document.getElementById('chEmpProvQty'), {
-      type: 'bar',
-      data: {
-        labels: labelsQ,
-        datasets: [
-          { label: 'ALX', data: dsAlxQ, stack: 'qty' },
-          { label: 'TOTAL', data: dsTotQ, stack: 'qty' },
-          { label: 'EDENRED', data: dsEdeQ, stack: 'qty' },
-          { label: 'NOTE', data: dsNotQ, stack: 'qty' },
-        ]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'bottom' },
-          tooltip: {
-            callbacks: {
-              label: (ctx) => `${ctx.dataset.label} : ${qty(ctx.parsed.y || 0)}`
-            }
-          }
-        },
-        scales: {
-          x: { stacked: true },
-          y: {
-            stacked: true,
-            ticks: {
-              callback: (v) => qty(v)
-            }
-          }
-        }
-      }
-    });
-  }
+  const gasolineRows = c.gasolineByEngin || [];
 
   // DataTables
   let dt = null;

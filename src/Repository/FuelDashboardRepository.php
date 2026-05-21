@@ -291,15 +291,13 @@ final class FuelDashboardRepository
   SELECT
     DATE_FORMAT(x.date_tx, '%Y-%m') AS ym,
     COALESCE(NULLIF(x.produit_sous, ''), '__NULL__') AS sous,
-    COALESCE(NULLIF(x.produit_sous, ''), 'Non catégorisé') AS sous_label,
-    SUM(x.qty) AS qty
+    COALESCE(SUM(x.qty), 0) AS qty
   FROM ($sqlBase) x
   WHERE $where
   GROUP BY
     DATE_FORMAT(x.date_tx, '%Y-%m'),
-    COALESCE(NULLIF(x.produit_sous, ''), '__NULL__'),
-    COALESCE(NULLIF(x.produit_sous, ''), 'Non catégorisé')
-  ORDER BY ym ASC, sous_label ASC
+    COALESCE(NULLIF(x.produit_sous, ''), '__NULL__')
+  ORDER BY ym ASC
 ", $params);
 
     $topEngBase = $this->db->fetchAllAssociative("
