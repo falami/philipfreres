@@ -469,6 +469,155 @@
         --cell-w:84px;
       }
     }
+
+
+
+
+    .toolbar{
+  border-radius:22px;
+  background:rgba(255,255,255,.72);
+  backdrop-filter:blur(18px);
+  border:1px solid rgba(255,255,255,.65);
+  box-shadow:0 18px 55px rgba(15,23,42,.10);
+  padding:.75rem;
+  position:sticky;
+  top:.5rem;
+  z-index:40;
+}
+
+.toolbar-grid{
+  display:grid;
+  grid-template-columns:1.25fr 1fr 1fr 1fr auto;
+  gap:10px;
+  align-items:end;
+}
+
+.f-item,
+.f-item-lg{
+  grid-column:auto;
+}
+
+.form-label{
+  font-size:.68rem;
+  font-weight:950;
+  color:var(--muted);
+  margin-bottom:.22rem;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+
+.form-control,
+.form-select,
+.ts-control{
+  min-height:38px !important;
+  height:38px !important;
+  border-radius:13px !important;
+  border:1px solid rgba(15,23,42,.09) !important;
+  background:rgba(255,255,255,.92) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9) !important;
+  color:var(--ink) !important;
+  font-size:.86rem !important;
+}
+
+.ts-wrapper.multi .ts-control{
+  min-height:38px !important;
+  height:38px !important;
+  max-height:38px !important;
+  overflow:hidden;
+  padding-top:4px !important;
+  padding-bottom:4px !important;
+}
+
+.ts-wrapper .ts-control > div{
+  max-width:125px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  border-radius:999px !important;
+  font-size:.74rem !important;
+  font-weight:850;
+  padding:.15rem .45rem !important;
+}
+
+.ts-dropdown{
+  border-radius:16px !important;
+  border:1px solid var(--stroke) !important;
+  box-shadow:0 20px 45px rgba(15,23,42,.14) !important;
+  overflow:hidden;
+}
+
+.toolbar-actions{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  white-space:nowrap;
+}
+
+.btn-premium,
+.btn-outline-soft{
+  min-height:38px;
+  height:38px;
+  border-radius:13px;
+  font-size:.84rem;
+  font-weight:950;
+  padding:0 .85rem;
+}
+
+.btn-premium{
+  border:0;
+  color:#fff;
+  background:
+    linear-gradient(135deg,
+      color-mix(in srgb, var(--theme-color-principal) 92%, #000 8%),
+      color-mix(in srgb, var(--theme-color-principal) 52%, var(--theme-color-secondaire) 48%)
+    );
+  box-shadow:0 12px 26px rgba(15,23,42,.16);
+}
+
+.btn-outline-soft{
+  border:1px solid rgba(15,23,42,.10);
+  background:rgba(255,255,255,.76);
+  color:var(--ink);
+}
+
+.btn-outline-soft:hover,
+.btn-premium:hover{
+  transform:translateY(-1px);
+}
+
+@media (max-width:1200px){
+  .toolbar-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .f-item-lg{
+    grid-column:span 2;
+  }
+}
+
+@media (max-width:768px){
+  .toolbar{
+    position:relative;
+    top:auto;
+  }
+
+  .toolbar-grid{
+    grid-template-columns:1fr;
+  }
+
+  .f-item-lg{
+    grid-column:auto;
+  }
+
+  .toolbar-actions{
+    flex-wrap:wrap;
+  }
+
+  .btn-premium,
+  .btn-outline-soft{
+    flex:1;
+  }
+}
   </style>
 {% endblock %}
 
@@ -535,10 +684,16 @@
 
       <div class="f-item-lg">
         <label class="form-label">Actions</label>
-        <div class="d-flex flex-wrap gap-2">
-          <button type="button" class="btn btn-premium" id="btnApply">Actualiser</button>
-          <button type="button" class="btn btn-outline-soft" id="btnToday">Aujourd’hui</button>
-          <button type="button" class="btn btn-outline-soft" id="btnReset">Réinitialiser</button>
+        <div class="toolbar-actions">
+          <button type="button" class="btn btn-premium" id="btnApply">
+            <i class="bi bi-arrow-repeat me-1"></i>Actualiser
+          </button>
+          <button type="button" class="btn btn-outline-soft" id="btnToday">
+            <i class="bi bi-calendar-day me-1"></i>Aujourd’hui
+          </button>
+          <button type="button" class="btn btn-outline-soft" id="btnReset">
+            <i class="bi bi-x-circle me-1"></i>Reset
+          </button>
         </div>
       </div>
     </div>
