@@ -229,7 +229,7 @@ final class FuelCalendarRepository
       e.nom AS engin_label,
 
       COALESCE(t.utilisateur_id, ue.utilisateur_id) AS employe_id,
-      CONCAT(COALESCE(u.prenom,''),' ',COALESCE(u.nom,'')) AS employe_label,
+      CONCAT(COALESCE(u.prenom,''),' ',COALESCE(u.nom,'')) AS employe_label
 
 
     FROM transaction_carte_alx t
@@ -242,7 +242,7 @@ final class FuelCalendarRepository
     LEFT JOIN utilisateur_external_id ue
       ON ue.provider = 'alx'
       AND ue.active = 1
-      AND ue.value = t.agent
+      AND ue.value = LOWER(TRIM(t.agent))
 
     /* 🔥 Produit mapping ALX: cuve (int) */
     LEFT JOIN produit_external_id tde
@@ -277,7 +277,7 @@ final class FuelCalendarRepository
       e.nom AS engin_label,
 
       COALESCE(t.utilisateur_id, ue.utilisateur_id) AS employe_id,
-      CONCAT(COALESCE(u.prenom,''),' ',COALESCE(u.nom,'')) AS employe_label,
+      CONCAT(COALESCE(u.prenom,''),' ',COALESCE(u.nom,'')) AS employe_label
 
 
     FROM transaction_carte_total t
@@ -325,7 +325,7 @@ final class FuelCalendarRepository
       e.nom AS engin_label,
 
       COALESCE(t.utilisateur_id, ue.utilisateur_id) AS employe_id,
-      CONCAT(COALESCE(u.prenom,''),' ',COALESCE(u.nom,'')) AS employe_label,
+      CONCAT(COALESCE(u.prenom,''),' ',COALESCE(u.nom,'')) AS employe_label
 
 
     FROM transaction_carte_edenred t

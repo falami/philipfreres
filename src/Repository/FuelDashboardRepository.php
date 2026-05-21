@@ -255,6 +255,19 @@ final class FuelDashboardRepository
     ";
     $k = $this->db->fetchAssociative($kpiSql, $params) ?: [];
 
+
+
+
+    $kpiSousCategories = $this->db->fetchAssociative("
+      SELECT
+        COALESCE(SUM(CASE WHEN x.produit_sous = 'gasoil' THEN x.qty ELSE 0 END), 0) AS total_gasoil,
+        COALESCE(SUM(CASE WHEN x.produit_sous = 'gnr' THEN x.qty ELSE 0 END), 0) AS total_gnr,
+        COALESCE(SUM(CASE WHEN x.produit_sous = 'adblue' THEN x.qty ELSE 0 END), 0) AS total_adblue,
+        COALESCE(SUM(CASE WHEN x.produit_sous = 'peage' THEN x.amount_cents ELSE 0 END), 0) AS total_peage_cents
+      FROM ($sqlBase) x
+      WHERE $where
+    ", $params) ?: [];
+
     // ===== Par fournisseur
     // provider = alx/total/edenred → label en UPPER pour l'affichage
     // ===== Essence uniquement par fournisseur
@@ -398,6 +411,10 @@ final class FuelDashboardRepository
         'cnt' => (int) ($k['cnt'] ?? 0),
         'cnt_unmatched_engin' => (int) ($k['cnt_unmatched_engin'] ?? 0),
         'cnt_unmatched_employe' => (int) ($k['cnt_unmatched_employe'] ?? 0),
+        'total_gasoil' => (float) ($kpiSousCategories['total_gasoil'] ?? 0),
+        'total_gnr' => (float) ($kpiSousCategories['total_gnr'] ?? 0),
+        'total_adblue' => (float) ($kpiSousCategories['total_adblue'] ?? 0),
+        'total_peage_cents' => (int) ($kpiSousCategories['total_peage_cents'] ?? 0),
       ],
       'charts' => [
         'gasolineByEngin' => $byEssenceEngin,

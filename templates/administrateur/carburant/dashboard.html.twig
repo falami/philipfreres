@@ -882,6 +882,13 @@ body{
   }
 }
 
+.kpi .value small{
+  font-size: .9rem;
+  font-weight: 800;
+  opacity: .65;
+  margin-left: .15rem;
+}
+
   </style>
 {% endblock %}
 
@@ -1222,6 +1229,55 @@ body{
           </div>
           <div class="value" id="kpiAvg">-</div>
           <div class="sub">Montant / transaction</div>
+        </div>
+      </div>
+
+
+      <div class="kpi-grid mt-3">
+        <div class="kpi">
+          <div class="kpi-top">
+            <div>
+              <div class="label">Total Gasoil</div>
+              <div class="value">
+                <span id="kpiGasoil">0</span> <small>L</small>
+              </div>
+            </div>
+            <div class="ico"><i class="bi bi-fuel-pump"></i></div>
+          </div>
+        </div>
+
+        <div class="kpi">
+          <div class="kpi-top">
+            <div>
+              <div class="label">Total GNR</div>
+              <div class="value">
+                <span id="kpiGnr">0</span> <small>L</small>
+              </div>
+            </div>
+            <div class="ico"><i class="bi bi-droplet-half"></i></div>
+          </div>
+        </div>
+
+        <div class="kpi">
+          <div class="kpi-top">
+            <div>
+              <div class="label">Total AdBlue</div>
+              <div class="value">
+                <span id="kpiAdblue">0</span> <small>L</small>
+              </div>
+            </div>
+            <div class="ico"><i class="bi bi-droplet"></i></div>
+          </div>
+        </div>
+
+        <div class="kpi">
+          <div class="kpi-top">
+            <div>
+              <div class="label">Total Péages</div>
+              <div class="value" id="kpiPeage">0 €</div>
+            </div>
+            <div class="ico"><i class="bi bi-signpost-split"></i></div>
+          </div>
         </div>
       </div>
     </div>
@@ -1848,19 +1904,19 @@ body{
 
   function applyKpis(k){
     document.getElementById('kpiAmount').textContent = money(k.amount_cents);
-
-    // ✅ quantité avec milliers + 2 décimales
     document.getElementById('kpiQty').textContent = numFR(k.qty || 0, 2);
-
-    // ✅ compteur avec milliers
     document.getElementById('kpiCount').textContent = `${numFR(k.cnt || 0, 0)} transaction(s)`;
 
-    // ✅ non rattachées avec milliers
     document.getElementById('kpiUnmatchedEngin').textContent = numFR(k.cnt_unmatched_engin || 0, 0);
     document.getElementById('kpiUnmatchedEmploye').textContent = `${numFR(k.cnt_unmatched_employe || 0, 0)} sans employé`;
 
-    const avg = (k.cnt ? Math.round((k.amount_cents||0)/k.cnt) : 0);
+    const avg = (k.cnt ? Math.round((k.amount_cents || 0) / k.cnt) : 0);
     document.getElementById('kpiAvg').textContent = money(avg);
+
+    document.getElementById('kpiGasoil').textContent = qty(k.total_gasoil || 0);
+    document.getElementById('kpiGnr').textContent = qty(k.total_gnr || 0);
+    document.getElementById('kpiAdblue').textContent = qty(k.total_adblue || 0);
+    document.getElementById('kpiPeage').textContent = money(k.total_peage_cents || 0);
   }
 
 
