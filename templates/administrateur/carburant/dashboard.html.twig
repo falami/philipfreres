@@ -1963,16 +1963,58 @@ body{
   }
 
   function applyCharts(c){
-    const trendLabels = (c.trendMonthly||[]).map(x=>x.ym);
-    const trendVals = (c.trendMonthly || []).map(x => Number(x.qty || 0));
+    const trendRows = c.trendMonthly || [];
+
+    const trendLabels = [...new Set(trendRows.map(r => r.ym))];
+    const trendSousLabels = [...new Set(trendRows.map(r => r.sous_label || 'Non catégorisé'))];
+
+    const trendDatasets = trendSousLabels.map(sous => ({
+      label: sous,
+      data: trendLabels.map(month => {
+        const row = trendRows.find(r =>
+          r.ym === month && (r.sous_label || 'Non catégorisé') === sous
+        );
+
+        return row ? Number(row.qty || 0) : 0;
+      }),
+      tension: .35,
+      borderWidth: 2,
+      pointRadius: 3,
+      pointHoverRadius: 5,
+      fill: false
+    }));
 
     chTrend = ensureChart(chTrend, document.getElementById('chTrend'), {
-      type:'line',
-      data:{ labels: trendLabels, datasets:[{ label:'Quantité', data: trendVals }]},
-      options:{
-        responsive:true, maintainAspectRatio:false,
-        plugins:{ legend:{position:'bottom'}, tooltip:{ callbacks:{ label:(ctx)=> qty(ctx.parsed.y || 0) } } },
-        scales:{ y:{ ticks:{ callback:(v)=> qty(v) } } }
+      type: 'line',
+      data: {
+        labels: trendLabels,
+        datasets: trendDatasets
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false
+        },
+        plugins: {
+          legend: {
+            position: 'bottom'
+          },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.dataset.label} : ${qty(ctx.parsed.y || 0)}`
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: (v) => qty(v)
+            }
+          }
+        }
       }
     });
 
