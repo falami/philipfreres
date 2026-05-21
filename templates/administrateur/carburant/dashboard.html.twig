@@ -1966,16 +1966,34 @@ body{
     const trendRows = c.trendMonthly || [];
 
     const trendLabels = [...new Set(trendRows.map(r => r.ym))];
-    const trendSousLabels = [...new Set(trendRows.map(r => r.sous_label || 'Non catégorisé'))];
 
-    const trendDatasets = trendSousLabels.map(sous => ({
-      label: sous,
+    const wantedSous = {
+      essence: 'Essence',
+      gasoil: 'Gasoil',
+      gnr: 'GNR',
+      HVO100: 'HVO 100'
+    };
+
+    const trendTotalDataset = {
+      label: 'Total',
       data: trendLabels.map(month => {
-        const row = trendRows.find(r =>
-          r.ym === month && (r.sous_label || 'Non catégorisé') === sous
-        );
+        return trendRows
+          .filter(r => r.ym === month)
+          .reduce((sum, r) => sum + Number(r.qty || 0), 0);
+      }),
+      tension: .35,
+      borderWidth: 3,
+      pointRadius: 4,
+      pointHoverRadius: 6,
+      fill: false
+    };
 
-        return row ? Number(row.qty || 0) : 0;
+    const trendSousDatasets = Object.entries(wantedSous).map(([sousValue, sousLabel]) => ({
+      label: sousLabel,
+      data: trendLabels.map(month => {
+        return trendRows
+          .filter(r => r.ym === month && r.sous === sousValue)
+          .reduce((sum, r) => sum + Number(r.qty || 0), 0);
       }),
       tension: .35,
       borderWidth: 2,
@@ -1984,39 +2002,10 @@ body{
       fill: false
     }));
 
-    chTrend = ensureChart(chTrend, document.getElementById('chTrend'), {
-      type: 'line',
-      data: {
-        labels: trendLabels,
-        datasets: trendDatasets
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: {
-          mode: 'index',
-          intersect: false
-        },
-        plugins: {
-          legend: {
-            position: 'bottom'
-          },
-          tooltip: {
-            callbacks: {
-              label: (ctx) => `${ctx.dataset.label} : ${qty(ctx.parsed.y || 0)}`
-            }
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: {
-              callback: (v) => qty(v)
-            }
-          }
-        }
-      }
-    });
+    const trendDatasets = [
+      trendTotalDataset,
+      ...trendSousDatasets
+    ];
 
     const gasolineRows = c.gasolineByEngin || [];
 
