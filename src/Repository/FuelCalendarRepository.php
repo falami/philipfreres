@@ -237,7 +237,7 @@ final class FuelCalendarRepository
     LEFT JOIN engin_external_id ee
       ON ee.provider = 'alx'
       AND ee.active = 1
-      AND ee.value = t.vehicule
+      AND ee.value = LOWER(TRIM(t.vehicule))
 
     LEFT JOIN utilisateur_external_id ue
       ON ue.provider = 'alx'
@@ -285,12 +285,12 @@ final class FuelCalendarRepository
     LEFT JOIN engin_external_id ee
       ON ee.provider = 'total'
       AND ee.active = 1
-      AND ee.value = t.nom_personnalise_carte
+      AND ee.value = LOWER(TRIM(t.nom_personnalise_carte))
 
     LEFT JOIN utilisateur_external_id ue
       ON ue.provider = 'total'
       AND ue.active = 1
-      AND ue.value = t.code_conducteur
+      AND ue.value = LOWER(TRIM(t.code_conducteur))
 
     /* 🔥 Produit mapping Total: categorie_libelle_produit */
     LEFT JOIN produit_external_id tde
@@ -333,12 +333,12 @@ final class FuelCalendarRepository
     LEFT JOIN engin_external_id ee
       ON ee.provider = 'edenred'
       AND ee.active = 1
-      AND ee.value = COALESCE(t.immatriculation, t.kilometrage)
+      AND ee.value = LOWER(TRIM(COALESCE(t.immatriculation, t.kilometrage)))
 
     LEFT JOIN utilisateur_external_id ue
       ON ue.provider = 'edenred'
       AND ue.active = 1
-      AND ue.value = t.code_vehicule
+      AND ue.value = LOWER(TRIM(t.code_vehicule))
 
     /* 🔥 Produit mapping Edenred: produit */
     LEFT JOIN produit_external_id tde
