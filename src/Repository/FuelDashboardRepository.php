@@ -283,15 +283,62 @@ final class FuelDashboardRepository
   ORDER BY ym ASC
 ", $params);
 
-    $topEng = $this->db->fetchAllAssociative("
-  SELECT COALESCE(x.engin_label,'(Non rattaché)') AS label,
-         SUM(x.qty) AS v
+    $topEngBase = $this->db->fetchAllAssociative("
+  SELECT
+    COALESCE(x.engin_id, 0) AS filter_id,
+    COALESCE(x.engin_label, '(Non rattaché)') AS label,
+    SUM(x.qty) AS total_qty
   FROM ($sqlBase) x
   WHERE $where
-  GROUP BY COALESCE(x.engin_label,'(Non rattaché)')
-  ORDER BY v DESC
+  GROUP BY COALESCE(x.engin_id, 0), COALESCE(x.engin_label, '(Non rattaché)')
+  ORDER BY total_qty DESC
   LIMIT 10
 ", $params);
+
+    $topEngIds = array_map(static fn(array $r) => (int) $r['filter_id'], $topEngBase);
+
+    $topEng = [];
+
+    if ($topEngIds !== []) {
+      $topParams = $params;
+      $parts = [];
+
+      $realIds = array_values(array_filter($topEngIds, static fn(int $id) => $id > 0));
+      $hasNull = in_array(0, $topEngIds, true);
+
+      if ($realIds !== []) {
+        $in = [];
+        foreach ($realIds as $i => $id) {
+          $k = 'topEng' . $i;
+          $in[] = ':' . $k;
+          $topParams[$k] = $id;
+        }
+        $parts[] = 'x.engin_id IN (' . implode(',', $in) . ')';
+      }
+
+      if ($hasNull) {
+        $parts[] = 'x.engin_id IS NULL';
+      }
+
+      $topWhere = $where . ' AND (' . implode(' OR ', $parts) . ') ';
+
+      $topEng = $this->db->fetchAllAssociative("
+    SELECT
+      COALESCE(x.engin_id, 0) AS filter_id,
+      COALESCE(x.engin_label, '(Non rattaché)') AS label,
+      COALESCE(NULLIF(x.produit_sous, ''), '__NULL__') AS sous,
+      COALESCE(NULLIF(x.produit_sous, ''), 'Non catégorisé') AS sous_label,
+      SUM(x.qty) AS v
+    FROM ($sqlBase) x
+    WHERE $topWhere
+    GROUP BY
+      COALESCE(x.engin_id, 0),
+      COALESCE(x.engin_label, '(Non rattaché)'),
+      COALESCE(NULLIF(x.produit_sous, ''), '__NULL__'),
+      COALESCE(NULLIF(x.produit_sous, ''), 'Non catégorisé')
+    ORDER BY SUM(x.qty) DESC
+  ", $topParams);
+    }
 
     $byEmp = $this->db->fetchAllAssociative("
   SELECT COALESCE(x.employe_label,'(Non rattaché)') AS label,

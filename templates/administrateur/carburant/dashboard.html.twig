@@ -1980,16 +1980,46 @@ body{
       }
     });
 
+    const topEngRows = c.topEngins || [];
+    const engLabels = [...new Set(topEngRows.map(r => r.label))];
+    const sousLabels = [...new Set(topEngRows.map(r => r.sous_label || 'Non catégorisé'))];
+
+    const topEngDatasets = sousLabels.map(sous => ({
+      label: sous,
+      data: engLabels.map(engin => {
+        const row = topEngRows.find(r => r.label === engin && (r.sous_label || 'Non catégorisé') === sous);
+        return row ? Number(row.v || 0) : 0;
+      }),
+      stack: 'engin',
+      borderRadius: 8,
+      borderSkipped: false
+    }));
+
     chEng = ensureChart(chEng, document.getElementById('chEng'), {
-      type:'bar',
-      data:{
-        labels:(c.topEngins||[]).map(x=>x.label),
-        datasets:[{ label:'Top engins TTC', data:(c.topEngins||[]).map(x=>Number(x.v||0)) }]
+      type: 'bar',
+      data: {
+        labels: engLabels,
+        datasets: topEngDatasets
       },
-      options:{
-        responsive:true, maintainAspectRatio:false,
-        plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:(ctx)=> qty(ctx.parsed.y || 0) } } },
-        scales:{ y:{ ticks:{ callback:(v)=> qty(v) } } }
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom' },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.dataset.label} : ${qty(ctx.parsed.y || 0)}`
+            }
+          }
+        },
+        scales: {
+          x: { stacked: true },
+          y: {
+            stacked: true,
+            beginAtZero: true,
+            ticks: { callback: (v) => qty(v) }
+          }
+        }
       }
     });
 
