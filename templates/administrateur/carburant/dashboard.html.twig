@@ -1963,6 +1963,10 @@ body{
   }
 
   function applyCharts(c){
+
+  /* =========================================================
+   * TENDANCE MENSUELLE
+   * =======================================================*/
   const trendRows = c.trendMonthly || [];
 
   const trendLabels = [...new Set(trendRows.map(r => r.ym))];
@@ -2021,7 +2025,9 @@ body{
         intersect: false
       },
       plugins: {
-        legend: { position: 'bottom' },
+        legend: {
+          position: 'bottom'
+        },
         tooltip: {
           callbacks: {
             label: (ctx) => `${ctx.dataset.label} : ${qty(ctx.parsed.y || 0)}`
@@ -2039,8 +2045,252 @@ body{
     }
   });
 
+  /* =========================================================
+   * ESSENCE PAR ENGIN
+   * =======================================================*/
   const gasolineRows = c.gasolineByEngin || [];
-  }
+
+  chProv = ensureChart(chProv, document.getElementById('chProv'), {
+    type: 'bar',
+    data: {
+      labels: gasolineRows.map(x => x.label),
+      datasets: [{
+        label: 'Quantité essence',
+        data: gasolineRows.map(x => Number(x.v || 0)),
+        borderRadius: 12,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => qty(ctx.parsed.y || 0)
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: (v) => qty(v)
+          }
+        }
+      }
+    }
+  });
+
+  /* =========================================================
+   * TOP ENGINS EMPILÉ
+   * =======================================================*/
+  const topEngRows = c.topEngins || [];
+
+  const engLabels = [...new Set(topEngRows.map(r => r.label))];
+  const sousLabels = [...new Set(topEngRows.map(r => r.sous_label || 'Non catégorisé'))];
+
+  const topEngDatasets = sousLabels.map(sous => ({
+    label: sous,
+    data: engLabels.map(engin => {
+      const row = topEngRows.find(r =>
+        r.label === engin &&
+        (r.sous_label || 'Non catégorisé') === sous
+      );
+
+      return row ? Number(row.v || 0) : 0;
+    }),
+    stack: 'engin',
+    borderRadius: 8,
+    borderSkipped: false
+  }));
+
+  chEng = ensureChart(chEng, document.getElementById('chEng'), {
+    type: 'bar',
+    data: {
+      labels: engLabels,
+      datasets: topEngDatasets
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom'
+        },
+        tooltip: {
+          callbacks: {
+            label: (ctx) =>
+              `${ctx.dataset.label} : ${qty(ctx.parsed.y || 0)}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          stacked: true
+        },
+        y: {
+          stacked: true,
+          beginAtZero: true,
+          ticks: {
+            callback: (v) => qty(v)
+          }
+        }
+      }
+    }
+  });
+
+  /* =========================================================
+   * TOP EMPLOYÉS
+   * =======================================================*/
+  const empRows = c.byEmployee || [];
+
+  chEmp = ensureChart(chEmp, document.getElementById('chEmp'), {
+    type: 'bar',
+    data: {
+      labels: empRows.map(x => x.label),
+      datasets: [{
+        label: 'Quantité',
+        data: empRows.map(x => Number(x.v || 0)),
+        borderRadius: 12,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => qty(ctx.parsed.y || 0)
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: (v) => qty(v)
+          }
+        }
+      }
+    }
+  });
+
+  /* =========================================================
+   * EMPLOYÉS / FOURNISSEURS (MONTANT)
+   * =======================================================*/
+  const empProvAmountRows = c.byEmployeeProviderAmount || [];
+
+  chEmpProvAmount = ensureChart(
+    chEmpProvAmount,
+    document.getElementById('chEmpProvAmount'),
+    {
+      type: 'bar',
+      data: {
+        labels: empProvAmountRows.map(x => x.label),
+        datasets: [
+          {
+            label: 'ALX',
+            data: empProvAmountRows.map(x => Number(x.alx || 0)),
+            stack: 'total'
+          },
+          {
+            label: 'TOTAL',
+            data: empProvAmountRows.map(x => Number(x.total || 0)),
+            stack: 'total'
+          },
+          {
+            label: 'EDENRED',
+            data: empProvAmountRows.map(x => Number(x.edenred || 0)),
+            stack: 'total'
+          },
+          {
+            label: 'NOTE',
+            data: empProvAmountRows.map(x => Number(x.note || 0)),
+            stack: 'total'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            stacked: true
+          },
+          y: {
+            stacked: true,
+            beginAtZero: true,
+            ticks: {
+              callback: (v) => qty(v)
+            }
+          }
+        }
+      }
+    }
+  );
+
+  /* =========================================================
+   * EMPLOYÉS / FOURNISSEURS (QUANTITÉ)
+   * =======================================================*/
+  const empProvQtyRows = c.byEmployeeProviderQty || [];
+
+  chEmpProvQty = ensureChart(
+    chEmpProvQty,
+    document.getElementById('chEmpProvQty'),
+    {
+      type: 'bar',
+      data: {
+        labels: empProvQtyRows.map(x => x.label),
+        datasets: [
+          {
+            label: 'ALX',
+            data: empProvQtyRows.map(x => Number(x.alx || 0)),
+            stack: 'qty'
+          },
+          {
+            label: 'TOTAL',
+            data: empProvQtyRows.map(x => Number(x.total || 0)),
+            stack: 'qty'
+          },
+          {
+            label: 'EDENRED',
+            data: empProvQtyRows.map(x => Number(x.edenred || 0)),
+            stack: 'qty'
+          },
+          {
+            label: 'NOTE',
+            data: empProvQtyRows.map(x => Number(x.note || 0)),
+            stack: 'qty'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            stacked: true
+          },
+          y: {
+            stacked: true,
+            beginAtZero: true,
+            ticks: {
+              callback: (v) => qty(v)
+            }
+          }
+        }
+      }
+    }
+  );
+}
 
   // DataTables
   let dt = null;
