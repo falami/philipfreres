@@ -21,6 +21,7 @@ final class TotalUtilisateurRematcher
     $rows = $this->em->getRepository(TransactionCarteTotal::class)
       ->createQueryBuilder('t')
       ->andWhere('t.entite = :entite')
+      ->andWhere('t.utilisateurLocked = false')
       ->setParameter('entite', $entite)
       ->getQuery()
       ->toIterable();
@@ -53,7 +54,7 @@ final class TotalUtilisateurRematcher
         $user = $ext?->getUtilisateur();
       }
 
-      $t->setUtilisateur($user);
+      $t->assignUtilisateurAutomatically($user);
       $count++;
 
       if ($count % 200 === 0) {

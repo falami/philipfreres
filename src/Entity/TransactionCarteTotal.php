@@ -144,6 +144,13 @@ class TransactionCarteTotal
     #[ORM\Column(enumType: ExternalProvider::class, options: ['default' => 'total'])]
     private ExternalProvider $provider = ExternalProvider::TOTAL;
 
+
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $utilisateurLocked = false;
+
+    #[ORM\Column(length: 20, nullable: true)]
+    private ?string $utilisateurMatchSource = null;
+
     public function __construct()
     {
         $this->importedAt = new \DateTimeImmutable();
@@ -658,6 +665,49 @@ class TransactionCarteTotal
     public function setProvider(ExternalProvider $provider): self
     {
         $this->provider = $provider;
+        return $this;
+    }
+
+    public function isUtilisateurLocked(): bool
+    {
+        return $this->utilisateurLocked;
+    }
+
+    public function setUtilisateurLocked(bool $utilisateurLocked): self
+    {
+        $this->utilisateurLocked = $utilisateurLocked;
+        return $this;
+    }
+
+    public function getUtilisateurMatchSource(): ?string
+    {
+        return $this->utilisateurMatchSource;
+    }
+
+    public function setUtilisateurMatchSource(?string $utilisateurMatchSource): self
+    {
+        $this->utilisateurMatchSource = $utilisateurMatchSource;
+        return $this;
+    }
+
+    public function assignUtilisateurManually(?Utilisateur $utilisateur): self
+    {
+        $this->utilisateur = $utilisateur;
+        $this->utilisateurLocked = true;
+        $this->utilisateurMatchSource = 'manual';
+
+        return $this;
+    }
+
+    public function assignUtilisateurAutomatically(?Utilisateur $utilisateur): self
+    {
+        if ($this->utilisateurLocked) {
+            return $this;
+        }
+
+        $this->utilisateur = $utilisateur;
+        $this->utilisateurMatchSource = 'auto';
+
         return $this;
     }
 }

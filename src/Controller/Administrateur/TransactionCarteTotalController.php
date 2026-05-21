@@ -300,6 +300,8 @@ final class TransactionCarteTotalController extends AbstractController
     $form->handleRequest($request);
 
     if ($form->isSubmitted() && $form->isValid()) {
+      $t->setUtilisateurLocked(true);
+
       $em->flush();
 
       $this->addFlash('success', 'Transaction TOTAL mise à jour.');
