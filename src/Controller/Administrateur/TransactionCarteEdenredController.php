@@ -226,6 +226,8 @@ final class TransactionCarteEdenredController extends AbstractController
     $form->handleRequest($request);
 
     if ($form->isSubmitted() && $form->isValid()) {
+      $t->setEnginLocked(true);
+
       $em->flush();
       $this->addFlash('success', 'Transaction EDENRED modifiée.');
       return $this->redirectToRoute('app_administrateur_tce_show', ['entite' => $entite->getId(), 'id' => $t->getId()]);

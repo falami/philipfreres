@@ -22,6 +22,7 @@ final class EdenredRematcher
     $rows = $this->em->getRepository(TransactionCarteEdenred::class)
       ->createQueryBuilder('t')
       ->andWhere('t.entite = :entite')
+      ->andWhere('t.enginLocked = false')
       ->setParameter('entite', $entite)
       ->getQuery()
       ->toIterable();

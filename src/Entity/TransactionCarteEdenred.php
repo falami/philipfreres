@@ -165,6 +165,13 @@ class TransactionCarteEdenred
     #[ORM\Column(enumType: ExternalProvider::class, options: ['default' => 'edenred'])]
     private ExternalProvider $provider = ExternalProvider::EDENRED;
 
+
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $enginLocked = false;
+
+    #[ORM\Column(length: 20, nullable: true)]
+    private ?string $enginMatchSource = null; // auto | manual
+
     public function __construct()
     {
         $this->importedAt = new \DateTimeImmutable();
@@ -747,6 +754,49 @@ class TransactionCarteEdenred
     public function setProvider(ExternalProvider $provider): self
     {
         $this->provider = $provider;
+        return $this;
+    }
+
+    public function isEnginLocked(): bool
+    {
+        return $this->enginLocked;
+    }
+
+    public function setEnginLocked(bool $enginLocked): self
+    {
+        $this->enginLocked = $enginLocked;
+        return $this;
+    }
+
+    public function getEnginMatchSource(): ?string
+    {
+        return $this->enginMatchSource;
+    }
+
+    public function setEnginMatchSource(?string $enginMatchSource): self
+    {
+        $this->enginMatchSource = $enginMatchSource;
+        return $this;
+    }
+
+    public function assignEnginManually(?Engin $engin): self
+    {
+        $this->engin = $engin;
+        $this->enginLocked = true;
+        $this->enginMatchSource = 'manual';
+
+        return $this;
+    }
+
+    public function assignEnginAutomatically(?Engin $engin): self
+    {
+        if ($this->enginLocked) {
+            return $this;
+        }
+
+        $this->engin = $engin;
+        $this->enginMatchSource = 'auto';
+
         return $this;
     }
 }

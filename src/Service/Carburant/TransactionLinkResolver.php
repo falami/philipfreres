@@ -38,13 +38,18 @@ final class TransactionLinkResolver
 
   public function resolveEdenred(Entite $entite, TransactionCarteEdenred $t, bool $force = false): void
   {
+    if ($t->isEnginLocked()) {
+      $this->resolveEmployeFromEngin($t->getEngin(), $t->getDateTransaction(), $t);
+      return;
+    }
+
     if (!$force && $t->getEngin()) {
       $this->resolveEmployeFromEngin($t->getEngin(), $t->getDateTransaction(), $t);
       return;
     }
 
     $engin = $this->matcher->matchForEdenred($entite, $t);
-    $t->setEngin($engin);
+    $t->assignEnginAutomatically($engin);
     $this->resolveEmployeFromEngin($engin, $t->getDateTransaction(), $t);
   }
 
