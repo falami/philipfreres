@@ -2222,17 +2222,29 @@ body{
 
       onClick: (evt, elements, chart) => {
         chartClickOrReset(chart, elements, (index) => {
-          const row = empProvAmountRows[index];
+          const enginLabel = chart.data.labels[index];
+          const datasetIndex = elements[0].datasetIndex;
+          const sousLabel = chart.data.datasets[datasetIndex]?.label;
+
+          const row = topEngRows.find(r => r.label === enginLabel);
           if (!row) return;
 
-          const datasetIndex = elements[0].datasetIndex;
-          const provider = chart.data.datasets[datasetIndex]?.label;
+          const sousRow = topEngRows.find(r =>
+            r.label === enginLabel &&
+            (r.sous_label || 'Non catégorisé') === sousLabel
+          );
 
           applyMultipleChartFilters(() => {
-            setOnlyCheckboxFilter('.fuel-filter-emp', Number(row.filter_id || 0) > 0 ? row.filter_id : '__NULL__');
+            setOnlyCheckboxFilter(
+              '.fuel-filter-engin',
+              Number(row.filter_id || 0) > 0 ? row.filter_id : '__NULL__'
+            );
 
-            if (provider) {
-              setOnlyCheckboxFilter('.fuel-filter-prov', provider.toUpperCase());
+            if (sousRow?.sous) {
+              setOnlyCheckboxFilter(
+                '.fuel-filter-sous',
+                sousRow.sous === '__NULL__' ? '__NULL__' : sousRow.sous
+              );
             }
           });
         });
