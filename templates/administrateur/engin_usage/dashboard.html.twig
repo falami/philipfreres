@@ -277,9 +277,7 @@
     document.getElementById('kpiAvg').textContent = num(data.kpis.avgDaily);
     document.getElementById('kpiDepense').textContent = num(data.kpis.avgWeekly);
     document.getElementById('kpiCostUnit').textContent = num(data.kpis.avgMonthly);
-
-    const expenseLabels = data.charts.monthlyExpense.map(x => x.month);
-
+    
     const usageLabels = data.charts.monthlyUsage.map(x => x.month);
 
     chMonthlyUsage = chart(chMonthlyUsage, 'chMonthlyUsage', {
