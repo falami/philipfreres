@@ -2117,6 +2117,24 @@ body{
     options: {
       responsive: true,
       maintainAspectRatio: false,
+
+      onClick: (evt, elements, chart) => {
+        chartClickOrReset(chart, elements, (index) => {
+          const label = chart.data.labels[index];
+
+          const row = topEngRows.find(r => r.label === label);
+          if (!row) return;
+
+          const filterId = Number(row.filter_id || 0);
+
+          if (filterId > 0) {
+            applyOnlyCheckboxFilter('.fuel-filter-engin', filterId);
+          } else {
+            applyOnlyCheckboxFilter('.fuel-filter-engin', '__NULL__');
+          }
+        });
+      },
+
       plugins: {
         legend: {
           position: 'bottom'
