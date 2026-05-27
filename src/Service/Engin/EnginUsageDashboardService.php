@@ -3,236 +3,149 @@
 namespace App\Service\Engin;
 
 use App\Entity\Entite;
-use App\Entity\EnginUsageReleve;
-use App\Entity\TransactionCarteAlx;
-use App\Entity\TransactionCarteTotal;
-use App\Entity\TransactionCarteEdenred;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Repository\EnginUsageReleveRepository;
 
 final class EnginUsageDashboardService
 {
   public function __construct(
-    private readonly EntityManagerInterface $em,
+    private readonly EnginUsageReleveRepository $repo,
   ) {}
 
   public function build(Entite $entite, array $filters): array
   {
-    $usage = $this->getUsageData($entite, $filters);
-    $expenses = $this->getExpenseData($entite, $filters);
+    $rows = $this->repo->fetchDashboardReleves($entite, $filters);
 
+    $byEnginRaw = [];
+    foreach ($rows as $row) {
+      $enginId = (int) $row['enginId'];
+      $byEnginRaw[$enginId][] = $row;
+    }
+
+    $totalUsage = 0.0;
+    $totalDays = 0;
+    $nbIntervals = 0;
+
+    $daily = [];
+    $weekly = [];
+    $monthly = [];
     $byEngin = [];
 
-    foreach ($usage['byEngin'] as $row) {
-      $enginId = (int) $row['enginId'];
+    foreach ($byEnginRaw as $enginId => $releves) {
+      $previous = null;
 
-      $byEngin[$enginId] = [
-        'enginId' => $enginId,
-        'engin' => $row['engin'],
-        'type' => $this->enumValue($row['type']),
-        'usage' => (float) $row['usage'],
-        'avgUsage' => (float) $row['avgUsage'],
-        'depense' => 0.0,
-        'coutUnite' => 0.0,
-        'nb' => (int) $row['nb'],
-      ];
-    }
+      foreach ($releves as $current) {
+        if (!$previous) {
+          $previous = $current;
+          continue;
+        }
 
-    foreach ($expenses['byEngin'] as $row) {
-      $enginId = (int) $row['enginId'];
+        $datePrev = $previous['dateReleve'];
+        $dateCur = $current['dateReleve'];
 
-      if (!isset($byEngin[$enginId])) {
-        $byEngin[$enginId] = [
-          'enginId' => $enginId,
-          'engin' => $row['engin'],
-          'type' => null,
-          'usage' => 0.0,
-          'avgUsage' => 0.0,
-          'depense' => 0.0,
-          'coutUnite' => 0.0,
-          'nb' => 0,
-        ];
+        if (!$datePrev instanceof \DateTimeInterface || !$dateCur instanceof \DateTimeInterface) {
+          $previous = $current;
+          continue;
+        }
+
+        $days = max(1, (int) $datePrev->diff($dateCur)->days);
+        $delta = round((float) $current['valeur'] - (float) $previous['valeur'], 2);
+
+        // Ignore les compteurs remis à zéro ou erreurs de saisie
+        if ($delta < 0) {
+          $previous = $current;
+          continue;
+        }
+
+        $enginNom = $current['enginNom'] ?? 'Engin';
+        $type = $this->normalizeCompteurType($current['compteurType'] ?? null);
+        $unit = $type === 'kilometre' ? 'km' : 'h';
+
+        $dayKey = $dateCur->format('Y-m-d');
+        $weekKey = $dateCur->format('o-\WW');
+        $monthKey = $dateCur->format('Y-m');
+
+        $daily[$dayKey] = ($daily[$dayKey] ?? 0) + $delta;
+        $weekly[$weekKey] = ($weekly[$weekKey] ?? 0) + $delta;
+        $monthly[$monthKey] = ($monthly[$monthKey] ?? 0) + $delta;
+
+        if (!isset($byEngin[$enginId])) {
+          $byEngin[$enginId] = [
+            'engin' => $enginNom,
+            'type' => $type,
+            'unit' => $unit,
+            'usage' => 0.0,
+            'days' => 0,
+            'nbIntervals' => 0,
+            'avgDaily' => 0.0,
+            'avgWeekly' => 0.0,
+            'avgMonthly' => 0.0,
+          ];
+        }
+
+        $byEngin[$enginId]['usage'] += $delta;
+        $byEngin[$enginId]['days'] += $days;
+        $byEngin[$enginId]['nbIntervals']++;
+
+        $totalUsage += $delta;
+        $totalDays += $days;
+        $nbIntervals++;
+
+        $previous = $current;
       }
-
-      $byEngin[$enginId]['depense'] += (float) $row['depense'];
     }
 
-    foreach ($byEngin as &$row) {
-      $row['coutUnite'] = $row['usage'] > 0
-        ? round($row['depense'] / $row['usage'], 2)
-        : 0.0;
-    }
+    foreach ($byEngin as &$engin) {
+      $days = max(1, $engin['days']);
 
-    $totalUsage = array_sum(array_column($byEngin, 'usage'));
-    $totalDepense = array_sum(array_column($byEngin, 'depense'));
-    $nbReleves = $usage['nbReleves'];
+      $engin['usage'] = round($engin['usage'], 2);
+      $engin['avgDaily'] = round($engin['usage'] / $days, 2);
+      $engin['avgWeekly'] = round(($engin['usage'] / $days) * 7, 2);
+      $engin['avgMonthly'] = round(($engin['usage'] / $days) * 30.44, 2);
+    }
+    unset($engin);
+
+    ksort($daily);
+    ksort($weekly);
+    ksort($monthly);
 
     return [
       'kpis' => [
         'totalUsage' => round($totalUsage, 2),
-        'avgUsage' => $nbReleves > 0 ? round($totalUsage / $nbReleves, 2) : 0,
-        'totalDepense' => round($totalDepense, 2),
-        'coutMoyenUnite' => $totalUsage > 0 ? round($totalDepense / $totalUsage, 2) : 0,
-        'nbReleves' => $nbReleves,
+        'avgDaily' => $totalDays > 0 ? round($totalUsage / $totalDays, 2) : 0,
+        'avgWeekly' => $totalDays > 0 ? round(($totalUsage / $totalDays) * 7, 2) : 0,
+        'avgMonthly' => $totalDays > 0 ? round(($totalUsage / $totalDays) * 30.44, 2) : 0,
+        'nbReleves' => count($rows),
+        'nbIntervals' => $nbIntervals,
       ],
       'charts' => [
-        'monthlyUsage' => $usage['monthly'],
-        'monthlyExpense' => $expenses['monthly'],
+        'dailyUsage' => $this->mapChart($daily, 'date', 'usage'),
+        'weeklyUsage' => $this->mapChart($weekly, 'week', 'usage'),
+        'monthlyUsage' => $this->mapChart($monthly, 'month', 'usage'),
         'byEngin' => array_values($byEngin),
       ],
     ];
   }
 
-  private function getUsageData(Entite $entite, array $filters): array
+  private function mapChart(array $data, string $labelKey, string $valueKey): array
   {
-    $qb = $this->em->createQueryBuilder()
-      ->from(EnginUsageReleve::class, 'r')
-      ->join('r.engin', 'e')
-      ->where('r.entite = :entite')
-      ->andWhere('r.dateReleve BETWEEN :start AND :end')
-      ->setParameter('entite', $entite)
-      ->setParameter('start', new \DateTimeImmutable($filters['dateStart']))
-      ->setParameter('end', new \DateTimeImmutable($filters['dateEnd'] . ' 23:59:59'));
+    $out = [];
 
-    if (!empty($filters['enginId'])) {
-      $qb->andWhere('e.id = :enginId')
-        ->setParameter('enginId', (int) $filters['enginId']);
-    }
-
-    $monthly = (clone $qb)
-      ->select("
-                SUBSTRING(r.dateReleve, 1, 7) AS month,
-                e.compteurType AS type,
-                SUM(r.valeur) AS usage,
-                AVG(r.valeur) AS avgUsage,
-                COUNT(r.id) AS nb
-            ")
-      ->groupBy('month', 'e.compteurType')
-      ->orderBy('month', 'ASC')
-      ->getQuery()
-      ->getArrayResult();
-
-    $byEngin = (clone $qb)
-      ->select("
-                e.id AS enginId,
-                e.nom AS engin,
-                e.compteurType AS type,
-                SUM(r.valeur) AS usage,
-                AVG(r.valeur) AS avgUsage,
-                COUNT(r.id) AS nb
-            ")
-      ->groupBy('e.id')
-      ->orderBy('usage', 'DESC')
-      ->getQuery()
-      ->getArrayResult();
-
-    return [
-      'monthly' => array_map(fn(array $r) => [
-        'month' => $r['month'],
-        'type' => $this->enumValue($r['type']),
-        'usage' => (float) $r['usage'],
-        'avgUsage' => (float) $r['avgUsage'],
-        'nb' => (int) $r['nb'],
-      ], $monthly),
-      'byEngin' => $byEngin,
-      'nbReleves' => array_sum(array_map(fn($r) => (int) $r['nb'], $monthly)),
-    ];
-  }
-
-  private function getExpenseData(Entite $entite, array $filters): array
-  {
-    $rows = [];
-
-    $rows = array_merge($rows, $this->expenseQuery(
-      TransactionCarteAlx::class,
-      't.journee',
-      '(COALESCE(t.quantite, 0) * COALESCE(t.prixUnitaire, 0))',
-      $entite,
-      $filters
-    ));
-
-    $rows = array_merge($rows, $this->expenseQuery(
-      TransactionCarteTotal::class,
-      't.dateTransaction',
-      'COALESCE(t.montantTtcEur, 0)',
-      $entite,
-      $filters
-    ));
-
-    $rows = array_merge($rows, $this->expenseQuery(
-      TransactionCarteEdenred::class,
-      't.dateTransaction',
-      'COALESCE(t.montantTtc, 0)',
-      $entite,
-      $filters
-    ));
-
-    $monthly = [];
-    $byEngin = [];
-
-    foreach ($rows as $row) {
-      $month = $row['month'];
-      $enginId = (int) $row['enginId'];
-      $depense = (float) $row['depense'];
-
-      $monthly[$month] ??= [
-        'month' => $month,
-        'depense' => 0.0,
+    foreach ($data as $key => $value) {
+      $out[] = [
+        $labelKey => $key,
+        $valueKey => round((float) $value, 2),
       ];
-
-      $monthly[$month]['depense'] += $depense;
-
-      $byEngin[$enginId] ??= [
-        'enginId' => $enginId,
-        'engin' => $row['engin'],
-        'depense' => 0.0,
-      ];
-
-      $byEngin[$enginId]['depense'] += $depense;
     }
 
-    ksort($monthly);
-
-    return [
-      'monthly' => array_values($monthly),
-      'byEngin' => array_values($byEngin),
-    ];
+    return $out;
   }
 
-  private function expenseQuery(
-    string $entityClass,
-    string $dateField,
-    string $amountExpression,
-    Entite $entite,
-    array $filters
-  ): array {
-    $qb = $this->em->createQueryBuilder()
-      ->from($entityClass, 't')
-      ->join('t.engin', 'e')
-      ->select("
-            e.id AS enginId,
-            e.nom AS engin,
-            SUBSTRING($dateField, 1, 7) AS month,
-            SUM($amountExpression) AS depense
-        ")
-      ->where('t.entite = :entite')
-      ->andWhere("$dateField BETWEEN :start AND :end")
-      ->andWhere('t.engin IS NOT NULL')
-      ->setParameter('entite', $entite)
-      ->setParameter('start', new \DateTimeImmutable($filters['dateStart']))
-      ->setParameter('end', new \DateTimeImmutable($filters['dateEnd'] . ' 23:59:59'))
-      ->groupBy('e.id', 'month');
-
-    if (!empty($filters['enginId'])) {
-      $qb->andWhere('e.id = :enginId')
-        ->setParameter('enginId', (int) $filters['enginId']);
-    }
-
-    return $qb->getQuery()->getArrayResult();
-  }
-
-
-  private function enumValue(mixed $value): ?string
+  private function normalizeCompteurType(mixed $value): string
   {
-    return $value instanceof \BackedEnum ? $value->value : ($value ? (string) $value : null);
+    if ($value instanceof \BackedEnum) {
+      return $value->value;
+    }
+
+    return (string) $value;
   }
 }

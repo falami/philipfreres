@@ -196,7 +196,7 @@
   <div class="col-lg-6">
     <div class="cardx">
       <div class="cardx-h">
-        <h5 class="cardx-title"><i class="bi bi-cash-coin text-warning"></i> Dépenses mensuelles</h5>
+        <h5 class="cardx-title"><i class="bi bi-cash-coin text-warning"></i> Utilisation hebdomadaire</h5>
         <span class="chip">€</span>
       </div>
       <div class="p-3 p-md-4">
@@ -220,7 +220,7 @@
   <div class="col-lg-12">
     <div class="cardx">
       <div class="cardx-h">
-        <h5 class="cardx-title"><i class="bi bi-calculator text-warning"></i> Coût moyen par engin</h5>
+        <h5 class="cardx-title"><i class="bi bi-calculator text-warning"></i> Moyenne journalière par engin</h5>
         <span class="chip">€/h ou €/km</span>
       </div>
       <div class="p-3 p-md-4">
@@ -274,19 +274,20 @@
     const data = await res.json();
 
     document.getElementById('kpiUsage').textContent = num(data.kpis.totalUsage);
-    document.getElementById('kpiDepense').textContent = money(data.kpis.totalDepense);
-    document.getElementById('kpiAvg').textContent = num(data.kpis.avgUsage);
-    document.getElementById('kpiCostUnit').textContent = money(data.kpis.coutMoyenUnite);
+    document.getElementById('kpiAvg').textContent = num(data.kpis.avgDaily);
+    document.getElementById('kpiDepense').textContent = num(data.kpis.avgWeekly);
+    document.getElementById('kpiCostUnit').textContent = num(data.kpis.avgMonthly);
+
+    const expenseLabels = data.charts.monthlyExpense.map(x => x.month);
 
     const usageLabels = data.charts.monthlyUsage.map(x => x.month);
-    const expenseLabels = data.charts.monthlyExpense.map(x => x.month);
 
     chMonthlyUsage = chart(chMonthlyUsage, 'chMonthlyUsage', {
       type:'line',
       data:{
         labels: usageLabels,
         datasets:[{
-          label:'Utilisation',
+          label:'Utilisation réelle mensuelle',
           data:data.charts.monthlyUsage.map(x => x.usage),
           tension:.35,
           fill:true
@@ -295,43 +296,47 @@
       options:{responsive:true, maintainAspectRatio:false}
     });
 
+    const weeklyLabels = data.charts.weeklyUsage.map(x => x.week);
+
     chMonthlyDepense = chart(chMonthlyDepense, 'chMonthlyDepense', {
       type:'bar',
       data:{
-        labels: expenseLabels,
+        labels: weeklyLabels,
         datasets:[{
-          label:'Dépenses',
-          data:data.charts.monthlyExpense.map(x => x.depense)
+          label:'Utilisation hebdomadaire',
+          data:data.charts.weeklyUsage.map(x => x.usage)
         }]
       },
       options:{responsive:true, maintainAspectRatio:false}
     });
 
-    const top = data.charts.byEngin.slice(0, 10);
+    const top = data.charts.byEngin
+      .sort((a,b) => Number(b.usage) - Number(a.usage))
+      .slice(0, 10);
+
     chTopEngin = chart(chTopEngin, 'chTopEngin', {
       type:'bar',
       data:{
         labels:top.map(x => x.engin),
         datasets:[{
-          label:'Utilisation',
+          label:'Utilisation réelle',
           data:top.map(x => x.usage)
         }]
       },
       options:{indexAxis:'y', responsive:true, maintainAspectRatio:false}
     });
 
-    const costs = data.charts.byEngin
-      .filter(x => Number(x.coutUnite || 0) > 0)
-      .sort((a,b) => Number(b.coutUnite) - Number(a.coutUnite))
+    const averages = data.charts.byEngin
+      .sort((a,b) => Number(b.avgDaily) - Number(a.avgDaily))
       .slice(0, 15);
 
     chCostUnit = chart(chCostUnit, 'chCostUnit', {
       type:'bar',
       data:{
-        labels:costs.map(x => x.engin),
+        labels:averages.map(x => x.engin),
         datasets:[{
-          label:'Coût / unité',
-          data:costs.map(x => x.coutUnite)
+          label:'Moyenne journalière',
+          data:averages.map(x => x.avgDaily)
         }]
       },
       options:{responsive:true, maintainAspectRatio:false}

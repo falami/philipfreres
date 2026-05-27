@@ -111,4 +111,34 @@ final class EnginUsageReleveRepository extends ServiceEntityRepository
 
         return $qb;
     }
+
+
+    public function fetchDashboardReleves(Entite $entite, array $f): array
+    {
+        $qb = $this->createQueryBuilder('r')
+            ->innerJoin('r.engin', 'e')
+            ->select('
+            r.id,
+            r.dateReleve,
+            r.valeur,
+            e.id AS enginId,
+            e.nom AS enginNom,
+            e.compteurType AS compteurType
+        ')
+            ->andWhere('r.entite = :entite')
+            ->andWhere('r.dateReleve BETWEEN :start AND :end')
+            ->setParameter('entite', $entite)
+            ->setParameter('start', new \DateTimeImmutable($f['dateStart']))
+            ->setParameter('end', new \DateTimeImmutable($f['dateEnd']))
+            ->orderBy('e.id', 'ASC')
+            ->addOrderBy('r.dateReleve', 'ASC')
+            ->addOrderBy('r.id', 'ASC');
+
+        if (!empty($f['enginId'])) {
+            $qb->andWhere('e.id = :enginId')
+                ->setParameter('enginId', (int) $f['enginId']);
+        }
+
+        return $qb->getQuery()->getArrayResult();
+    }
 }
