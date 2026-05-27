@@ -243,15 +243,23 @@ final class FuelDashboardRepository
     $sqlBase = $this->unionSql();
 
     // ===== KPI
-    $k = $this->db->fetchAssociative("
+    $kpiSql = "
       SELECT
-        COALESCE(SUM(x.qty), 0) AS qty,
-        COALESCE(SUM(x.amount_cents), 0) AS amount_cents,
-        COUNT(*) AS cnt,
+        COALESCE(SUM(x.qty),0) qty,
+        COALESCE(SUM(x.amount_cents),0) amount_cents,
+        COUNT(*) cnt,
+        COALESCE(SUM(CASE WHEN x.engin_id IS NULL THEN 1 ELSE 0 END),0) cnt_unmatched_engin,
+        COALESCE(SUM(CASE WHEN x.employe_id IS NULL THEN 1 ELSE 0 END),0) cnt_unmatched_employe
+      FROM ($sqlBase) x
+      WHERE $where
+    ";
+    $k = $this->db->fetchAssociative($kpiSql, $params) ?: [];
 
-        COALESCE(SUM(CASE WHEN x.engin_id IS NULL THEN 1 ELSE 0 END), 0) AS cnt_unmatched_engin,
-        COALESCE(SUM(CASE WHEN x.employe_id IS NULL THEN 1 ELSE 0 END), 0) AS cnt_unmatched_employe,
 
+
+
+    $kpiSousCategories = $this->db->fetchAssociative("
+      SELECT
         COALESCE(SUM(CASE WHEN x.produit_sous = 'gasoil' THEN x.qty ELSE 0 END), 0) AS total_gasoil,
         COALESCE(SUM(CASE WHEN x.produit_sous = 'gnr' THEN x.qty ELSE 0 END), 0) AS total_gnr,
         COALESCE(SUM(CASE WHEN x.produit_sous = 'adblue' THEN x.qty ELSE 0 END), 0) AS total_adblue,
@@ -318,9 +326,9 @@ final class FuelDashboardRepository
       if ($realIds !== []) {
         $in = [];
         foreach ($realIds as $i => $id) {
-          $k = 'topEng' . $i;
-          $in[] = ':' . $k;
-          $topParams[$k] = $id;
+          $paramName = 'topEng' . $i;
+          $in[] = ':' . $paramName;
+          $topParams[$paramName] = $id;
         }
         $parts[] = 'x.engin_id IN (' . implode(',', $in) . ')';
       }
@@ -407,10 +415,10 @@ final class FuelDashboardRepository
         'cnt' => (int) ($k['cnt'] ?? 0),
         'cnt_unmatched_engin' => (int) ($k['cnt_unmatched_engin'] ?? 0),
         'cnt_unmatched_employe' => (int) ($k['cnt_unmatched_employe'] ?? 0),
-        'total_gasoil' => (float) ($k['total_gasoil'] ?? 0),
-        'total_gnr' => (float) ($k['total_gnr'] ?? 0),
-        'total_adblue' => (float) ($k['total_adblue'] ?? 0),
-        'total_peage_cents' => (int) ($k['total_peage_cents'] ?? 0),
+        'total_gasoil' => (float) ($kpiSousCategories['total_gasoil'] ?? 0),
+        'total_gnr' => (float) ($kpiSousCategories['total_gnr'] ?? 0),
+        'total_adblue' => (float) ($kpiSousCategories['total_adblue'] ?? 0),
+        'total_peage_cents' => (int) ($kpiSousCategories['total_peage_cents'] ?? 0),
       ],
       'charts' => [
         'gasolineByEngin' => $byEssenceEngin,
