@@ -2154,18 +2154,15 @@ body{
       maintainAspectRatio: false,
       onClick: (evt, elements, chart) => {
         chartClickOrReset(chart, elements, (index) => {
-          const row = empProvAmountRows[index];
+          const row = gasolineRows[index];
           if (!row) return;
 
-          const datasetIndex = elements[0].datasetIndex;
-          const provider = chart.data.datasets[datasetIndex]?.label;
-
           applyMultipleChartFilters(() => {
-            setOnlyCheckboxFilter('.fuel-filter-emp', Number(row.filter_id || 0) > 0 ? row.filter_id : '__NULL__');
-
-            if (provider) {
-              setOnlyCheckboxFilter('.fuel-filter-prov', provider.toUpperCase());
-            }
+            essenceOnly = true;
+            setOnlyCheckboxFilter(
+              '.fuel-filter-engin',
+              Number(row.filter_id || 0) > 0 ? row.filter_id : '__NULL__'
+            );
           });
         });
       },
