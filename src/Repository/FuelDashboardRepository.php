@@ -358,17 +358,21 @@ final class FuelDashboardRepository
     }
 
     $byEmp = $this->db->fetchAllAssociative("
-  SELECT COALESCE(x.employe_label,'(Non rattaché)') AS label,
-         SUM(x.qty) AS v
-  FROM ($sqlBase) x
-  WHERE $where
-  GROUP BY COALESCE(x.employe_label,'(Non rattaché)')
-  ORDER BY v DESC
-  LIMIT 10
-", $params);
+      SELECT
+        COALESCE(x.employe_id, 0) AS filter_id,
+        COALESCE(x.employe_label,'(Non rattaché)') AS label,
+        SUM(x.qty) AS v
+      FROM ($sqlBase) x
+      WHERE $where
+      GROUP BY COALESCE(x.employe_id, 0), COALESCE(x.employe_label,'(Non rattaché)')
+      ORDER BY v DESC
+      LIMIT 10
+    ", $params);
 
     $byEmpProvAmount = $this->db->fetchAllAssociative("
   SELECT
+    COALESCE(x.employe_label,'(Non rattaché)') AS label,
+    COALESCE(x.employe_id, 0) AS filter_id,
     COALESCE(x.employe_label,'(Non rattaché)') AS label,
     SUM(CASE WHEN x.provider = 'alx' THEN x.qty ELSE 0 END) AS alx,
     SUM(CASE WHEN x.provider = 'total' THEN x.qty ELSE 0 END) AS total,
@@ -376,7 +380,7 @@ final class FuelDashboardRepository
     SUM(CASE WHEN x.provider = 'note' THEN x.qty ELSE 0 END) AS note
   FROM ($sqlBase) x
   WHERE $where
-  GROUP BY COALESCE(x.employe_label,'(Non rattaché)')
+  GROUP BY COALESCE(x.employe_id, 0), COALESCE(x.employe_label,'(Non rattaché)')
   ORDER BY
     (
       SUM(CASE WHEN x.provider = 'alx' THEN x.qty ELSE 0 END)
@@ -390,6 +394,7 @@ final class FuelDashboardRepository
     // ===== (Nouveau) Empilé QTY par employé/fournisseur
     $byEmpProvQty = $this->db->fetchAllAssociative("
       SELECT
+        COALESCE(x.employe_id, 0) AS filter_id,
         COALESCE(x.employe_label,'(Non rattaché)') AS label,
         SUM(CASE WHEN x.provider = 'alx' THEN x.qty ELSE 0 END) AS alx,
         SUM(CASE WHEN x.provider = 'total' THEN x.qty ELSE 0 END) AS total,
@@ -397,7 +402,7 @@ final class FuelDashboardRepository
         SUM(CASE WHEN x.provider = 'note' THEN x.qty ELSE 0 END) AS note
       FROM ($sqlBase) x
       WHERE $where
-      GROUP BY COALESCE(x.employe_label,'(Non rattaché)')
+      GROUP BY COALESCE(x.employe_id, 0), COALESCE(x.employe_label,'(Non rattaché)')
       ORDER BY
         (
           SUM(CASE WHEN x.provider = 'alx' THEN x.qty ELSE 0 END)

@@ -1952,6 +1952,22 @@ body{
     refresh();
   }
 
+
+  function setOnlyCheckboxFilter(selector, value){
+    setAll(selector, false);
+
+    const checkbox = document.querySelector(`${selector}[value="${CSS.escape(String(value))}"]`);
+    if (checkbox) {
+      checkbox.checked = true;
+    }
+  }
+
+  function applyMultipleChartFilters(callback){
+    callback();
+    updateCounts();
+    refresh();
+  }
+
   function chartClickOrReset(chart, elements, callback){
     if (!elements.length) {
       resetDashboardFilters();
@@ -1960,6 +1976,50 @@ body{
 
     const index = elements[0].index;
     callback(index);
+  }
+
+
+  function applyProviderFilter(provider){
+    applyOnlyCheckboxFilter('.fuel-filter-prov', provider.toUpperCase());
+  }
+
+  function applyEmployeFilter(filterId){
+    filterId = Number(filterId || 0);
+
+    if (filterId > 0) {
+      applyOnlyCheckboxFilter('.fuel-filter-emp', filterId);
+    } else {
+      applyOnlyCheckboxFilter('.fuel-filter-emp', '__NULL__');
+    }
+  }
+
+  function applyEnginFilter(filterId){
+    filterId = Number(filterId || 0);
+
+    if (filterId > 0) {
+      applyOnlyCheckboxFilter('.fuel-filter-engin', filterId);
+    } else {
+      applyOnlyCheckboxFilter('.fuel-filter-engin', '__NULL__');
+    }
+  }
+
+  function applySousCategorieFilter(value){
+    if (!value || value === '__NULL__' || value === 'Non catégorisé') {
+      applyOnlyCheckboxFilter('.fuel-filter-sous', '__NULL__');
+    } else {
+      applyOnlyCheckboxFilter('.fuel-filter-sous', value);
+    }
+  }
+
+  function applyMonthFilter(ym){
+    if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return;
+
+    const [y, m] = ym.split('-').map(Number);
+    const endDay = pad2(lastDayOfMonth(y, m));
+
+    setRangeIso(`${y}-${pad2(m)}-01`, `${y}-${pad2(m)}-${endDay}`);
+    updateCounts();
+    refresh();
   }
 
   function applyCharts(c){
@@ -2024,6 +2084,34 @@ body{
         mode: 'index',
         intersect: false
       },
+      onClick: (evt, elements, chart) => {
+        chartClickOrReset(chart, elements, (index) => {
+          const ym = chart.data.labels[index];
+          const datasetIndex = elements[0].datasetIndex;
+          const dataset = chart.data.datasets[datasetIndex];
+
+          applyMultipleChartFilters(() => {
+            const [y, m] = ym.split('-').map(Number);
+            const endDay = pad2(lastDayOfMonth(y, m));
+
+            setRangeIso(`${y}-${pad2(m)}-01`, `${y}-${pad2(m)}-${endDay}`);
+
+            if (dataset.label && dataset.label !== 'Total') {
+              const mapLabelToSous = {
+                'Essence': 'essence',
+                'Gasoil': 'gasoil',
+                'GNR': 'gnr',
+                'HVO 100': 'HVO100'
+              };
+
+              const sous = mapLabelToSous[dataset.label];
+              if (sous) {
+                setOnlyCheckboxFilter('.fuel-filter-sous', sous);
+              }
+            }
+          });
+        });
+      },
       plugins: {
         legend: {
           position: 'bottom'
@@ -2064,6 +2152,23 @@ body{
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      onClick: (evt, elements, chart) => {
+        chartClickOrReset(chart, elements, (index) => {
+          const row = empProvAmountRows[index];
+          if (!row) return;
+
+          const datasetIndex = elements[0].datasetIndex;
+          const provider = chart.data.datasets[datasetIndex]?.label;
+
+          applyMultipleChartFilters(() => {
+            setOnlyCheckboxFilter('.fuel-filter-emp', Number(row.filter_id || 0) > 0 ? row.filter_id : '__NULL__');
+
+            if (provider) {
+              setOnlyCheckboxFilter('.fuel-filter-prov', provider.toUpperCase());
+            }
+          });
+        });
+      },
       plugins: {
         legend: {
           display: false
@@ -2120,18 +2225,19 @@ body{
 
       onClick: (evt, elements, chart) => {
         chartClickOrReset(chart, elements, (index) => {
-          const label = chart.data.labels[index];
-
-          const row = topEngRows.find(r => r.label === label);
+          const row = empProvAmountRows[index];
           if (!row) return;
 
-          const filterId = Number(row.filter_id || 0);
+          const datasetIndex = elements[0].datasetIndex;
+          const provider = chart.data.datasets[datasetIndex]?.label;
 
-          if (filterId > 0) {
-            applyOnlyCheckboxFilter('.fuel-filter-engin', filterId);
-          } else {
-            applyOnlyCheckboxFilter('.fuel-filter-engin', '__NULL__');
-          }
+          applyMultipleChartFilters(() => {
+            setOnlyCheckboxFilter('.fuel-filter-emp', Number(row.filter_id || 0) > 0 ? row.filter_id : '__NULL__');
+
+            if (provider) {
+              setOnlyCheckboxFilter('.fuel-filter-prov', provider.toUpperCase());
+            }
+          });
         });
       },
 
@@ -2180,6 +2286,14 @@ body{
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      onClick: (evt, elements, chart) => {
+        chartClickOrReset(chart, elements, (index) => {
+          const row = empRows[index];
+          if (!row) return;
+
+          applyEmployeFilter(row.filter_id);
+        });
+      },
       plugins: {
         legend: {
           display: false
@@ -2239,6 +2353,23 @@ body{
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        onClick: (evt, elements, chart) => {
+          chartClickOrReset(chart, elements, (index) => {
+            const row = empProvAmountRows[index];
+            if (!row) return;
+
+            const datasetIndex = elements[0].datasetIndex;
+            const provider = chart.data.datasets[datasetIndex]?.label;
+
+            applyMultipleChartFilters(() => {
+              setOnlyCheckboxFilter('.fuel-filter-emp', Number(row.filter_id || 0) > 0 ? row.filter_id : '__NULL__');
+
+              if (provider) {
+                setOnlyCheckboxFilter('.fuel-filter-prov', provider.toUpperCase());
+              }
+            });
+          });
+        },
         scales: {
           x: {
             stacked: true
@@ -2293,6 +2424,26 @@ body{
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        onClick: (evt, elements, chart) => {
+          chartClickOrReset(chart, elements, (index) => {
+            const row = empProvQtyRows[index];
+            if (!row) return;
+
+            const datasetIndex = elements[0].datasetIndex;
+            const provider = chart.data.datasets[datasetIndex]?.label;
+
+            applyMultipleChartFilters(() => {
+              setOnlyCheckboxFilter(
+                '.fuel-filter-emp',
+                Number(row.filter_id || 0) > 0 ? row.filter_id : '__NULL__'
+              );
+
+              if (provider) {
+                setOnlyCheckboxFilter('.fuel-filter-prov', provider.toUpperCase());
+              }
+            });
+          });
+        },
         scales: {
           x: {
             stacked: true
