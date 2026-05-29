@@ -106,7 +106,20 @@ final class EnginUsageController extends AbstractController
     $search = trim((string) ($request->query->all('search')['value'] ?? ''));
     $filters = $this->filters($request);
 
-    [$rows, $total, $filtered] = $this->repo->fetchDtRows($entite, $filters, $start, $length, $search);
+    $order = $request->query->all('order')[0] ?? [];
+
+    $orderColumn = isset($order['column']) ? (int) $order['column'] : 2;
+    $orderDir = strtoupper((string) ($order['dir'] ?? 'DESC'));
+
+    [$rows, $total, $filtered] = $this->repo->fetchDtRows(
+      $entite,
+      $filters,
+      $start,
+      $length,
+      $search,
+      $orderColumn,
+      $orderDir
+    );
 
     return new JsonResponse([
       'draw' => $draw,

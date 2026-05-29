@@ -64,8 +64,15 @@ final class EnginUsageReleveRepository extends ServiceEntityRepository
         ];
     }
 
-    public function fetchDtRows(Entite $entite, array $f, int $start, int $length, string $search = ''): array
-    {
+    public function fetchDtRows(
+        Entite $entite,
+        array $f,
+        int $start,
+        int $length,
+        string $search = '',
+        int $orderColumn = 2,
+        string $orderDir = 'DESC'
+    ): array {
         $qb = $this->baseQb($entite, $f)
             ->select('
             r.id,
@@ -96,11 +103,11 @@ final class EnginUsageReleveRepository extends ServiceEntityRepository
             ->getQuery()
             ->getSingleScalarResult();
 
+        // Important : on récupère toutes les lignes filtrées,
+        // car plusieurs colonnes sont calculées en PHP.
         $rows = $qb
             ->orderBy('r.dateReleve', 'DESC')
             ->addOrderBy('r.id', 'DESC')
-            ->setFirstResult($start)
-            ->setMaxResults($length)
             ->getQuery()
             ->getArrayResult();
 
@@ -119,13 +126,20 @@ final class EnginUsageReleveRepository extends ServiceEntityRepository
 
             $row['lastDateReleve'] = $lastDate;
             $row['daysSinceLast'] = $lastDate instanceof \DateTimeInterface
-                ? $lastDate->diff(new \DateTimeImmutable())->days
+                ? \DateTimeImmutable::createFromInterface($lastDate)->setTime(0, 0)->diff(new \DateTimeImmutable('today'))->days
                 : null;
 
             $row['previousValeur'] = $previous['valeur'] ?? null;
             $row['previousDateReleve'] = $previous['dateReleve'] ?? null;
+
             $row['ecartValeur'] = $previous
                 ? (float) $row['valeur'] - (float) $previous['valeur']
+                : null;
+
+            $row['ecartDaysValue'] =
+                $row['previousDateReleve'] instanceof \DateTimeInterface
+                && $row['dateReleve'] instanceof \DateTimeInterface
+                ? abs($row['previousDateReleve']->diff($row['dateReleve'])->days)
                 : null;
 
             $row['fuelLitres'] = null;
@@ -162,12 +176,70 @@ final class EnginUsageReleveRepository extends ServiceEntityRepository
             if ($lastDate instanceof \DateTimeInterface) {
                 $today = new \DateTimeImmutable('today');
                 $lastDay = \DateTimeImmutable::createFromInterface($lastDate)->setTime(0, 0);
-
-                $daysSinceRealLast = $lastDay->diff($today)->days;
-
-                $row['isLate'] = $daysSinceRealLast > 8;
+                $row['isLate'] = $lastDay->diff($today)->days > 8;
             }
         }
+        unset($row);
+
+        $orderDir = strtoupper($orderDir) === 'ASC' ? 'ASC' : 'DESC';
+
+        $sortMap = [
+            0 => 'id',
+            1 => 'daysSinceLast',
+            2 => 'dateReleve',
+            3 => 'previousDateReleve',
+            4 => 'ecartDaysValue',
+            5 => 'enginNom',
+            6 => 'compteurType',
+            7 => 'valeur',
+            8 => 'ecartValeur',
+            9 => 'consommation',
+        ];
+
+        $sortKey = $sortMap[$orderColumn] ?? 'dateReleve';
+
+        usort($rows, function (array $a, array $b) use ($sortKey, $orderDir): int {
+            $va = $a[$sortKey] ?? null;
+            $vb = $b[$sortKey] ?? null;
+
+            if ($va instanceof \DateTimeInterface) {
+                $va = $va->getTimestamp();
+            }
+
+            if ($vb instanceof \DateTimeInterface) {
+                $vb = $vb->getTimestamp();
+            }
+
+            if ($va instanceof \BackedEnum) {
+                $va = $va->value;
+            }
+
+            if ($vb instanceof \BackedEnum) {
+                $vb = $vb->value;
+            }
+
+            if ($va === null && $vb === null) {
+                return 0;
+            }
+
+            if ($va === null) {
+                return 1;
+            }
+
+            if ($vb === null) {
+                return -1;
+            }
+
+            if (is_numeric($va) && is_numeric($vb)) {
+                $cmp = (float) $va <=> (float) $vb;
+            } else {
+                $cmp = strnatcasecmp((string) $va, (string) $vb);
+            }
+
+            return $orderDir === 'ASC' ? $cmp : -$cmp;
+        });
+
+        $rows = array_slice($rows, $start, $length);
 
         return [$rows, $total, $filtered];
     }

@@ -559,17 +559,17 @@ $(function(){
     pageLength: 25,
 
     columns: [
-      { data: 'id', name: 'id' },
-      { data: 'daysSinceLast', name: 'daysSinceLast', orderable: false, searchable: false },
-      { data: 'date', name: 'dateReleve' },
-      { data: 'previousDate', name: 'previousDate', orderable: false, searchable: false },
-      { data: 'ecartDays', name: 'ecartDays', orderable: false, searchable: false },
-      { data: 'engin', name: 'engin' },
-      { data: 'type', name: 'type' },
-      { data: 'valeur', name: 'valeur' },
-      { data: 'ecart', name: 'ecart', orderable: false, searchable: false },
-      { data: 'consommation', name: 'consommation', orderable: false, searchable: false },
-      { data: 'actions', name: 'actions' }
+      { data: 'id', name: 'id', orderable: true, searchable: true },
+      { data: 'daysSinceLast', name: 'daysSinceLast', orderable: true, searchable: false },
+      { data: 'date', name: 'dateReleve', orderable: true, searchable: false },
+      { data: 'previousDate', name: 'previousDate', orderable: true, searchable: false },
+      { data: 'ecartDays', name: 'ecartDays', orderable: true, searchable: false },
+      { data: 'engin', name: 'engin', orderable: true, searchable: true },
+      { data: 'type', name: 'type', orderable: true, searchable: true },
+      { data: 'valeur', name: 'valeur', orderable: true, searchable: false },
+      { data: 'ecart', name: 'ecart', orderable: true, searchable: false },
+      { data: 'consommation', name: 'consommation', orderable: true, searchable: false },
+      { data: 'actions', name: 'actions', orderable: false, searchable: false }
     ],
 
     columnDefs: [
