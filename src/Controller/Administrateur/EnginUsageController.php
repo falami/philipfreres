@@ -133,7 +133,7 @@ final class EnginUsageController extends AbstractController
           'id' => $r['id'],
           'date' => $r['dateReleve'] instanceof \DateTimeInterface ? $r['dateReleve']->format('d/m/Y') : '-',
           'engin' => $r['enginNom'] ?? '-',
-          'type' => $type === 'kilometre' ? 'Kilomètres' : 'Heures',
+          'type' => $type === 'kilometre' ? 'Km' : 'H',
           'valeur' => number_format((float) $r['valeur'], 2, ',', ' ') . ' ' . $unit,
 
           'previousDate' => $r['previousDateReleve'] instanceof \DateTimeInterface
@@ -156,7 +156,7 @@ final class EnginUsageController extends AbstractController
 
           'consommation' => $r['consommation'] !== null
             ? number_format((float) $r['consommation'], 2, ',', ' ') . ' ' . (
-              $type === 'kilometre' ? 'L/100 km' : 'L/h'
+              $type === 'kilometre' ? 'l/100 km' : 'l/h'
             )
             : '-',
 

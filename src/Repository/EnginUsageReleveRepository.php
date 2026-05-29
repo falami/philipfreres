@@ -176,7 +176,7 @@ final class EnginUsageReleveRepository extends ServiceEntityRepository
             if ($lastDate instanceof \DateTimeInterface) {
                 $today = new \DateTimeImmutable('today');
                 $lastDay = \DateTimeImmutable::createFromInterface($lastDate)->setTime(0, 0);
-                $row['isLate'] = $lastDay->diff($today)->days > 8;
+                $row['isLate'] = $lastDay->diff($today)->days > 14;
             }
         }
         unset($row);
