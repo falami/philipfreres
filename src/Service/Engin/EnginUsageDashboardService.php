@@ -79,10 +79,20 @@ final class EnginUsageDashboardService
             'avgDaily' => 0.0,
             'avgWeekly' => 0.0,
             'avgMonthly' => 0.0,
+            'fuelLitres' => 0.0,
+            'consumption' => 0.0,
           ];
         }
 
         $byEngin[$enginId]['usage'] += $delta;
+        $litres = $this->repo->sumFuelLitresBetween(
+          $entite,
+          $enginId,
+          $datePrev,
+          $dateCur
+        );
+
+        $byEngin[$enginId]['fuelLitres'] += $litres;
         $byEngin[$enginId]['days'] += $days;
         $byEngin[$enginId]['nbIntervals']++;
 
@@ -101,6 +111,13 @@ final class EnginUsageDashboardService
       $engin['avgDaily'] = round($engin['usage'] / $days, 2);
       $engin['avgWeekly'] = round(($engin['usage'] / $days) * 7, 2);
       $engin['avgMonthly'] = round(($engin['usage'] / $days) * 30.44, 2);
+      $engin['fuelLitres'] = round($engin['fuelLitres'], 2);
+
+      if ($engin['usage'] > 0 && $engin['fuelLitres'] > 0) {
+        $engin['consumption'] = $engin['type'] === 'kilometre'
+          ? round(($engin['fuelLitres'] / $engin['usage']) * 100, 2)
+          : round($engin['fuelLitres'] / $engin['usage'], 2);
+      }
     }
     unset($engin);
 

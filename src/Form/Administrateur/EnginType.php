@@ -77,7 +77,7 @@ class EnginType extends AbstractType
             ->add('photoCouverture', FileType::class, [
                 'mapped' => false,
                 'required' => false,
-                'label'  => 'Photo de couverture (affichée en plein écran)',
+                'label'  => 'Photo (affichée en plein écran)',
                 'constraints' => [new Image(maxSize: '16M', mimeTypesMessage: 'Image invalide')],
                 'attr' => ['accept' => 'image/*']
             ])

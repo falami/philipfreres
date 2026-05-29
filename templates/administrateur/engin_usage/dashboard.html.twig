@@ -181,6 +181,36 @@
 </div>
 
 <div class="row g-4 mb-4">
+
+
+  <div class="col-lg-12">
+    <div class="cardx">
+      <div class="cardx-h">
+        <h5 class="cardx-title">
+          <i class="bi bi-fuel-pump text-warning"></i> Consommation véhicules
+        </h5>
+        <span class="chip">L/100 km</span>
+      </div>
+      <div class="p-3 p-md-4">
+        <div class="chart-box sm"><canvas id="chConsumptionKm"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-12">
+    <div class="cardx">
+      <div class="cardx-h">
+        <h5 class="cardx-title">
+          <i class="bi bi-fuel-pump-diesel text-warning"></i> Consommation engins
+        </h5>
+        <span class="chip">L/h</span>
+      </div>
+      <div class="p-3 p-md-4">
+        <div class="chart-box sm"><canvas id="chConsumptionHour"></canvas></div>
+      </div>
+    </div>
+  </div>
+
   <div class="col-lg-12">
     <div class="cardx">
       <div class="cardx-h">
@@ -254,6 +284,8 @@
   let chMonthlyDepense = null;
   let chTopEngin = null;
   let chCostUnit = null;
+  let chConsumptionKm = null;
+  let chConsumptionHour = null;
 
   function filters(){
     return {
@@ -277,7 +309,7 @@
     document.getElementById('kpiAvg').textContent = num(data.kpis.avgDaily);
     document.getElementById('kpiDepense').textContent = num(data.kpis.avgWeekly);
     document.getElementById('kpiCostUnit').textContent = num(data.kpis.avgMonthly);
-    
+
     const usageLabels = data.charts.monthlyUsage.map(x => x.month);
 
     chMonthlyUsage = chart(chMonthlyUsage, 'chMonthlyUsage', {
@@ -322,6 +354,45 @@
         }]
       },
       options:{indexAxis:'y', responsive:true, maintainAspectRatio:false}
+    });
+
+
+    const consoKm = data.charts.byEngin
+      .filter(x => x.type === 'kilometre' && Number(x.consumption || 0) > 0)
+      .sort((a,b) => Number(b.consumption) - Number(a.consumption));
+
+    chConsumptionKm = chart(chConsumptionKm, 'chConsumptionKm', {
+      type:'bar',
+      data:{
+        labels: consoKm.map(x => x.engin),
+        datasets:[{
+          label:'Consommation L/100 km',
+          data: consoKm.map(x => x.consumption)
+        }]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false
+      }
+    });
+
+    const consoHour = data.charts.byEngin
+      .filter(x => x.type === 'heure' && Number(x.consumption || 0) > 0)
+      .sort((a,b) => Number(b.consumption) - Number(a.consumption));
+
+    chConsumptionHour = chart(chConsumptionHour, 'chConsumptionHour', {
+      type:'bar',
+      data:{
+        labels: consoHour.map(x => x.engin),
+        datasets:[{
+          label:'Consommation L/h',
+          data: consoHour.map(x => x.consumption)
+        }]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false
+      }
     });
 
     const averages = data.charts.byEngin

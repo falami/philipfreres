@@ -112,19 +112,47 @@ final class EnginUsageController extends AbstractController
       'draw' => $draw,
       'recordsTotal' => $total,
       'recordsFiltered' => $filtered,
-      'data' => array_map(fn(array $r) => [
-        'id' => $r['id'],
-        'date' => $r['dateReleve'] instanceof \DateTimeInterface ? $r['dateReleve']->format('d/m/Y') : '-',
-        'engin' => $r['enginNom'] ?? '-',
-        'type' => $this->normalizeCompteurType($r['compteurType'] ?? null) === 'kilometre' ? 'Kilomètres' : 'Heures',
-        'valeur' => number_format((float) $r['valeur'], 2, ',', ' ') . ' ' . (
-          $this->normalizeCompteurType($r['compteurType'] ?? null) === 'kilometre' ? 'km' : 'h'
-        ),
-        'actions' => $this->renderView('administrateur/engin_usage/_actions.html.twig', [
-          'entite' => $entite,
-          'releveId' => $r['id'],
-        ]),
-      ], $rows),
+      'data' => array_map(function (array $r) use ($entite) {
+        $type = $this->normalizeCompteurType($r['compteurType'] ?? null);
+        $unit = $type === 'kilometre' ? 'km' : 'h';
+
+        return [
+          'id' => $r['id'],
+          'date' => $r['dateReleve'] instanceof \DateTimeInterface ? $r['dateReleve']->format('d/m/Y') : '-',
+          'engin' => $r['enginNom'] ?? '-',
+          'type' => $type === 'kilometre' ? 'Kilomètres' : 'Heures',
+          'valeur' => number_format((float) $r['valeur'], 2, ',', ' ') . ' ' . $unit,
+
+          'previousDate' => $r['previousDateReleve'] instanceof \DateTimeInterface
+            ? $r['previousDateReleve']->format('d/m/Y')
+            : '-',
+
+          'ecartDays' => $r['previousDateReleve'] instanceof \DateTimeInterface && $r['dateReleve'] instanceof \DateTimeInterface
+            ? abs($r['previousDateReleve']->diff($r['dateReleve'])->days) . ' jour' . (abs($r['previousDateReleve']->diff($r['dateReleve'])->days) > 1 ? 's' : '')
+            : '-',
+
+          'daysSinceLast' => $r['daysSinceLast'] !== null
+            ? $r['daysSinceLast'] . ' jour' . ((int) $r['daysSinceLast'] > 1 ? 's' : '')
+            : '-',
+
+          'ecart' => $r['ecartValeur'] !== null
+            ? number_format((float) $r['ecartValeur'], 2, ',', ' ') . ' ' . $unit
+            : '-',
+
+          'isLate' => (bool) ($r['isLate'] ?? false),
+
+          'consommation' => $r['consommation'] !== null
+            ? number_format((float) $r['consommation'], 2, ',', ' ') . ' ' . (
+              $type === 'kilometre' ? 'L/100 km' : 'L/h'
+            )
+            : '-',
+
+          'actions' => $this->renderView('administrateur/engin_usage/_actions.html.twig', [
+            'entite' => $entite,
+            'releveId' => $r['id'],
+          ]),
+        ];
+      }, $rows),
     ]);
   }
 

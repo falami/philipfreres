@@ -272,6 +272,19 @@
         z-index:5;
       }
     }
+
+
+    #tableUsage tr.usage-row-late td{
+      background:rgba(220,53,69,.10)!important;
+    }
+
+    #tableUsage tr.usage-row-late td:first-child{
+      border-left:4px solid #dc3545;
+    }
+
+    #tableUsage tr.usage-row-late:hover td{
+      background:rgba(220,53,69,.16)!important;
+    }
   </style>
 {% endblock %}
 
@@ -426,10 +439,15 @@
     <thead>
       <tr>
         <th>#</th>
+        <th>Jours écoulés</th>
         <th>Date</th>
+        <th>Relevé précédent</th>
+        <th>Écart jours</th>
         <th>Engin</th>
         <th>Type</th>
         <th>Valeur</th>
+        <th>Écart valeurs</th>
+        <th>Conso</th>
         <th class="text-end"></th>
       </tr>
     </thead>
@@ -542,17 +560,28 @@ $(function(){
 
     columns: [
       { data: 'id', name: 'id' },
+      { data: 'daysSinceLast', name: 'daysSinceLast', orderable: false, searchable: false },
       { data: 'date', name: 'dateReleve' },
+      { data: 'previousDate', name: 'previousDate', orderable: false, searchable: false },
+      { data: 'ecartDays', name: 'ecartDays', orderable: false, searchable: false },
       { data: 'engin', name: 'engin' },
       { data: 'type', name: 'type' },
       { data: 'valeur', name: 'valeur' },
+      { data: 'ecart', name: 'ecart', orderable: false, searchable: false },
+      { data: 'consommation', name: 'consommation', orderable: false, searchable: false },
       { data: 'actions', name: 'actions' }
     ],
 
     columnDefs: [
-      { targets: 5, className: 'action-column text-end', orderable: false, searchable: false },
-      { targets: [0,1,2,3,4], className: 'text-center' }
+      { targets: 10, className: 'action-column text-end', orderable: false, searchable: false },
+      { targets: [0,1,2,3,4,5,6,7,8,9], className: 'text-center' }
     ],
+
+    createdRow: function(row, data) {
+      if (data.isLate) {
+        $(row).addClass('usage-row-late');
+      }
+    },
 
     initComplete: function(){
       const api = this.api();

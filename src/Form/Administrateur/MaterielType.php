@@ -60,7 +60,7 @@ final class MaterielType extends AbstractType
       ])
 
       ->add('photo', FileType::class, [
-        'label' => 'Photo de couverture',
+        'label' => 'Photo',
         'mapped' => false,
         'required' => false,
         'constraints' => [
