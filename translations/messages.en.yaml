@@ -433,7 +433,10 @@ navbar:
     list: "List"
     add: "Add"
     externalId: "External Id"
-    kilometrage: "Kilometrage"
+  
+  kilometrage:
+    analyse: "Analyse"
+    add: "Ajouter"
 
   materiel:
     title: "Matériel"

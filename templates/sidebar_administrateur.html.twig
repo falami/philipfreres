@@ -32,9 +32,6 @@
 			</a>
 		</li>
 
-		
-
-
 		<li class="nav-item">
 			<a href="{{ path('app_administrateur_fuel_calendar_global', {'entite' : entite.id}) }}">
 				<span class="{% 
@@ -74,6 +71,43 @@
 					{{ 'navbar.map.title'|trans }}
 				</span>
 			</a>
+		</li>
+
+
+
+		<li class="nav-item">
+			<button class="nav-link dropdown-toggle {% if
+					app.request.attributes.get('_route') == 'app_administrateur_engin_usage_index' or
+					app.request.attributes.get('_route') == 'app_administrateur_engin_usage_ajouter' %}text-theme-secondaire{% else %}text-white{% endif %}" data-bs-toggle="collapse" data-bs-target="#submenuKilometrage" aria-expanded="{% if app.request.attributes.get('_route') in [
+										'app_administrateur_engin_usage_index',
+										'app_administrateur_engin_usage_ajouter',
+										] %}true{% else %}false{% endif %}">
+				<i class="bi bi-speedometer"></i>
+
+				{{ 'navbar.kilometrage.title'|trans }}
+			</button>
+
+			<div class="collapse {% if
+					app.request.attributes.get('_route') == 'app_administrateur_engin_usage_index' or
+					app.request.attributes.get('_route') == 'app_administrateur_engin_usage_ajouter' %}show{% endif %}" id="submenuKilometrage">
+				<ul class="list-unstyled badge fs-6 large fw-normal text-bg-light text-dark w-100">
+					<li>
+						<a href="{{ path('app_administrateur_engin_usage_index', {'entite' : entite.id}) }}">
+							<span class="{% if app.request.attributes.get('_route') == 'app_administrateur_engin_usage_index' %}text-theme-secondaire{% endif %}">{{ 'navbar.kilometrage.analyse'|trans }}</span>
+						</a>
+					</li>
+					<li>
+						<a href="{{ path('app_administrateur_engin_usage_ajouter', {'entite' : entite.id}) }}">
+							<span class="{% if app.request.attributes.get('_route') == 'app_administrateur_engin_usage_ajouter' %}text-theme-secondaire{% endif %}">{{ 'navbar.kilometrage.add'|trans }}</span>
+						</a>
+					</li>
+					{#<li>
+						<a href="{{ path('app_administrateur_planning_TENANT_EMPLOYEs_index', {'entite' : entite.id}) }}">
+							<span class="{% if app.request.attributes.get('_route') == 'app_administrateur_planning_TENANT_EMPLOYEs_index' %}text-theme-secondaire{% endif %}">{{ 'navbar.utilisateur.planning'|trans }}</span>
+						</a>
+					</li>#}
+				</ul>
+			</div>
 		</li>
 
 

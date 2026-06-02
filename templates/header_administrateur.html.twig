@@ -45,8 +45,6 @@
             <i class="bi bi-graph-up-arrow"></i> Analyse
           </a>
           <ul class="dropdown-menu">
-
-
             <li><a class="dropdown-item" href="{{ path('app_administrateur_fuel_calendar_global', {'entite': entite.id}) }}"><i class="bi bi-calendar4-week me-2"></i>{{ 'navbar.calendar.title'|trans }}</a></li>
             <li><a class="dropdown-item" href="{{ path('app_administrateur_calendrier_index', {'entite': entite.id}) }}"><i class="bi bi-calendar4-week me-2"></i>{{ 'navbar.ressource.title'|trans }}</a></li>
             <li><a class="dropdown-item" href="{{ path('app_administrateur_fuel_map', {'entite': entite.id}) }}"><i class="bi bi-globe-americas me-2"></i>{{ 'navbar.map.title'|trans }}</a></li>
@@ -56,6 +54,17 @@
           </ul>
         </li>
 
+
+        {# ===== GESTION ===== #}
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-speedometer"></i> Kilométrage
+          </a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="{{ path('app_administrateur_engin_usage_index', {'entite': entite.id}) }}"><i class="bi bi-graph-up-arrow me-2"></i>{{ 'navbar.kilometrage.analyse'|trans }}</a></li>
+            <li><a class="dropdown-item" href="{{ path('app_administrateur_engin_usage_index', {'entite': entite.id}) }}"><i class="bi bi-plus-circle me-2"></i>{{ 'navbar.kilometrage.add'|trans }}</a></li>
+          </ul>
+        </li>
 
 
 
