@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use App\Repository\ChantierRessourceEnginRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ChantierRessourceEnginRepository::class)]
 class ChantierRessourceEngin
@@ -19,6 +20,7 @@ class ChantierRessourceEngin
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false, onDelete: 'RESTRICT')]
+    #[Assert\NotNull(message: 'Veuillez sélectionner un engin.')]
     private ?Engin $engin = null;
 
     #[ORM\Column(length: 255, nullable: true)]

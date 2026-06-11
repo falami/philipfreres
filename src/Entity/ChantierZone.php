@@ -22,7 +22,7 @@ class ChantierZone
     private ?Chantier $chantier = null;
 
     #[ORM\Column(length: 180)]
-    #[Assert\NotBlank]
+    #[Assert\NotBlank(message: 'Le nom du sous-chantier est obligatoire.')]
     private ?string $nom = null;
 
     #[ORM\Column(length: 180, nullable: true)]
@@ -56,19 +56,24 @@ class ChantierZone
     private int $ordre = 0;
 
     #[ORM\OneToMany(mappedBy: 'zone', targetEntity: ChantierRessourceHumaine::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[Assert\Valid]
     private Collection $ressourcesHumaines;
 
     #[ORM\OneToMany(mappedBy: 'zone', targetEntity: ChantierRessourceEngin::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[Assert\Valid]
     private Collection $ressourcesEngins;
 
     #[ORM\OneToMany(mappedBy: 'zone', targetEntity: ChantierRessourceMateriel::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[Assert\Valid]
     private Collection $ressourcesMateriels;
 
     #[ORM\OneToMany(mappedBy: 'zone', targetEntity: ChantierDechet::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[Assert\Valid]
     private Collection $dechets;
 
     #[ORM\OneToMany(mappedBy: 'zone', targetEntity: ChantierPhoto::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     #[ORM\OrderBy(['ordre' => 'ASC', 'id' => 'ASC'])]
+    #[Assert\Valid]
     private Collection $photos;
 
     public function __construct()
@@ -101,9 +106,9 @@ class ChantierZone
         return $this->nom;
     }
 
-    public function setNom(string $nom): static
+    public function setNom(?string $nom): static
     {
-        $this->nom = trim($nom);
+        $this->nom = trim((string) $nom);
         return $this;
     }
 

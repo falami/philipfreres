@@ -745,6 +745,67 @@
       color:var(--muted);
       margin-top:.65rem;
     }
+
+
+    .premium-form-alert{
+      display:flex;
+      gap:1rem;
+      padding:1rem 1.15rem;
+      border-radius:20px;
+      border:1px solid rgba(220,53,69,.22);
+      background:
+        radial-gradient(700px 180px at 0% 0%, rgba(220,53,69,.12), transparent 60%),
+        linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,245,246,.96));
+      box-shadow:0 18px 45px rgba(220,53,69,.12);
+    }
+
+    .premium-form-alert__icon{
+      width:48px;
+      height:48px;
+      min-width:48px;
+      border-radius:16px;
+      display:grid;
+      place-items:center;
+      color:#dc3545;
+      background:rgba(220,53,69,.10);
+      border:1px solid rgba(220,53,69,.18);
+      font-size:1.25rem;
+    }
+
+    .premium-form-alert__title{
+      font-weight:900;
+      color:#842029;
+      font-size:1.05rem;
+    }
+
+    .premium-form-alert__text{
+      color:#7f1d1d;
+      font-weight:600;
+      margin-top:.25rem;
+    }
+
+    .premium-form-alert__hint{
+      display:inline-flex;
+      margin-top:.65rem;
+      padding:.35rem .65rem;
+      border-radius:999px;
+      background:rgba(255,193,7,.16);
+      color:#4b3410;
+      font-size:.85rem;
+      font-weight:800;
+    }
+
+    .form-control.is-invalid,
+    .form-select.is-invalid,
+    .ts-wrapper.is-invalid .ts-control{
+      border-color:#dc3545 !important;
+      box-shadow:0 0 0 .22rem rgba(220,53,69,.12) !important;
+    }
+
+    .zone-item.has-validation-error{
+      border-color:rgba(220,53,69,.45) !important;
+      box-shadow:0 0 0 .22rem rgba(220,53,69,.10), 0 18px 45px rgba(220,53,69,.12) !important;
+    }
   </style>
 {% endblock %}
 
@@ -811,6 +872,32 @@
       name: 'chantier_administrateur'
     }
   }) }}
+  {% set formHasErrors = form.vars.submitted and not form.vars.valid %}
+
+  {% if formHasErrors %}
+    <div class="premium-form-alert mb-4" id="serverFormErrorAlert">
+      <div class="premium-form-alert__icon">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+      </div>
+
+      <div class="premium-form-alert__content">
+        <div class="premium-form-alert__title">
+          Impossible d’enregistrer le chantier
+        </div>
+
+        <div class="premium-form-alert__text">
+          Certains champs obligatoires sont manquants ou contiennent des données incorrectes.
+          Merci de vérifier les zones signalées ci-dessous avant de relancer l’enregistrement.
+        </div>
+
+        <div class="premium-form-alert__hint">
+          <i class="bi bi-magic me-1"></i>
+          Les sous-chantiers concernés sont automatiquement ouverts pour faciliter la correction.
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
   {{ form_errors(form) }}
 
   <div class="row g-4">
@@ -942,12 +1029,17 @@
               data-prototype="{{ include('administrateur/chantier/_zone_item.html.twig', { row: form.zones.vars.prototype })|e('html_attr') }}">
 
               {% for zoneForm in form.zones %}
-                <div class="collection-item zone-item">
+                {% set zoneHasErrors = zoneForm.vars.submitted and not zoneForm.vars.valid %}
+
+                <div class="collection-item zone-item {{ zoneHasErrors ? 'has-validation-error' : '' }}">
                   <button type="button" class="btn btn-outline-danger btn-sm remove-collection-item">
                     <i class="bi bi-trash"></i>
                   </button>
 
-                  {% include 'administrateur/chantier/_zone_item.html.twig' with { row: zoneForm } %}
+                  {% include 'administrateur/chantier/_zone_item.html.twig' with {
+                    row: zoneForm,
+                    forceOpen: zoneHasErrors
+                  } %}
                 </div>
               {% else %}
                 <div class="collection-empty empty-placeholder">
@@ -2074,41 +2166,122 @@
         const form = document.querySelector(`form[name="${formName}"]`);
         if (!form) return;
 
-        const submitButton = form.querySelector('button[type="submit"]');
-        if (!submitButton) return;
+        let errorAlert = document.getElementById('premium-client-form-alert');
 
-        let errorAlert = document.getElementById('form-error-alert');
         if (!errorAlert) {
           errorAlert = document.createElement('div');
-          errorAlert.className = 'alert alert-danger d-none';
-          errorAlert.id = 'form-error-alert';
-          submitButton.parentElement.prepend(errorAlert);
+          errorAlert.id = 'premium-client-form-alert';
+          errorAlert.className = 'premium-form-alert d-none mb-4';
+          errorAlert.innerHTML = `
+            <div class="premium-form-alert__icon">
+              <i class="bi bi-exclamation-triangle-fill"></i>
+            </div>
+            <div class="premium-form-alert__content">
+              <div class="premium-form-alert__title">Vérification nécessaire avant enregistrement</div>
+              <div class="premium-form-alert__text js-premium-error-text">
+                Certains champs sont incomplets ou invalides.
+              </div>
+              <div class="premium-form-alert__hint">
+                <i class="bi bi-arrow-down-circle me-1"></i>
+                Le premier champ à corriger est affiché automatiquement.
+              </div>
+            </div>
+          `;
+
+          form.prepend(errorAlert);
         }
 
-        form.addEventListener('submit', e => {
-          const messages = new Set();
-          let first = null;
+        function getFieldLabel(field) {
+          const label = field.id ? form.querySelector(`label[for="${field.id}"]`) : null;
+          return label ? label.textContent.trim().replace(/\s+/g, ' ') : 'Champ à compléter';
+        }
 
-          form.querySelectorAll(':invalid').forEach(el => {
-            el.classList.add('is-invalid');
-            if (!first) first = el;
+        function openParentZone(field) {
+          const zoneItem = field.closest('.zone-item');
+          if (!zoneItem) return;
 
-            const label = form.querySelector(`label[for="${el.id}"]`);
-            if (label) messages.add(`- ${label.textContent.trim()}`);
-          });
+          zoneItem.classList.add('has-validation-error');
 
-          if (messages.size) {
-            e.preventDefault();
-            errorAlert.innerHTML = `<strong>Champs requis manquants :</strong><br>${[...messages].join('<br>')}`;
-            errorAlert.classList.remove('d-none');
+          const collapseEl = zoneItem.querySelector('.zone-collapse.collapse');
 
-            if (first && first.scrollIntoView) {
-              first.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
+          if (collapseEl && window.bootstrap) {
+            bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false }).show();
+          }
+        }
 
-            setTimeout(() => errorAlert.classList.add('d-none'), 6000);
+        function markInvalid(field) {
+          field.classList.add('is-invalid');
+
+          if (field.tomselect) {
+            field.tomselect.wrapper.classList.add('is-invalid');
+          }
+
+          openParentZone(field);
+        }
+
+        function clearInvalidState() {
+          form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+          form.querySelectorAll('.ts-wrapper.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+          form.querySelectorAll('.zone-item.has-validation-error').forEach(el => el.classList.remove('has-validation-error'));
+          errorAlert.classList.add('d-none');
+        }
+
+        form.addEventListener('input', e => {
+          e.target.classList.remove('is-invalid');
+
+          if (e.target.tomselect) {
+            e.target.tomselect.wrapper.classList.remove('is-invalid');
           }
         });
+
+        form.addEventListener('change', e => {
+          e.target.classList.remove('is-invalid');
+
+          if (e.target.tomselect) {
+            e.target.tomselect.wrapper.classList.remove('is-invalid');
+          }
+        });
+
+        form.addEventListener('submit', e => {
+          updateZoneOrders();
+          updatePhotoOrders();
+
+          clearInvalidState();
+
+          const invalidFields = [...form.querySelectorAll('input, select, textarea')]
+            .filter(field => {
+              if (field.disabled || field.type === 'hidden' || field.type === 'file') return false;
+              return !field.checkValidity();
+            });
+
+          if (!invalidFields.length) {
+            return;
+          }
+
+          e.preventDefault();
+          e.stopPropagation();
+
+          const first = invalidFields[0];
+          const labels = [...new Set(invalidFields.map(getFieldLabel))].slice(0, 8);
+
+          invalidFields.forEach(markInvalid);
+
+          errorAlert.querySelector('.js-premium-error-text').innerHTML = `
+            <div class="mb-2">
+              ${invalidFields.length} champ${invalidFields.length > 1 ? 's' : ''} à vérifier avant de pouvoir enregistrer le chantier.
+            </div>
+            <ul class="mb-0 ps-3">
+              ${labels.map(label => `<li>${label}</li>`).join('')}
+            </ul>
+          `;
+
+          errorAlert.classList.remove('d-none');
+
+          setTimeout(() => {
+            first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            first.focus({ preventScroll: true });
+          }, 250);
+        }, true);
       }
 
       [fields.nom, fields.ville].forEach(el => {

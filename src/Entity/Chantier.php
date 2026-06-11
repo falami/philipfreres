@@ -28,8 +28,8 @@ class Chantier
     private ?Utilisateur $createur = null;
 
     #[ORM\Column(length: 180)]
-    #[Assert\NotBlank]
-    #[Assert\Length(max: 180)]
+    #[Assert\NotBlank(message: 'Le nom du chantier est obligatoire.')]
+    #[Assert\Length(max: 180, maxMessage: 'Le nom du chantier ne peut pas dépasser {{ limit }} caractères.')]
     private ?string $nom = null;
 
     #[ORM\Column(length: 255, nullable: true)]
@@ -70,6 +70,7 @@ class Chantier
 
     #[ORM\OneToMany(mappedBy: 'chantier', targetEntity: ChantierZone::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     #[ORM\OrderBy(['ordre' => 'ASC', 'id' => 'ASC'])]
+    #[Assert\Valid]
     private Collection $zones;
 
     #[ORM\ManyToMany(targetEntity: Utilisateur::class)]
@@ -130,9 +131,9 @@ class Chantier
         return $this->nom;
     }
 
-    public function setNom(string $nom): static
+    public function setNom(?string $nom): static
     {
-        $this->nom = trim($nom);
+        $this->nom = trim((string) $nom);
         return $this;
     }
 

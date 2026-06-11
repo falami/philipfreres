@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use App\Repository\ChantierRessourceHumaineRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ChantierRessourceHumaineRepository::class)]
 class ChantierRessourceHumaine
@@ -19,6 +20,7 @@ class ChantierRessourceHumaine
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false, onDelete: 'RESTRICT')]
+    #[Assert\NotNull(message: 'Veuillez sélectionner une ressource humaine.')]
     private ?Utilisateur $utilisateur = null;
 
     #[ORM\Column(length: 120, nullable: true)]

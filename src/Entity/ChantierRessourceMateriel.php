@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use App\Repository\ChantierRessourceMaterielRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ChantierRessourceMaterielRepository::class)]
 class ChantierRessourceMateriel
@@ -19,10 +20,13 @@ class ChantierRessourceMateriel
 
     #[ORM\ManyToOne(inversedBy: 'chantierRessources')]
     #[ORM\JoinColumn(nullable: false, onDelete: 'RESTRICT')]
+    #[Assert\NotNull(message: 'Veuillez sélectionner un matériel.')]
     private ?Materiel $materiel = null;
 
-    #[ORM\Column(nullable: true)]
-    private ?int $quantite = 1;
+    #[ORM\Column(nullable: false)]
+    #[Assert\NotNull(message: 'Veuillez renseigner une quantité.')]
+    #[Assert\Positive(message: 'La quantité doit être supérieure à 0.')]
+    private int $quantite = 1;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $commentaire = null;

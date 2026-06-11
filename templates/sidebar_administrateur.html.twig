@@ -426,12 +426,6 @@
 							<span class="{% if app.request.attributes.get('_route') == 'app_administrateur_engin_external_id_all_index' %}text-theme-secondaire{% endif %}">{{ 'navbar.truck.externalId'|trans }}</span>
 						</a>
 					</li>
-
-					<li>
-						<a href="{{ path('app_administrateur_engin_usage_index', {'entite' : entite.id}) }}">
-							<span class="{% if app.request.attributes.get('_route') == 'app_administrateur_engin_usage_index' %}text-theme-secondaire{% endif %}">{{ 'navbar.truck.kilometrage'|trans }}</span>
-						</a>
-					</li>
 				</ul>
 			</div>
 		</li>

@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Repository\ChantierDechetRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ChantierDechetRepository::class)]
 class ChantierDechet
@@ -20,9 +21,11 @@ class ChantierDechet
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false, onDelete: 'RESTRICT')]
+    #[Assert\NotNull(message: 'Veuillez sélectionner un type de déchet.')]
     private ?Dechet $typeDechet = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
+    #[Assert\PositiveOrZero(message: 'La quantité doit être supérieure ou égale à 0.')]
     private ?string $quantite = null;
 
     public function getId(): ?int

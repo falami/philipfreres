@@ -1,5 +1,5 @@
 {# templates/administrateur/chantier/_zone_item.html.twig #}
-
+{% set forceOpen = forceOpen|default(false) %}
 <div class="zone-block">
   {{ form_widget(row.ordre) }}
 
@@ -12,7 +12,7 @@
             type="button"
             data-bs-toggle="collapse"
             data-bs-target="#{{ row.vars.id }}-collapse"
-            aria-expanded="false">
+            aria-expanded="{{ forceOpen ? 'true' : 'false' }}">
 
       <span class="zone-title">
         <i class="bi bi-diagram-3 text-warning me-1"></i>
@@ -35,7 +35,7 @@
     </button>
   </div>
 
-  <div id="{{ row.vars.id }}-collapse" class="collapse zone-collapse">
+  <div id="{{ row.vars.id }}-collapse" class="collapse zone-collapse {{ forceOpen ? 'show' : '' }}">
     <div class="row g-3 mb-3 mt-3">
       <div class="col-md-7">{{ form_row(row.nom) }}</div>
       <div class="col-md-5">{{ form_row(row.parcelle) }}</div>
