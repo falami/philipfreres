@@ -964,36 +964,43 @@
 
             <td class="photo-meta">
 
-              {% if p.datePriseVueApres %}
-                  <strong>Date :</strong>
-                  {{ p.datePriseVueApres|date('d/m/Y') }}
-              {% else %}
-                  <strong>Date :</strong>
-                  <span style="color:#9ca3af;font-style:italic;">
-                      Champ non renseigné
-                  </span>
-              {% endif %}
-              <br>
+              {% if p.photoApres %}
 
-              {% if p.adresseApres %}
-                  <strong>Adresse :</strong>
-                  {{ p.adresseApres }}
-              {% else %}
-                  <strong>Adresse :</strong>
-                  <span style="color:#9ca3af;font-style:italic;">
-                      Champ non renseigné
-                  </span>
-              {% endif %}
-              <br>
+                  <strong>Date :</strong>
+                  {{ p.datePriseVueApres ? p.datePriseVueApres|date('d/m/Y') : 'Champ non renseigné' }}
+                  <br>
 
-              {% if p.latitudeApres and p.longitudeApres %}
+                  <strong>Adresse :</strong>
+                  {{ p.adresseApres ?: 'Champ non renseigné' }}
+                  <br>
+
                   <strong>Latitude / Longitude :</strong>
-                  {{ p.latitudeApres }}, {{ p.longitudeApres }}
+
+                  {% if p.latitudeApres is not null and p.longitudeApres is not null %}
+                      {{ p.latitudeApres }}, {{ p.longitudeApres }}
+                  {% else %}
+                      Champ non renseigné
+                  {% endif %}
+
               {% else %}
+
+                  <strong>Date :</strong>
+                  <span style="color:#9ca3af;font-style:italic;">
+                      Champ non renseigné
+                  </span>
+                  <br>
+
+                  <strong>Adresse :</strong>
+                  <span style="color:#9ca3af;font-style:italic;">
+                      Champ non renseigné
+                  </span>
+                  <br>
+
                   <strong>Latitude / Longitude :</strong>
                   <span style="color:#9ca3af;font-style:italic;">
                       Champ non renseigné
                   </span>
+
               {% endif %}
 
           </td>
