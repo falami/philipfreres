@@ -1683,6 +1683,9 @@
       const formMain = document.querySelector('form[name="chantier_administrateur"]');
       const submitButtons = formMain ? [...formMain.querySelectorAll('button[type="submit"]')] : [];
 
+      const codeChantierEl = document.getElementById('{{ form.codeChantier.vars.id }}');
+      const nominationChantierEl = document.getElementById('{{ form.nominationChantier.vars.id }}');
+
       let currentBrowserLocationPromise = null;
 
       function getBrowserLocation() {
@@ -2611,11 +2614,13 @@
         if (resume.photos) resume.photos.textContent = document.querySelectorAll('[id$="-photos-holder"] .collection-item').length;
 
 
-        document.getElementById('resume-code-chantier').textContent =
-          codeChantierEl?.value?.trim() || '-';
+        if (resume.codeChantier) {
+          resume.codeChantier.textContent = codeChantierEl?.value?.trim() || '-';
+        }
 
-        document.getElementById('resume-nomination-chantier').textContent =
-          nominationChantierEl?.value?.trim() || '-';
+        if (resume.nominationChantier) {
+          resume.nominationChantier.textContent = nominationChantierEl?.value?.trim() || '-';
+        }
 
 
 
@@ -2824,9 +2829,6 @@
         const uniteInput = document.getElementById('quickResourceUnite');
         const errorBox = document.getElementById('quickResourceError');
         const submitBtn = document.getElementById('quickResourceSubmit');
-
-        const codeChantierEl = document.getElementById('{{ form.codeChantier.vars.id }}');
-        const nominationChantierEl = document.getElementById('{{ form.nominationChantier.vars.id }}');
 
         function hideError() {
           errorBox.classList.add('d-none');
