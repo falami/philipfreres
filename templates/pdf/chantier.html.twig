@@ -963,20 +963,40 @@
             </td>
 
             <td class="photo-meta">
-                <strong>Date :</strong>
-                {{ p.datePriseVueApres ? p.datePriseVueApres|date('d/m/Y') : 'Champ non renseigné' }}
-                <br>
 
-                <strong>Adresse :</strong>
-                {{ p.adresseApres ?: 'Champ non renseigné' }}
-                <br>
+              {% if p.datePriseVueApres %}
+                  <strong>Date :</strong>
+                  {{ p.datePriseVueApres|date('d/m/Y') }}
+              {% else %}
+                  <strong>Date :</strong>
+                  <span style="color:#9ca3af;font-style:italic;">
+                      Champ non renseigné
+                  </span>
+              {% endif %}
+              <br>
 
-                <strong>GPS :</strong>
-                {{ p.latitudeApres and p.longitudeApres
-                    ? p.latitudeApres ~ ', ' ~ p.longitudeApres
-                    : 'Champ non renseigné'
-                }}
-            </td>
+              {% if p.adresseApres %}
+                  <strong>Adresse :</strong>
+                  {{ p.adresseApres }}
+              {% else %}
+                  <strong>Adresse :</strong>
+                  <span style="color:#9ca3af;font-style:italic;">
+                      Champ non renseigné
+                  </span>
+              {% endif %}
+              <br>
+
+              {% if p.latitudeApres and p.longitudeApres %}
+                  <strong>Latitude / Longitude :</strong>
+                  {{ p.latitudeApres }}, {{ p.longitudeApres }}
+              {% else %}
+                  <strong>Latitude / Longitude :</strong>
+                  <span style="color:#9ca3af;font-style:italic;">
+                      Champ non renseigné
+                  </span>
+              {% endif %}
+
+          </td>
         </tr>
 
         {% if p.commentaire %}
