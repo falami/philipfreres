@@ -289,8 +289,7 @@
        Résumé / sticky
        ========================= */
     .sticky-actions{
-      position: sticky;
-      bottom: 14px;
+      position: static !important;
       z-index: 5;
       background: color-mix(in srgb, var(--panel) 82%, transparent);
       backdrop-filter: blur(10px);
@@ -1040,6 +1039,7 @@
       border-radius:16px;
       font-weight:700;
     }
+
   </style>
 {% endblock %}
 
