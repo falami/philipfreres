@@ -886,29 +886,39 @@
     <div class="keep-together">
       <h3>{{ zone.nom }} {% if p.titre %}- {{ p.titre }}{% endif %}</h3>
       
+      {% set hasApres = p.photoApres is not empty %}
+
       <table class="photo-table w-100">
         <tr>
-          <th style="background: {{ primary }}; color: #fff;">Avant intervention</th>
-          <th style="background: {{ primary }}; color: #fff;">Après intervention</th>
+          <th style="background: {{ primary }}; color: #fff;" {% if not hasApres %}colspan="2"{% endif %}>
+            Avant intervention
+          </th>
+
+          {% if hasApres %}
+            <th style="background: {{ primary }}; color: #fff;">
+              Après intervention
+            </th>
+          {% endif %}
         </tr>
+
         <tr>
-          <td class="photo-cell">
+          <td class="photo-cell" {% if not hasApres %}colspan="2"{% endif %}>
             {% if p.photoAvant %}
               <img src="{{ absolute_url(asset('uploads/photos/chantiers/' ~ p.photoAvant)) }}">
             {% else %}
               <span style="color: #9ca3af;">Photo absente</span>
             {% endif %}
           </td>
-          <td class="photo-cell">
-            {% if p.photoApres %}
+
+          {% if hasApres %}
+            <td class="photo-cell">
               <img src="{{ absolute_url(asset('uploads/photos/chantiers/' ~ p.photoApres)) }}">
-            {% else %}
-              <span style="color: #9ca3af;">Photo absente</span>
-            {% endif %}
-          </td>
+            </td>
+          {% endif %}
         </tr>
+
         <tr>
-          <td class="map-cell">
+          <td class="map-cell" {% if not hasApres %}colspan="2"{% endif %}>
             {% set mapAvant = photoMaps[p.id].avant ?? null %}
 
             {% if mapAvant %}
@@ -918,31 +928,37 @@
             {% endif %}
           </td>
 
-          <td class="map-cell">
-            {% set mapApres = photoMaps[p.id].apres ?? null %}
+          {% if hasApres %}
+            <td class="map-cell">
+              {% set mapApres = photoMaps[p.id].apres ?? null %}
 
-            {% if mapApres %}
-              <img src="{{ mapApres }}" alt="Carte photo après">
-            {% else %}
-              <span style="color: #9ca3af;">Carte indisponible</span>
-            {% endif %}
-          </td>
+              {% if mapApres %}
+                <img src="{{ mapApres }}" alt="Carte photo après">
+              {% else %}
+                <span style="color: #9ca3af;">Carte indisponible</span>
+              {% endif %}
+            </td>
+          {% endif %}
         </tr>
+
         <tr>
-          <td class="photo-meta">
+          <td class="photo-meta" {% if not hasApres %}colspan="2"{% endif %}>
             <strong>Date :</strong> {{ p.datePriseVueAvant ? p.datePriseVueAvant|date('d/m/Y') : '-' }}<br>
             <strong>Adresse :</strong> {{ p.adresseAvant ?: '-' }}<br>
-            <strong>GPS :</strong> {{ p.latitudeAvant and p.longitudeAvant ? p.latitudeAvant ~ ', ' ~ p.longitudeAvant : '-' }}<br>
+            <strong>GPS :</strong>
+            {{ p.latitudeAvant and p.longitudeAvant ? p.latitudeAvant ~ ', ' ~ p.longitudeAvant : '-' }}
           </td>
 
-          <td class="photo-meta">
-            <strong>Date :</strong> {{ p.datePriseVueApres ? p.datePriseVueApres|date('d/m/Y') : '-' }}<br>
-            <strong>Adresse :</strong> {{ p.adresseApres ?: '-' }}<br>
-            <strong>GPS :</strong> {{ p.latitudeApres and p.longitudeApres ? p.latitudeApres ~ ', ' ~ p.longitudeApres : '-' }}<br>
-          </td>
+          {% if hasApres %}
+            <td class="photo-meta">
+              <strong>Date :</strong> {{ p.datePriseVueApres ? p.datePriseVueApres|date('d/m/Y') : '-' }}<br>
+              <strong>Adresse :</strong> {{ p.adresseApres ?: '-' }}<br>
+              <strong>GPS :</strong>
+              {{ p.latitudeApres and p.longitudeApres ? p.latitudeApres ~ ', ' ~ p.longitudeApres : '-' }}
+            </td>
+          {% endif %}
         </tr>
 
-        
         {% if p.commentaire %}
           <tr>
             <td colspan="2" style="border: 1px solid {{ border }}; padding: 8px; font-style: italic;">
