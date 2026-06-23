@@ -827,6 +827,29 @@
       margin-left: .45rem;
       padding-left: .45rem;
     }
+
+    .js-ts-affectations + .ts-wrapper .ts-control{
+      min-height:48px;
+    }
+
+    .js-ts-affectations + .ts-wrapper.multi .ts-control > div{
+      border-radius:999px;
+      background:rgba(13,110,253,.10);
+      border:1px solid rgba(13,110,253,.20);
+      color:var(--ink);
+      font-weight:700;
+      padding:.32rem .6rem;
+    }
+
+    .js-ts-affectations + .ts-wrapper .remove{
+      border-left:1px solid rgba(0,0,0,.10);
+      margin-left:.45rem;
+      padding-left:.45rem;
+    }
+
+    select.js-ts-affectations.tomselected{
+      display:none !important;
+    }
   </style>
 {% endblock %}
 
@@ -1506,6 +1529,7 @@
           if (
             select.classList.contains('no-tomselect') ||
             select.classList.contains('js-ts-mandataires') ||
+            select.classList.contains('js-ts-affectations') ||
             select.dataset.noTomselect === '1'
           ) {
             return;
@@ -1515,10 +1539,47 @@
         });
       }
 
+
+      function initAffectationsTomSelect(scope = document) {
+        if (!window.TomSelect) return;
+
+        scope.querySelectorAll('.js-ts-affectations').forEach(select => {
+          if (select.tomselect) {
+            return;
+          }
+
+          new TomSelect(select, {
+            plugins: ['remove_button'],
+            maxItems: null,
+            persist: false,
+            create: false,
+            dropdownParent: 'body',
+            placeholder: 'Rechercher un utilisateur...',
+            searchField: ['text'],
+            sortField: {
+              field: 'text',
+              direction: 'asc'
+            },
+            render: {
+              no_results: () => `
+                <div class="px-3 py-3 text-muted">
+                  <i class="bi bi-search me-1"></i>
+                  Aucun utilisateur trouvé.
+                </div>
+              `
+            },
+            onChange: () => refreshResume()
+          });
+        });
+      }
+
       function initWidgets(scope = document) {
         initFlatpickr(scope);
         initTomSelect(scope);
+        initAffectationsTomSelect(scope);
       }
+
+      initWidgets(document);
 
       function initRealDatesDefaults() {
         const debutPrev = document.getElementById('{{ form.dateDebutPrevisionnelle.vars.id }}');

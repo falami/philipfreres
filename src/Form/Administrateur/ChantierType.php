@@ -180,7 +180,8 @@ class ChantierType extends AbstractType
             ->addOrderBy('u.prenom', 'ASC');
         },
         'attr' => [
-          'class' => 'form-select',
+          'class' => 'form-select js-ts-affectations',
+          'placeholder' => 'Sélectionner un ou plusieurs utilisateurs',
         ],
         'help' => 'Ces utilisateurs pourront voir et modifier ce chantier, sauf s’il est en brouillon.',
       ]);
