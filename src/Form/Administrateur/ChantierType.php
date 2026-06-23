@@ -18,6 +18,8 @@ use App\Repository\UtilisateurRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use App\Entity\Mandataire;
 use App\Repository\MandataireRepository;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 
 class ChantierType extends AbstractType
 {
@@ -48,6 +50,28 @@ class ChantierType extends AbstractType
         'attr' => [
           'class' => 'form-control',
           'placeholder' => 'Ex : Entretien annuel - secteur nord',
+        ],
+      ])
+
+      ->add('saison', IntegerType::class, [
+        'required' => false,
+        'label' => 'Saison',
+        'attr' => [
+          'class' => 'form-control',
+          'placeholder' => 'Ex : 1',
+          'min' => 0,
+        ],
+      ])
+      ->add('annee', ChoiceType::class, [
+        'required' => false,
+        'label' => 'Année',
+        'placeholder' => 'Sélectionner une année',
+        'choices' => array_combine(
+          range((int) date('Y') - 5, (int) date('Y') + 5),
+          range((int) date('Y') - 5, (int) date('Y') + 5)
+        ),
+        'attr' => [
+          'class' => 'form-select',
         ],
       ])
       ->add('adresse', TextType::class, [

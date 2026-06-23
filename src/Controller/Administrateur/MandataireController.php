@@ -13,6 +13,8 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\{JsonResponse, RedirectResponse, Request, Response};
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use App\Service\FileUploader;
+use App\Service\Photo\PhotoManager;
 
 #[Route('/administrateur/{entite}/mandataire', name: 'app_administrateur_mandataire_')]
 #[IsGranted(TenantPermission::CHANTIER_MANAGE, subject: 'entite')]
@@ -73,6 +75,15 @@ class MandataireController extends AbstractController
     foreach ($rows as $mandataire) {
       $data[] = [
         'id' => $mandataire->getId(),
+        'logo' => $mandataire->getLogo()
+          ? sprintf(
+            '<img src="%s" alt="Logo" style="width:48px;height:48px;object-fit:contain;border-radius:12px;background:#fff;border:1px solid rgba(0,0,0,.08);padding:4px;">',
+            $this->generateUrl('app_administrateur_mandataire_logo', [
+              'entite' => $entite->getId(),
+              'id' => $mandataire->getId(),
+            ])
+          )
+          : '<span class="text-muted small">-</span>',
         'societe' => $mandataire->getSociete() ?: '-',
         'nom' => $mandataire->getNom(),
         'email' => $mandataire->getEmail() ?: '-',
@@ -96,10 +107,33 @@ class MandataireController extends AbstractController
     ]);
   }
 
+
+  #[Route('/{id}/logo', name: 'logo', methods: ['GET'])]
+  public function logo(Entite $entite, Mandataire $mandataire): Response
+  {
+    if ($mandataire->getEntite()?->getId() !== $entite->getId() || !$mandataire->getLogo()) {
+      throw $this->createNotFoundException();
+    }
+
+    $path = $this->getParameter('kernel.project_dir') . '/public/uploads/mandataires/logos/' . $mandataire->getLogo();
+
+    if (!is_file($path)) {
+      throw $this->createNotFoundException();
+    }
+
+    return $this->file($path);
+  }
+
   #[Route('/ajouter', name: 'ajouter', methods: ['GET', 'POST'])]
   #[Route('/modifier/{id}', name: 'modifier', methods: ['GET', 'POST'])]
-  public function addEdit(Entite $entite, Request $request, EntityManagerInterface $em, ?Mandataire $mandataire = null): Response
-  {
+  public function addEdit(
+    Entite $entite,
+    Request $request,
+    EntityManagerInterface $em,
+    FileUploader $fileUploader,
+    PhotoManager $photoManager,
+    ?Mandataire $mandataire = null
+  ): Response {
     /** @var Utilisateur $user */
     $user = $this->getUser();
 
@@ -117,6 +151,31 @@ class MandataireController extends AbstractController
     $form->handleRequest($request);
 
     if ($form->isSubmitted() && $form->isValid()) {
+      $uploadPath = $this->getParameter('kernel.project_dir') . '/public/uploads/mandataires/logos';
+
+      if (!is_dir($uploadPath)) {
+        mkdir($uploadPath, 0775, true);
+      }
+
+      if ((string) $form->get('removeLogo')->getData() === '1' && $mandataire->getLogo()) {
+        $photoManager->deleteIfExists($uploadPath, $mandataire->getLogo());
+        $mandataire->setLogo(null);
+      }
+
+      $logoFile = $form->get('logoFile')->getData();
+
+      if ($logoFile) {
+        $photoManager->handleSingleImageUpload(
+          $logoFile,
+          fn(string $filename) => $mandataire->setLogo($filename),
+          $fileUploader,
+          $uploadPath,
+          600,
+          400,
+          $mandataire->getLogo()
+        );
+      }
+
       $em->persist($mandataire);
       $em->flush();
 

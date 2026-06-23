@@ -12,6 +12,10 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints as Assert;
 
+use Symfony\Component\Form\Extension\Core\Type\FileType;
+use Symfony\Component\Form\Extension\Core\Type\HiddenType;
+use Symfony\Component\Validator\Constraints\Image;
+
 final class MandataireType extends AbstractType
 {
   public function buildForm(FormBuilderInterface $b, array $o): void
@@ -23,6 +27,30 @@ final class MandataireType extends AbstractType
         'attr' => [
           'class' => 'form-control',
           'placeholder' => 'Nom de la société',
+        ],
+      ])
+
+      ->add('logoFile', FileType::class, [
+        'label' => 'Logo',
+        'mapped' => false,
+        'required' => false,
+        'attr' => [
+          'accept' => 'image/*',
+          'class' => 'd-none js-logo-input',
+        ],
+        'constraints' => [
+          new Image(
+            maxSize: '5M',
+            mimeTypesMessage: 'Le fichier doit être une image valide.',
+            maxSizeMessage: 'Le logo ne doit pas dépasser {{ limit }} {{ suffix }}.'
+          ),
+        ],
+      ])
+      ->add('removeLogo', HiddenType::class, [
+        'mapped' => false,
+        'required' => false,
+        'attr' => [
+          'class' => 'js-remove-logo',
         ],
       ])
       ->add('nom', TextType::class, [

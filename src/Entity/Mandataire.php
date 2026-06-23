@@ -31,6 +31,9 @@ class Mandataire
   #[ORM\Column(length: 180, nullable: true)]
   private ?string $societe = null;
 
+  #[ORM\Column(length: 255, nullable: true)]
+  private ?string $logo = null;
+
   #[ORM\Column(length: 180, nullable: true)]
   private ?string $email = null;
 
@@ -203,5 +206,16 @@ class Mandataire
   public function getUpdatedAt(): ?\DateTimeImmutable
   {
     return $this->updatedAt;
+  }
+
+  public function getLogo(): ?string
+  {
+    return $this->logo;
+  }
+
+  public function setLogo(?string $logo): static
+  {
+    $this->logo = $logo;
+    return $this;
   }
 }

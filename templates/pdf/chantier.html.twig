@@ -10,6 +10,7 @@
     {% set light = '#f6f8fb' %}
     {% set border = '#d8dee8' %}
     {% set logoPath = entite.logo ? absolute_url(asset('uploads/photos/entite/logo/' ~ entite.logo)) : null %}
+    {% set prestatairesAvecLogo = chantier.mandataires|filter(m => m.actif and m.logo)|slice(0, 3) %}
 
     {# --- VARIABLES DE SYNTHÈSE --- #}
     {% set totalHumains = chantier.nbRessourcesHumaines %}
@@ -406,6 +407,44 @@
       max-height: 160px;
       border: 1px solid {{ border }};
     }
+
+    .cover-partners {
+      margin-top: 42px;
+      width: 580px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.22);
+      border-radius: 16px;
+      padding: 14px 16px;
+    }
+
+    .cover-partners-label {
+      font-size: 7px;
+      color: #cbd5e1;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      margin-bottom: 10px;
+    }
+
+    .cover-partners-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 10px 0;
+    }
+
+    .cover-partners-table td {
+      width: 33.33%;
+      height: 72px;
+      background: #ffffff;
+      border-radius: 14px;
+      text-align: center;
+      vertical-align: middle;
+      padding: 8px;
+    }
+
+    .cover-partners-table img {
+      max-width: 150px;
+      max-height: 58px;
+    }
   </style>
 </head>
 <body>
@@ -459,7 +498,39 @@
       </tr>
     </table>
 
-    <div class="cover-category">Compte rendu d’intervention</div>
+    {% if prestatairesAvecLogo|length > 0 %}
+      <div class="cover-partners">
+        <div class="cover-partners-label">Prestataires / Mandataires associés</div>
+
+        <table class="cover-partners-table">
+          <tr>
+            {% for mandataire in prestatairesAvecLogo %}
+              <td>
+                <img
+                  src="{{ absolute_url(asset('uploads/mandataires/logos/' ~ mandataire.logo)) }}"
+                  alt="{{ mandataire.societe ?: mandataire.nom }}"
+                >
+              </td>
+            {% endfor %}
+
+            {% for i in prestatairesAvecLogo|length..2 %}
+              {% if prestatairesAvecLogo|length < 3 %}
+                <td style="background: transparent;"></td>
+              {% endif %}
+            {% endfor %}
+          </tr>
+        </table>
+      </div>
+
+      <div class="cover-category" style="margin-top: 36px;">
+        Compte rendu d’intervention
+      </div>
+    {% else %}
+      <div class="cover-category">
+        Compte rendu d’intervention
+      </div>
+    {% endif %}
+
 
     <div class="cover-title">
       Rapport de chantier

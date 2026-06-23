@@ -440,6 +440,7 @@
       <thead>
         <tr>
           <th>#</th>
+          <th>Logo</th>
           <th>Société</th>
           <th>Nom</th>
           <th>Email</th>
@@ -621,6 +622,7 @@
 
         columns:[
           {data:'id', name:'id'},
+          {data:'logo', name:'logo', orderable:false, searchable:false},
           {data:'societe', name:'societe'},
           {data:'nom', name:'nom'},
           {data:'email', name:'email'},
@@ -647,11 +649,10 @@
         ],
 
         columnDefs:[
-          {targets:7, className:'action-column text-end', orderable:false, searchable:false},
-          {targets:[1,2,3,4,5,6], className:'text-center'}
+          {targets:8, className:'action-column text-end', orderable:false, searchable:false},
+          {targets:[1,2,3,4,5,6,7], className:'text-center'}
         ],
-
-        order:[[1,'asc']],
+        order:[[2,'asc']],
         language:{ url:'https://cdn.datatables.net/plug-ins/2.2.2/i18n/fr-FR.json' },
 
         initComplete:function(){

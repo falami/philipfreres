@@ -41,6 +41,19 @@ class Chantier
     #[Assert\Length(max: 180, maxMessage: 'La nomination chantier ne peut pas dépasser {{ limit }} caractères.')]
     private ?string $nominationChantier = null;
 
+
+    #[ORM\Column(nullable: true)]
+    #[Assert\PositiveOrZero(message: 'La saison doit être un chiffre positif.')]
+    private ?int $saison = null;
+
+    #[ORM\Column(nullable: true)]
+    #[Assert\Range(
+        min: 2000,
+        max: 2100,
+        notInRangeMessage: 'L’année doit être comprise entre {{ min }} et {{ max }}.'
+    )]
+    private ?int $annee = null;
+
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $adresse = null;
 
@@ -571,6 +584,28 @@ class Chantier
     {
         $this->mandataires->removeElement($mandataire);
 
+        return $this;
+    }
+
+    public function getSaison(): ?int
+    {
+        return $this->saison;
+    }
+
+    public function setSaison(?int $saison): static
+    {
+        $this->saison = $saison;
+        return $this;
+    }
+
+    public function getAnnee(): ?int
+    {
+        return $this->annee;
+    }
+
+    public function setAnnee(?int $annee): static
+    {
+        $this->annee = $annee;
         return $this;
     }
 }
