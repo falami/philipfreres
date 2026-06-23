@@ -886,87 +886,108 @@
     <div class="keep-together">
       <h3>{{ zone.nom }} {% if p.titre %}- {{ p.titre }}{% endif %}</h3>
       
-      {% set hasApres = p.photoApres is not empty %}
-
       <table class="photo-table w-100">
         <tr>
-          <th style="background: {{ primary }}; color: #fff;" {% if not hasApres %}colspan="2"{% endif %}>
-            Avant intervention
-          </th>
-
-          {% if hasApres %}
             <th style="background: {{ primary }}; color: #fff;">
-              Après intervention
+                Avant intervention
             </th>
-          {% endif %}
+
+            <th style="background: {{ primary }}; color: #fff;">
+                Après intervention
+            </th>
         </tr>
 
         <tr>
-          <td class="photo-cell" {% if not hasApres %}colspan="2"{% endif %}>
-            {% if p.photoAvant %}
-              <img src="{{ absolute_url(asset('uploads/photos/chantiers/' ~ p.photoAvant)) }}">
-            {% else %}
-              <span style="color: #9ca3af;">Photo absente</span>
-            {% endif %}
-          </td>
-
-          {% if hasApres %}
             <td class="photo-cell">
-              <img src="{{ absolute_url(asset('uploads/photos/chantiers/' ~ p.photoApres)) }}">
+                {% if p.photoAvant %}
+                    <img src="{{ absolute_url(asset('uploads/photos/chantiers/' ~ p.photoAvant)) }}">
+                {% else %}
+                    <span style="color:#9ca3af;font-style:italic;">
+                        Champ non renseigné
+                    </span>
+                {% endif %}
             </td>
-          {% endif %}
+
+            <td class="photo-cell">
+                {% if p.photoApres %}
+                    <img src="{{ absolute_url(asset('uploads/photos/chantiers/' ~ p.photoApres)) }}">
+                {% else %}
+                    <span style="color:#9ca3af;font-style:italic;">
+                        Champ non renseigné
+                    </span>
+                {% endif %}
+            </td>
         </tr>
 
         <tr>
-          <td class="map-cell" {% if not hasApres %}colspan="2"{% endif %}>
-            {% set mapAvant = photoMaps[p.id].avant ?? null %}
-
-            {% if mapAvant %}
-              <img src="{{ mapAvant }}" alt="Carte photo avant">
-            {% else %}
-              <span style="color: #9ca3af;">Carte indisponible</span>
-            {% endif %}
-          </td>
-
-          {% if hasApres %}
             <td class="map-cell">
-              {% set mapApres = photoMaps[p.id].apres ?? null %}
+                {% set mapAvant = photoMaps[p.id].avant ?? null %}
 
-              {% if mapApres %}
-                <img src="{{ mapApres }}" alt="Carte photo après">
-              {% else %}
-                <span style="color: #9ca3af;">Carte indisponible</span>
-              {% endif %}
+                {% if mapAvant %}
+                    <img src="{{ mapAvant }}" alt="Carte photo avant">
+                {% else %}
+                    <span style="color:#9ca3af;font-style:italic;">
+                        Champ non renseigné
+                    </span>
+                {% endif %}
             </td>
-          {% endif %}
+
+            <td class="map-cell">
+                {% set mapApres = photoMaps[p.id].apres ?? null %}
+
+                {% if p.photoApres and mapApres %}
+                    <img src="{{ mapApres }}" alt="Carte photo après">
+                {% else %}
+                    <span style="color:#9ca3af;font-style:italic;">
+                        Champ non renseigné
+                    </span>
+                {% endif %}
+            </td>
         </tr>
 
         <tr>
-          <td class="photo-meta" {% if not hasApres %}colspan="2"{% endif %}>
-            <strong>Date :</strong> {{ p.datePriseVueAvant ? p.datePriseVueAvant|date('d/m/Y') : '-' }}<br>
-            <strong>Adresse :</strong> {{ p.adresseAvant ?: '-' }}<br>
-            <strong>GPS :</strong>
-            {{ p.latitudeAvant and p.longitudeAvant ? p.latitudeAvant ~ ', ' ~ p.longitudeAvant : '-' }}
-          </td>
-
-          {% if hasApres %}
             <td class="photo-meta">
-              <strong>Date :</strong> {{ p.datePriseVueApres ? p.datePriseVueApres|date('d/m/Y') : '-' }}<br>
-              <strong>Adresse :</strong> {{ p.adresseApres ?: '-' }}<br>
-              <strong>GPS :</strong>
-              {{ p.latitudeApres and p.longitudeApres ? p.latitudeApres ~ ', ' ~ p.longitudeApres : '-' }}
+                <strong>Date :</strong>
+                {{ p.datePriseVueAvant ? p.datePriseVueAvant|date('d/m/Y') : 'Champ non renseigné' }}
+                <br>
+
+                <strong>Adresse :</strong>
+                {{ p.adresseAvant ?: 'Champ non renseigné' }}
+                <br>
+
+                <strong>GPS :</strong>
+                {{ p.latitudeAvant and p.longitudeAvant
+                    ? p.latitudeAvant ~ ', ' ~ p.longitudeAvant
+                    : 'Champ non renseigné'
+                }}
             </td>
-          {% endif %}
+
+            <td class="photo-meta">
+                <strong>Date :</strong>
+                {{ p.datePriseVueApres ? p.datePriseVueApres|date('d/m/Y') : 'Champ non renseigné' }}
+                <br>
+
+                <strong>Adresse :</strong>
+                {{ p.adresseApres ?: 'Champ non renseigné' }}
+                <br>
+
+                <strong>GPS :</strong>
+                {{ p.latitudeApres and p.longitudeApres
+                    ? p.latitudeApres ~ ', ' ~ p.longitudeApres
+                    : 'Champ non renseigné'
+                }}
+            </td>
         </tr>
 
         {% if p.commentaire %}
-          <tr>
-            <td colspan="2" style="border: 1px solid {{ border }}; padding: 8px; font-style: italic;">
-              <strong>Note :</strong> {{ p.commentaire }}
-            </td>
-          </tr>
+            <tr>
+                <td colspan="2"
+                    style="border:1px solid {{ border }};padding:8px;font-style:italic;">
+                    <strong>Note :</strong> {{ p.commentaire }}
+                </td>
+            </tr>
         {% endif %}
-      </table>
+    </table>
     </div>
   {% endfor %}
 {% endfor %}
