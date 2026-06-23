@@ -26,6 +26,16 @@
       --radius: 18px;
     }
 
+    html,
+    body {
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
+    .row {
+      --bs-gutter-x: 1rem;
+    }
+
     body{
       background: var(--bg);
     }
@@ -866,11 +876,16 @@
       box-shadow:0 12px 28px rgba(15,23,42,.06);
     }
 
+    .dynamic-table-wrap{
+      overflow-x: auto;
+      overflow-y: visible;
+      max-width: 100%;
+    }
+
     .dynamic-table{
-      width:100%;
-      min-width:720px;
-      border-collapse:separate;
-      border-spacing:0;
+      width: 100%;
+      min-width: 0;
+      table-layout: fixed;
     }
 
     .dynamic-table th,
@@ -931,6 +946,99 @@
     .remove-column-btn:hover{
       background:#dc3545;
       color:#fff;
+    }
+
+    .mandataire-premium-label{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:1rem;
+      margin-bottom:.45rem;
+    }
+
+    .btn-add-mandataire{
+      border:0;
+      border-radius:999px;
+      padding:.45rem .8rem;
+      font-size:.82rem;
+      font-weight:900;
+      color:var(--theme-color-principal);
+      background:
+        linear-gradient(135deg,
+          color-mix(in srgb, var(--theme-color-secondaire) 95%, #fff),
+          color-mix(in srgb, var(--theme-color-secondaire) 55%, #fff)
+        );
+      box-shadow:0 10px 24px rgba(15,23,42,.14);
+    }
+
+    .btn-add-mandataire:hover{
+      transform:translateY(-1px);
+      box-shadow:0 14px 30px rgba(15,23,42,.18);
+    }
+
+    .mandataire-modal-card{
+      border:0;
+      border-radius:28px;
+      overflow:hidden;
+      box-shadow:0 30px 90px rgba(15,23,42,.28);
+    }
+
+    .mandataire-modal-hero{
+      padding:1.4rem;
+      color:#fff;
+      background:
+        radial-gradient(800px 260px at 0% 0%, rgba(255,193,7,.28), transparent 60%),
+        linear-gradient(135deg, var(--theme-color-principal), color-mix(in srgb, var(--theme-color-principal) 72%, #fff));
+    }
+
+    .mandataire-modal-icon{
+      width:54px;
+      height:54px;
+      border-radius:18px;
+      display:grid;
+      place-items:center;
+      background:rgba(255,255,255,.14);
+      border:1px solid rgba(255,255,255,.18);
+      color:var(--theme-color-secondaire);
+      font-size:1.45rem;
+    }
+
+    .mandataire-modal-title{
+      font-weight:950;
+      letter-spacing:-.03em;
+    }
+
+    .mandataire-modal-subtitle{
+      color:rgba(255,255,255,.76);
+      font-size:.92rem;
+    }
+
+    .mandataire-logo-drop{
+      border:1.5px dashed rgba(15,23,42,.16);
+      border-radius:22px;
+      background:linear-gradient(180deg, #fff, #f8fafc);
+      min-height:150px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      cursor:pointer;
+    }
+
+    .mandataire-logo-drop:hover{
+      border-color:rgba(255,193,7,.55);
+      box-shadow:0 0 0 .25rem rgba(255,193,7,.12);
+    }
+
+    .mandataire-logo-preview{
+      max-width:180px;
+      max-height:95px;
+      object-fit:contain;
+    }
+
+    .mandataire-error{
+      border-radius:16px;
+      font-weight:700;
     }
   </style>
 {% endblock %}
@@ -1047,7 +1155,24 @@
             <div class="col-md-4">{{ form_row(form.statut) }}</div>
 
 
-            <div class="col-md-12">{{ form_row(form.mandataires) }}</div>
+            <div class="col-md-12">
+              <div class="mandataire-premium-field">
+                <div class="mandataire-premium-label">
+                  {{ form_label(form.mandataires) }}
+
+                  <button type="button"
+                          class="btn-add-mandataire"
+                          data-bs-toggle="modal"
+                          data-bs-target="#mandataireQuickModal">
+                    <i class="bi bi-plus-lg"></i>
+                    Nouveau mandataire
+                  </button>
+                </div>
+
+                {{ form_widget(form.mandataires) }}
+                {{ form_errors(form.mandataires) }}
+              </div>
+            </div>
 
             <div class="col-md-6">{{ form_row(form.adresse) }}</div>
             <div class="col-md-6">{{ form_row(form.complement) }}</div>
@@ -1426,6 +1551,114 @@
       </div>
     </div>
   </div>
+
+
+
+
+
+
+  <div class="modal fade" id="mandataireQuickModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content mandataire-modal-card">
+
+      <div class="mandataire-modal-hero">
+        <div class="d-flex align-items-center gap-3">
+          <div class="mandataire-modal-icon">
+            <i class="bi bi-person-vcard"></i>
+          </div>
+
+          <div class="flex-grow-1">
+            <div class="mandataire-modal-title h4 mb-1">
+              Nouveau mandataire
+            </div>
+            <div class="mandataire-modal-subtitle">
+              Ajoute rapidement un prestataire ou mandataire sans quitter le chantier.
+            </div>
+          </div>
+
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+      </div>
+
+      <div class="modal-body p-4">
+        <form id="quickMandataireForm" enctype="multipart/form-data">
+          <input type="hidden" name="_token" value="{{ csrf_token('chantier_inline_mandataire') }}">
+
+          <div class="alert alert-danger d-none mandataire-error" id="quickMandataireError"></div>
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Société</label>
+              <input type="text" class="form-control" name="societe" placeholder="Ex : Philip Frères">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Nom du mandataire *</label>
+              <input type="text" class="form-control" name="nom" required placeholder="Nom du contact">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-control" name="email" placeholder="contact@societe.fr">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Téléphone</label>
+              <input type="text" class="form-control" name="telephone" placeholder="06 00 00 00 00">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Adresse</label>
+              <input type="text" class="form-control" name="adresse" placeholder="Adresse complète">
+            </div>
+
+            <div class="col-md-2">
+              <label class="form-label">CP</label>
+              <input type="text" class="form-control" name="codePostal" placeholder="30100">
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Ville</label>
+              <input type="text" class="form-control" name="ville" placeholder="Ville">
+            </div>
+
+            <div class="col-md-12">
+              <label class="form-label">Logo</label>
+
+              <label class="mandataire-logo-drop">
+                <input type="file" name="logoFile" id="quickMandataireLogo" class="d-none" accept="image/*">
+
+                <div id="quickMandataireLogoEmpty">
+                  <i class="bi bi-cloud-arrow-up fs-2 text-warning"></i>
+                  <div class="fw-bold mt-2">Déposer ou sélectionner un logo</div>
+                  <div class="text-muted small">PNG, JPG, WEBP — maximum 5 Mo</div>
+                </div>
+
+                <img src="" class="mandataire-logo-preview d-none" id="quickMandataireLogoPreview">
+              </label>
+            </div>
+
+            <div class="col-md-12">
+              <label class="form-label">Commentaire</label>
+              <textarea class="form-control" name="commentaire" rows="3" placeholder="Notes internes..."></textarea>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer border-0 px-4 pb-4">
+        <button type="button" class="btn btn-light fw-bold" data-bs-dismiss="modal">
+          Annuler
+        </button>
+
+        <button type="button" class="btn btn-warning fw-bold" id="quickMandataireSubmit">
+          <i class="bi bi-check2-circle me-1"></i>
+          Créer et sélectionner
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
 
   <script>
@@ -3228,8 +3461,8 @@
     });
 
     document.getElementById('addDynamicColumn')?.addEventListener('click', function(){
-      if(data.columns.length >= 10) {
-        alert('Tu peux ajouter jusqu’à 10 colonnes maximum.');
+      if(data.columns.length >= 5) {
+        alert('Tu peux ajouter jusqu’à 5 colonnes maximum.');
         return;
       }
 
@@ -3274,5 +3507,105 @@
 
     render();
   });
+</script>
+
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const modalEl = document.getElementById('mandataireQuickModal');
+  const form = document.getElementById('quickMandataireForm');
+  const submitBtn = document.getElementById('quickMandataireSubmit');
+  const errorBox = document.getElementById('quickMandataireError');
+  const logoInput = document.getElementById('quickMandataireLogo');
+  const logoPreview = document.getElementById('quickMandataireLogoPreview');
+  const logoEmpty = document.getElementById('quickMandataireLogoEmpty');
+
+  if (!modalEl || !form || !submitBtn) return;
+
+  logoInput?.addEventListener('change', function () {
+    const file = this.files?.[0];
+
+    if (!file || !file.type.startsWith('image/')) return;
+
+    const reader = new FileReader();
+
+    reader.onload = e => {
+      logoPreview.src = e.target.result;
+      logoPreview.classList.remove('d-none');
+      logoEmpty.classList.add('d-none');
+    };
+
+    reader.readAsDataURL(file);
+  });
+
+  function showMandataireError(message) {
+    errorBox.textContent = message || 'Une erreur est survenue.';
+    errorBox.classList.remove('d-none');
+  }
+
+  function clearMandataireError() {
+    errorBox.textContent = '';
+    errorBox.classList.add('d-none');
+  }
+
+  submitBtn.addEventListener('click', async function () {
+    clearMandataireError();
+
+    const nom = form.querySelector('[name="nom"]')?.value.trim();
+
+    if (!nom) {
+      showMandataireError('Le nom du mandataire est obligatoire.');
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Création...';
+
+    try {
+      const response = await fetch('{{ path('app_administrateur_chantier_ajax_mandataire_creer', { entite: entite.id }) }}', {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: new FormData(form)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.message || 'Impossible de créer le mandataire.');
+      }
+
+      const select = document.querySelector('.js-ts-mandataires');
+
+      if (select?.tomselect) {
+        select.tomselect.addOption({
+          value: String(data.id),
+          text: data.label
+        });
+
+        select.tomselect.addItem(String(data.id));
+        select.tomselect.refreshOptions(false);
+      } else if (select) {
+        const option = new Option(data.label, data.id, true, true);
+        select.add(option);
+      }
+
+      form.reset();
+      logoPreview.src = '';
+      logoPreview.classList.add('d-none');
+      logoEmpty.classList.remove('d-none');
+
+      bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+
+    } catch (error) {
+      showMandataireError(error.message);
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Créer et sélectionner';
+    }
+  });
+});
 </script>
 {% endblock %}

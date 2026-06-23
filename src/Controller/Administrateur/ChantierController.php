@@ -883,4 +883,96 @@ SVG;
       throw $this->createAccessDeniedException('Seul un administrateur peut créer, supprimer ou affecter un chantier.');
     }
   }
+
+  #[Route('/ajax/mandataire/creer', name: 'app_administrateur_chantier_ajax_mandataire_creer', methods: ['POST'])]
+  public function ajaxCreateMandataire(
+    Entite $entite,
+    Request $request,
+    EM $em,
+    MandataireRepository $mandataireRepo,
+  ): JsonResponse {
+    /** @var Utilisateur $user */
+    $user = $this->getUser();
+
+    if (!$this->isCsrfTokenValid('chantier_inline_mandataire', (string) $request->request->get('_token'))) {
+      return new JsonResponse([
+        'ok' => false,
+        'message' => 'Jeton CSRF invalide.',
+      ], 403);
+    }
+
+    $nom = trim((string) $request->request->get('nom', ''));
+    $societe = trim((string) $request->request->get('societe', ''));
+    $email = trim((string) $request->request->get('email', ''));
+    $telephone = trim((string) $request->request->get('telephone', ''));
+    $adresse = trim((string) $request->request->get('adresse', ''));
+    $codePostal = trim((string) $request->request->get('codePostal', ''));
+    $ville = trim((string) $request->request->get('ville', ''));
+    $commentaire = trim((string) $request->request->get('commentaire', ''));
+
+    if ($nom === '') {
+      return new JsonResponse([
+        'ok' => false,
+        'message' => 'Le nom du mandataire est obligatoire.',
+      ], 400);
+    }
+
+    $existing = $mandataireRepo->createQueryBuilder('m')
+      ->andWhere('m.entite = :entite')
+      ->andWhere('LOWER(m.nom) = :nom')
+      ->andWhere('LOWER(COALESCE(m.societe, \'\')) = :societe')
+      ->setParameter('entite', $entite)
+      ->setParameter('nom', mb_strtolower($nom))
+      ->setParameter('societe', mb_strtolower($societe))
+      ->setMaxResults(1)
+      ->getQuery()
+      ->getOneOrNullResult();
+
+    if ($existing instanceof Mandataire) {
+      return new JsonResponse([
+        'ok' => false,
+        'message' => 'Ce mandataire existe déjà pour cette entité.',
+      ], 409);
+    }
+
+    $mandataire = new Mandataire();
+    $mandataire
+      ->setEntite($entite)
+      ->setCreateur($user)
+      ->setNom($nom)
+      ->setSociete($societe ?: null)
+      ->setEmail($email ?: null)
+      ->setTelephone($telephone ?: null)
+      ->setAdresse($adresse ?: null)
+      ->setCodePostal($codePostal ?: null)
+      ->setVille($ville ?: null)
+      ->setCommentaire($commentaire ?: null)
+      ->setActif(true);
+
+    $logoFile = $request->files->get('logoFile');
+
+    if ($logoFile) {
+      $uploadDir = $this->getParameter('kernel.project_dir') . '/public/uploads/mandataires/logos';
+
+      if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0775, true);
+      }
+
+      $extension = $logoFile->guessExtension() ?: 'jpg';
+      $filename = 'mandataire-' . uniqid('', true) . '.' . $extension;
+
+      $logoFile->move($uploadDir, $filename);
+
+      $mandataire->setLogo($filename);
+    }
+
+    $em->persist($mandataire);
+    $em->flush();
+
+    return new JsonResponse([
+      'ok' => true,
+      'id' => $mandataire->getId(),
+      'label' => (string) $mandataire,
+    ]);
+  }
 }
