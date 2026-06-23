@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Enum\ChantierStatut;
+use App\Entity\Mandataire;
 use App\Repository\ChantierRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -31,6 +32,14 @@ class Chantier
     #[Assert\NotBlank(message: 'Le nom du chantier est obligatoire.')]
     #[Assert\Length(max: 180, maxMessage: 'Le nom du chantier ne peut pas dépasser {{ limit }} caractères.')]
     private ?string $nom = null;
+
+    #[ORM\Column(length: 80, nullable: true)]
+    #[Assert\Length(max: 80, maxMessage: 'Le code chantier ne peut pas dépasser {{ limit }} caractères.')]
+    private ?string $codeChantier = null;
+
+    #[ORM\Column(length: 180, nullable: true)]
+    #[Assert\Length(max: 180, maxMessage: 'La nomination chantier ne peut pas dépasser {{ limit }} caractères.')]
+    private ?string $nominationChantier = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $adresse = null;
@@ -79,11 +88,21 @@ class Chantier
     #[ORM\InverseJoinColumn(name: 'utilisateur_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     private Collection $utilisateursAffectes;
 
+
+    #[ORM\ManyToMany(targetEntity: Mandataire::class)]
+    #[ORM\JoinTable(name: 'chantier_mandataire')]
+    #[ORM\JoinColumn(name: 'chantier_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
+    #[ORM\InverseJoinColumn(name: 'mandataire_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
+    private Collection $mandataires;
+
+
+
     public function __construct()
     {
         $this->dateCreation = new \DateTimeImmutable();
         $this->zones = new ArrayCollection();
         $this->utilisateursAffectes = new ArrayCollection();
+        $this->mandataires = new ArrayCollection();
     }
 
     #[ORM\PrePersist]
@@ -134,6 +153,28 @@ class Chantier
     public function setNom(?string $nom): static
     {
         $this->nom = trim((string) $nom);
+        return $this;
+    }
+
+    public function getCodeChantier(): ?string
+    {
+        return $this->codeChantier;
+    }
+
+    public function setCodeChantier(?string $codeChantier): static
+    {
+        $this->codeChantier = $codeChantier ? trim($codeChantier) : null;
+        return $this;
+    }
+
+    public function getNominationChantier(): ?string
+    {
+        return $this->nominationChantier;
+    }
+
+    public function setNominationChantier(?string $nominationChantier): static
+    {
+        $this->nominationChantier = $nominationChantier ? trim($nominationChantier) : null;
         return $this;
     }
 
@@ -507,5 +548,29 @@ class Chantier
     public function isAffecteA(Utilisateur $utilisateur): bool
     {
         return $this->utilisateursAffectes->contains($utilisateur);
+    }
+
+    /**
+     * @return Collection<int, Mandataire>
+     */
+    public function getMandataires(): Collection
+    {
+        return $this->mandataires;
+    }
+
+    public function addMandataire(Mandataire $mandataire): static
+    {
+        if (!$this->mandataires->contains($mandataire)) {
+            $this->mandataires->add($mandataire);
+        }
+
+        return $this;
+    }
+
+    public function removeMandataire(Mandataire $mandataire): static
+    {
+        $this->mandataires->removeElement($mandataire);
+
+        return $this;
     }
 }

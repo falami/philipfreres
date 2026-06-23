@@ -1,0 +1,688 @@
+{# templates/administrateur/mandataire/form.html.twig #}
+{% extends 'base_admin.html.twig' %}
+{% set is_edit = modeEdition ?? false %}
+
+{% block title %}{{ is_edit ? 'Modification' : 'Ajout' }} d’un mandataire{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+
+  <link rel="stylesheet" href="{{ asset('dist/css/style.css') }}">
+  <link rel="stylesheet" href="{{ asset('dist/css/formulaire.css') }}">
+
+  <style>
+    :root{
+      --theme-color-principal: {{ themeColorPrimaire|default(entite.couleurPrincipal|default('#233342')) }};
+      --theme-color-secondaire: {{ themeColorSecondaire|default(entite.couleurSecondaire|default('#ffc107')) }};
+      --theme-color-tertiaire: {{ themeColorTertiaire|default(entite.couleurTertiaire|default('#F0F0F0')) }};
+      --theme-color-quaternaire: {{ couleurQuaternaire|default(entite.couleurQuaternaire|default('#000000')) }};
+
+      --bg:#f5f7fb;
+      --panel:#fff;
+      --ink:#0f172a;
+      --muted:#64748b;
+      --stroke:rgba(15,23,42,.10);
+      --shadow:0 18px 55px rgba(15,23,42,.10);
+      --radius:18px;
+    }
+
+    body{ background:var(--bg); }
+
+    .hero{
+      border-radius:22px;
+      padding:1.2rem;
+      position:relative;
+      overflow:hidden;
+      color:#fff;
+      box-shadow:0 18px 50px rgba(0,0,0,.14);
+      background:
+        radial-gradient(1200px 420px at 12% -10%,
+          color-mix(in srgb, var(--theme-color-tertiaire) 35%, transparent),
+          transparent 58%
+        ),
+        radial-gradient(900px 380px at 92% 0%,
+          color-mix(in srgb, var(--theme-color-secondaire) 32%, transparent),
+          transparent 60%
+        ),
+        radial-gradient(700px 260px at 55% 115%,
+          color-mix(in srgb, var(--theme-color-quaternaire) 18%, transparent),
+          transparent 62%
+        ),
+        linear-gradient(135deg,
+          color-mix(in srgb, var(--theme-color-principal) 92%, #000 8%),
+          color-mix(in srgb, var(--theme-color-principal) 70%, #fff 30%)
+        );
+    }
+
+    .hero::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,0) 55%);
+      opacity:.85;
+    }
+
+    .hero .accent{
+      width:12px;
+      border-radius:999px;
+      background:var(--theme-color-secondaire);
+      box-shadow:0 0 0 6px color-mix(in srgb, var(--theme-color-secondaire) 18%, transparent);
+      flex:0 0 auto;
+    }
+
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:.45rem;
+      padding:.28rem .65rem;
+      border-radius:999px;
+      font-size:.82rem;
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.14);
+      color:rgba(255,255,255,.92);
+      white-space:nowrap;
+    }
+
+    .chip i{ color:var(--theme-color-secondaire); }
+
+    .hero .btn{
+      border-radius:14px;
+      font-weight:800;
+    }
+
+    .btn-outline-theme,
+    .hero .btn-outline-theme{
+      border-color:rgba(255,255,255,.35);
+      color:#fff;
+    }
+
+    .btn-outline-theme:hover,
+    .hero .btn-outline-theme:hover{
+      background:rgba(255,255,255,.10);
+      border-color:rgba(255,255,255,.55);
+      color:#fff;
+    }
+
+    .cardx{
+      background:var(--panel);
+      border:1px solid var(--stroke);
+      border-radius:var(--radius);
+      box-shadow:0 10px 28px rgba(15,23,42,.08);
+      overflow:hidden;
+    }
+
+    .cardx-h{
+      padding:.95rem 1.05rem;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:1rem;
+      background:linear-gradient(180deg, rgba(0,0,0,.015), transparent);
+      border-bottom:1px solid var(--stroke);
+    }
+
+    .cardx-title{
+      margin:0;
+      font-weight:800;
+      letter-spacing:-.01em;
+      color:var(--ink);
+      display:flex;
+      align-items:center;
+      gap:.6rem;
+    }
+
+    label.form-label{
+      font-weight:700;
+      color:var(--ink);
+    }
+
+    .form-text,
+    .text-muted,
+    .small{
+      color:var(--muted)!important;
+    }
+
+    .form-control,
+    .form-select{
+      border-radius:14px;
+      border:1px solid var(--stroke);
+      padding:.65rem .85rem;
+      min-height:44px;
+    }
+
+    textarea.form-control{
+      min-height:130px;
+      resize:vertical;
+    }
+
+    .form-control:focus,
+    .form-select:focus{
+      border-color:color-mix(in srgb, var(--theme-color-principal) 55%, var(--stroke));
+      box-shadow:0 0 0 .2rem color-mix(in srgb, var(--theme-color-principal) 18%, transparent);
+    }
+
+    .soft-box{
+      border-radius:16px;
+      border:1px dashed rgba(15,35,54,.18);
+      background:rgba(248,251,254,.75);
+      padding:1rem;
+    }
+
+    .sticky-actions{
+      position:sticky;
+      bottom:14px;
+      z-index:5;
+      background:color-mix(in srgb, var(--panel) 82%, transparent);
+      backdrop-filter:blur(10px);
+      border:1px solid var(--stroke);
+      border-radius:var(--radius);
+      padding:.75rem;
+      box-shadow:var(--shadow);
+    }
+
+    .resume-box{
+      border-color:var(--stroke)!important;
+      background:linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--theme-color-principal) 8%, transparent),
+        transparent
+      );
+    }
+
+    .resume-line{
+      display:flex;
+      justify-content:space-between;
+      gap:1rem;
+      padding:.35rem 0;
+    }
+
+    .resume-line span:last-child{
+      text-align:right;
+      font-weight:700;
+      color:var(--ink);
+      word-break:break-word;
+    }
+
+    .status-pill{
+      border:1px solid var(--stroke);
+      background:rgba(255,193,7,.15);
+      color:var(--ink);
+    }
+
+    .btn-gradient{
+      border:0;
+      color:#fff;
+      font-weight:800;
+      border-radius:14px;
+      background:linear-gradient(135deg,
+        color-mix(in srgb, var(--theme-color-principal) 88%, #000 12%),
+        color-mix(in srgb, var(--theme-color-secondaire) 75%, var(--theme-color-principal) 25%)
+      );
+      box-shadow:0 12px 26px color-mix(in srgb, var(--theme-color-principal) 20%, transparent);
+    }
+
+    .btn-gradient:hover{
+      color:#fff;
+      transform:translateY(-1px);
+      box-shadow:0 16px 34px color-mix(in srgb, var(--theme-color-principal) 25%, transparent);
+    }
+
+    .form-check-input{
+      width:2.7em;
+      height:1.35em;
+      cursor:pointer;
+    }
+
+    .form-check-input:checked{
+      background-color:var(--theme-color-secondaire);
+      border-color:var(--theme-color-secondaire);
+    }
+
+    @media (max-width:768px){
+      .hero{ border-radius:16px; }
+      .cardx-h{
+        align-items:flex-start;
+        flex-direction:column;
+      }
+    }
+
+    .invalid-feedback,
+    .form-error-message,
+    .form-error-icon,
+    ul.form-error-message,
+    .form-error-message li{
+      font-size:.85rem;
+      font-weight:700;
+      color:#842029;
+    }
+
+    .form-error-message,
+    .invalid-feedback{
+      margin-top:.45rem;
+      border-radius:14px;
+      padding:.65rem .75rem;
+      background:rgba(220,53,69,.10);
+      border:1px solid rgba(220,53,69,.20);
+      box-shadow:0 8px 18px rgba(220,53,69,.06);
+    }
+
+    .form-control.is-invalid,
+    .was-validated .form-control:invalid{
+      border-color:rgba(220,53,69,.55)!important;
+      box-shadow:0 0 0 .2rem rgba(220,53,69,.12)!important;
+    }
+
+    .premium-field-error{
+      margin-top:.45rem;
+      border-radius:14px;
+      padding:.65rem .75rem;
+      background:rgba(220,53,69,.10);
+      border:1px solid rgba(220,53,69,.20);
+      box-shadow:0 8px 18px rgba(220,53,69,.06);
+      color:#842029;
+      font-size:.85rem;
+      font-weight:700;
+    }
+  </style>
+{% endblock %}
+
+{% block body %}
+
+  <div class="hero p-3 mb-4 d-flex gap-3">
+    <div class="accent"></div>
+
+    <div class="flex-grow-1">
+      <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+        <div>
+          <h2 class="m-0 fw-bold">
+            <i class="bi bi-person-vcard me-2" style="color:var(--theme-color-secondaire)"></i>
+            {{ is_edit ? 'Modifier un mandataire' : 'Créer un mandataire' }}
+          </h2>
+
+          <div class="opacity-75 mt-1">
+            {{ is_edit
+              ? 'Mettre à jour les informations du mandataire.'
+              : 'Créer un mandataire rattaché à cette entité.'
+            }}
+          </div>
+
+          <div class="d-flex gap-2 flex-wrap mt-3">
+            <span class="chip"><i class="bi bi-building"></i> {{ entite.nom }}</span>
+            <span class="chip"><i class="bi bi-shield-check"></i> Admin</span>
+            <span class="chip"><i class="bi bi-clock"></i> {{ is_edit ? 'Mode édition' : 'Mode création' }}</span>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <a href="{{ path('app_administrateur_mandataire_index', { entite: entite.id }) }}"
+             class="btn btn-outline-light btn-sm fw-semibold">
+            <i class="bi bi-arrow-left me-1"></i> Retour
+          </a>
+
+          <button type="button"
+                  class="btn btn-light btn-sm fw-semibold"
+                  onclick="window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'})">
+            <i class="bi bi-arrow-down me-1"></i> Actions
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% include 'flagMessage.html.twig' %}
+
+  {{ form_start(form, { attr: { novalidate: 'novalidate', id: 'mandataireForm' } }) }}
+  {{ form_errors(form) }}
+
+  <div class="row g-4">
+
+    <div class="col-lg-8">
+
+      <div class="cardx mb-4">
+        <div class="cardx-h">
+          <h5 class="cardx-title">
+            <i class="bi bi-person-vcard text-warning"></i>
+            Informations générales
+          </h5>
+          <span class="chip">Étape 1</span>
+        </div>
+
+        <div class="p-3 p-md-4">
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              {{ form_row(form.societe) }}
+            </div>
+
+            <div class="col-12 col-md-6">
+              {{ form_row(form.nom) }}
+            </div>
+
+            <div class="col-12 col-md-6">
+              {{ form_row(form.email) }}
+            </div>
+
+            <div class="col-12 col-md-6">
+              {{ form_row(form.telephone) }}
+            </div>
+          </div>
+
+          <div class="form-text mt-2">
+            Le nom du mandataire est obligatoire. La société, l’email et le téléphone sont optionnels.
+          </div>
+        </div>
+      </div>
+
+      <div class="cardx mb-4">
+        <div class="cardx-h">
+          <h5 class="cardx-title">
+            <i class="bi bi-geo-alt text-warning"></i>
+            Coordonnées
+          </h5>
+          <span class="chip">Étape 2</span>
+        </div>
+
+        <div class="p-3 p-md-4">
+          <div class="row g-3">
+            <div class="col-12">
+              {{ form_row(form.adresse) }}
+            </div>
+
+            <div class="col-12 col-md-4">
+              {{ form_row(form.codePostal) }}
+            </div>
+
+            <div class="col-12 col-md-8">
+              {{ form_row(form.ville) }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cardx mb-4">
+        <div class="cardx-h">
+          <h5 class="cardx-title">
+            <i class="bi bi-chat-left-text text-warning"></i>
+            Informations complémentaires
+          </h5>
+          <span class="chip">Options</span>
+        </div>
+
+        <div class="p-3 p-md-4">
+          <div class="row g-3">
+            <div class="col-12">
+              {{ form_row(form.commentaire) }}
+            </div>
+
+            <div class="col-12">
+              <div class="soft-box">
+                <div class="d-flex align-items-start justify-content-between gap-3">
+                  <div class="flex-grow-1">
+                    <div class="fw-semibold">Mandataire actif</div>
+                    <div class="text-muted small mt-1">
+                      Désactive ce mandataire si tu veux le conserver sans l’utiliser dans les sélections.
+                    </div>
+                  </div>
+
+                  <div class="form-check form-switch m-0">
+                    {{ form_widget(form.actif, { attr: { class: 'form-check-input' } }) }}
+                  </div>
+                </div>
+
+                {{ form_errors(form.actif) }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-end gap-2 mt-3 mb-4">
+        <a href="{{ path('app_administrateur_mandataire_index', { entite: entite.id }) }}"
+           class="btn btn-secondary">
+          <i class="bi bi-arrow-left"></i> Retour
+        </a>
+
+        <button type="submit" class="btn btn-gradient" id="btnBottomSubmit">
+          <i class="bi bi-check"></i>
+          {{ is_edit ? 'Modifier & Terminer' : 'Créer & Terminer' }}
+        </button>
+      </div>
+
+    </div>
+
+    <div class="col-lg-4">
+
+      <div class="cardx mb-4">
+        <div class="cardx-h">
+          <h5 class="cardx-title">
+            <i class="bi bi-clipboard2-check text-warning"></i>
+            Résumé
+          </h5>
+          <span class="chip">Contrôle</span>
+        </div>
+
+        <div class="p-3 p-md-4">
+          <div class="small text-muted mb-3">
+            Vérifie les informations avant d’enregistrer.
+          </div>
+
+          <div class="border rounded-4 p-3 mb-3 resume-box">
+            <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+              <div class="fw-bold">Mandataire</div>
+
+              <span id="resume-valid-pill"
+                    class="badge rounded-pill px-3 py-2 status-pill">
+                ⚠️ Incomplet
+              </span>
+            </div>
+
+            <div class="mt-2 small">
+              <div class="resume-line">
+                <span class="text-muted">Société</span>
+                <span id="resume-societe">-</span>
+              </div>
+
+              <div class="resume-line">
+                <span class="text-muted">Nom</span>
+                <span id="resume-nom">-</span>
+              </div>
+
+              <div class="resume-line">
+                <span class="text-muted">Email</span>
+                <span id="resume-email">-</span>
+              </div>
+
+              <div class="resume-line">
+                <span class="text-muted">Téléphone</span>
+                <span id="resume-telephone">-</span>
+              </div>
+
+              <hr class="my-2" style="border-color:var(--stroke);">
+
+              <div class="resume-line">
+                <span class="text-muted">Adresse</span>
+                <span id="resume-adresse">-</span>
+              </div>
+
+              <div class="resume-line">
+                <span class="text-muted">Ville</span>
+                <span id="resume-ville">-</span>
+              </div>
+
+              <hr class="my-2" style="border-color:var(--stroke);">
+
+              <div class="resume-line">
+                <span class="text-muted">Statut</span>
+                <span id="resume-actif">-</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <a class="btn btn-light w-50"
+               href="{{ path('app_administrateur_mandataire_index', { entite: entite.id }) }}">
+              Annuler
+            </a>
+
+            <button type="submit" class="btn btn-gradient w-50" id="btnRightSubmit">
+              <i class="bi bi-check"></i>
+              Enregistrer
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="sticky-actions d-none d-lg-block">
+        <div class="d-flex align-items-center justify-content-between gap-2">
+          <div class="small text-muted">
+            <strong class="text-dark">Astuce :</strong> le nom est obligatoire.
+          </div>
+
+          <button type="submit" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-check2"></i>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  {{ form_widget(form._token) }}
+  {{ form_end(form, { render_rest: false }) }}
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function(){
+      const societeEl = document.getElementById('{{ form.societe.vars.id }}');
+      const nomEl = document.getElementById('{{ form.nom.vars.id }}');
+      const emailEl = document.getElementById('{{ form.email.vars.id }}');
+      const telephoneEl = document.getElementById('{{ form.telephone.vars.id }}');
+      const adresseEl = document.getElementById('{{ form.adresse.vars.id }}');
+      const codePostalEl = document.getElementById('{{ form.codePostal.vars.id }}');
+      const villeEl = document.getElementById('{{ form.ville.vars.id }}');
+      const actifEl = document.getElementById('{{ form.actif.vars.id }}');
+
+      const resume = {
+        societe: document.getElementById('resume-societe'),
+        nom: document.getElementById('resume-nom'),
+        email: document.getElementById('resume-email'),
+        telephone: document.getElementById('resume-telephone'),
+        adresse: document.getElementById('resume-adresse'),
+        ville: document.getElementById('resume-ville'),
+        actif: document.getElementById('resume-actif'),
+        pill: document.getElementById('resume-valid-pill')
+      };
+
+      function valueOf(el){
+        return (el && el.value ? el.value.trim() : '');
+      }
+
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+      const phoneRegex = /^(?:(?:\+33|0033)\s?[1-9](?:[\s.-]?\d{2}){4}|0[1-9](?:[\s.-]?\d{2}){4})$/;
+
+      function premiumFieldError(el, message){
+        if(!el) return;
+
+        el.classList.add('is-invalid');
+
+        let box = el.closest('.mb-3, .col-12, .col-md-6, .col-md-4, .col-md-8')?.querySelector('.premium-field-error');
+
+        if(!box){
+          box = document.createElement('div');
+          box.className = 'premium-field-error';
+          el.insertAdjacentElement('afterend', box);
+        }
+
+        box.innerHTML = `<i class="bi bi-exclamation-triangle me-1"></i>${message}`;
+      }
+
+      function clearPremiumFieldError(el){
+        if(!el) return;
+
+        el.classList.remove('is-invalid');
+
+        const box = el.parentElement.querySelector('.premium-field-error');
+        if(box) box.remove();
+      }
+
+      function validatePremiumFields(){
+        let ok = true;
+
+        const email = valueOf(emailEl);
+        const phone = valueOf(telephoneEl);
+
+        clearPremiumFieldError(emailEl);
+        clearPremiumFieldError(telephoneEl);
+
+        if(email && !emailRegex.test(email)){
+          ok = false;
+          premiumFieldError(emailEl, 'Adresse email invalide. Exemple : contact@societe.fr');
+        }
+
+        if(phone && !phoneRegex.test(phone)){
+          ok = false;
+          premiumFieldError(telephoneEl, 'Téléphone invalide. Exemple : 06 12 34 56 78 ou +33 6 12 34 56 78');
+        }
+
+        return ok;
+      }
+
+      document.getElementById('mandataireForm')?.addEventListener('submit', function(e){
+        if(!validatePremiumFields()){
+          e.preventDefault();
+
+          const firstError = document.querySelector('.is-invalid');
+          firstError?.scrollIntoView({ behavior:'smooth', block:'center' });
+          firstError?.focus();
+        }
+      });
+
+      [emailEl, telephoneEl].forEach(el => {
+        el?.addEventListener('input', validatePremiumFields);
+        el?.addEventListener('blur', validatePremiumFields);
+      });
+
+      function refreshResume(){
+        const societe = valueOf(societeEl);
+        const nom = valueOf(nomEl);
+        const email = valueOf(emailEl);
+        const telephone = valueOf(telephoneEl);
+        const adresse = valueOf(adresseEl);
+        const codePostal = valueOf(codePostalEl);
+        const ville = valueOf(villeEl);
+
+        if(resume.societe) resume.societe.textContent = societe || '-';
+        if(resume.nom) resume.nom.textContent = nom || '-';
+        if(resume.email) resume.email.textContent = email || '-';
+        if(resume.telephone) resume.telephone.textContent = telephone || '-';
+
+        const adresseComplete = [adresse, codePostal, ville].filter(Boolean).join(', ');
+        if(resume.adresse) resume.adresse.textContent = adresseComplete || '-';
+        if(resume.ville) resume.ville.textContent = ville || '-';
+        if(resume.actif) resume.actif.textContent = actifEl && actifEl.checked ? 'Actif' : 'Inactif';
+
+        const ok = !!nom;
+
+        if(resume.pill){
+          resume.pill.textContent = ok ? '✅ Complet' : '⚠️ Incomplet';
+          resume.pill.style.background = ok ? 'rgba(25,135,84,.15)' : 'rgba(255,193,7,.15)';
+          resume.pill.style.borderColor = ok ? 'rgba(25,135,84,.35)' : 'rgba(255,193,7,.35)';
+          resume.pill.style.color = 'var(--ink)';
+        }
+      }
+
+      [societeEl, nomEl, emailEl, telephoneEl, adresseEl, codePostalEl, villeEl].forEach(el => {
+        if(!el) return;
+        el.addEventListener('input', refreshResume);
+        el.addEventListener('change', refreshResume);
+      });
+
+      if(actifEl){
+        actifEl.addEventListener('change', refreshResume);
+      }
+
+      refreshResume();
+    });
+  </script>
+
+{% endblock %}

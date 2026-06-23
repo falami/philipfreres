@@ -535,6 +535,12 @@
 						</a>
 					</li>
 					{% endif %}
+
+					<li>
+						<a href="{{ path('app_administrateur_mandataire_index', {'entite' : entite.id}) }}">
+							<span class="{% if app.request.attributes.get('_route') == 'app_administrateur_mandataire_index' %}text-theme-secondaire{% endif %}">{{ 'navbar.chantier.mandataire'|trans }}</span>
+						</a>
+					</li>
 				</ul>
 			</div>
 		</li>

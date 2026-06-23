@@ -2,7 +2,7 @@
 
 namespace App\Controller\Administrateur;
 
-use App\Entity\{Chantier, Dechet, Entite, Utilisateur, Engin, Materiel};
+use App\Entity\{Chantier, Dechet, Entite, Utilisateur, Engin, Materiel, Mandataire};
 use App\Form\Administrateur\ChantierType;
 use App\Repository\ChantierRepository;
 use App\Security\Permission\TenantPermission;
@@ -21,6 +21,7 @@ use App\Repository\MaterielRepository;
 use App\Repository\DechetRepository;
 use App\Repository\UtilisateurRepository;
 use App\Enum\ChantierStatut;
+use App\Repository\MandataireRepository;
 
 #[Route('/administrateur/{entite}/chantier')]
 #[IsGranted(TenantPermission::CHANTIER_MANAGE, subject: 'entite')]
@@ -37,10 +38,20 @@ final class ChantierController extends AbstractController
   ) {}
 
   #[Route('', name: 'app_administrateur_chantier_index', methods: ['GET'])]
-  public function index(Entite $entite): Response
+  public function index(Entite $entite, MandataireRepository $mandataireRepo): Response
   {
+    $mandataires = $mandataireRepo->createQueryBuilder('m')
+      ->andWhere('m.entite = :entite')
+      ->andWhere('m.actif = true')
+      ->setParameter('entite', $entite)
+      ->orderBy('m.societe', 'ASC')
+      ->addOrderBy('m.nom', 'ASC')
+      ->getQuery()
+      ->getResult();
+
     return $this->render('administrateur/chantier/index.html.twig', [
       'entite' => $entite,
+      'mandataires' => $mandataires,
     ]);
   }
 
@@ -67,6 +78,7 @@ final class ChantierController extends AbstractController
     $statutFilter  = (string) $request->request->get('statutFilter', 'all');
     $semaineFilter = trim((string) $request->request->get('semaineFilter', ''));
     $villeFilter   = trim((string) $request->request->get('villeFilter', ''));
+    $mandataireFilter = (string) $request->request->get('mandataireFilter', 'all');
 
     // 🔀 Fusion recherche DataTables + champ custom
     $search = trim($searchDT . ' ' . $searchCustom);
@@ -82,10 +94,12 @@ final class ChantierController extends AbstractController
     $orderMap = [
       0 => 'c.id',
       1 => 'c.nom',
-      2 => 'c.ville',
-      3 => 'c.dateDebutPrevisionnelle',
-      4 => 'c.dateDebutPrevisionnelle',
-      5 => 'c.statut',
+      2 => 'c.id', // chef de chantier non trié SQL
+      3 => 'c.id', // mandataires non trié SQL
+      4 => 'c.ville',
+      5 => 'c.dateDebutPrevisionnelle',
+      6 => 'c.dateDebutPrevisionnelle',
+      7 => 'c.statut',
     ];
 
 
@@ -116,6 +130,14 @@ final class ChantierController extends AbstractController
     if ($villeFilter !== '') {
       $qb->andWhere('LOWER(c.ville) LIKE :ville')
         ->setParameter('ville', '%' . mb_strtolower($villeFilter) . '%');
+    }
+
+
+    if ($mandataireFilter !== 'all' && $mandataireFilter !== '') {
+      $qb
+        ->innerJoin('c.mandataires', 'mf')
+        ->andWhere('mf.id = :mandataireFilter')
+        ->setParameter('mandataireFilter', (int) $mandataireFilter);
     }
 
     // =========================
@@ -161,6 +183,13 @@ final class ChantierController extends AbstractController
     if ($villeFilter !== '') {
       $qbCount->andWhere('LOWER(c.ville) LIKE :ville')
         ->setParameter('ville', '%' . mb_strtolower($villeFilter) . '%');
+    }
+
+    if ($mandataireFilter !== 'all' && $mandataireFilter !== '') {
+      $qbCount
+        ->innerJoin('c.mandataires', 'mf_count')
+        ->andWhere('mf_count.id = :mandataireFilter')
+        ->setParameter('mandataireFilter', (int) $mandataireFilter);
     }
 
     $recordsFiltered = (int) $qbCount->getQuery()->getSingleScalarResult();
@@ -209,6 +238,15 @@ final class ChantierController extends AbstractController
           },
           $chantier->getStatut()->label()
         ),
+
+        'mandataires' => $chantier->getMandataires()->isEmpty()
+          ? '<span class="badge-soft badge-soft-dark">Non défini</span>'
+          : implode('<br>', array_map(
+            fn(Mandataire $m) => '<span class="badge-soft badge-soft-primary">'
+              . htmlspecialchars((string) $m, ENT_QUOTES, 'UTF-8')
+              . '</span>',
+            $chantier->getMandataires()->toArray()
+          )),
 
         // 🔥 VERSION PREMIUM RESSOURCES
         'ressources' => sprintf(

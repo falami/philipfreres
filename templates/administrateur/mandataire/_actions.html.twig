@@ -1,0 +1,55 @@
+{# templates/administrateur/mandataire/_actions.html.twig #}
+
+<div class="btn-group btn-group-sm mandataire-actions" role="group">
+
+  {# ✅ Bouton principal = Modifier #}
+  <a class="btn btn-light mandataire-main"
+     data-bs-toggle="tooltip"
+     title="Modifier"
+     href="{{ path('app_administrateur_mandataire_modifier', { entite: entite.id, id: mandataire.id }) }}">
+    <i class="bi bi-pencil"></i>
+  </a>
+
+  {# ✅ Split dropdown #}
+  <button type="button"
+          class="btn btn-light dropdown-toggle dropdown-toggle-split mandataire-split"
+          data-bs-toggle="dropdown"
+          data-bs-auto-close="outside"
+          aria-expanded="false">
+    <span class="visually-hidden">Actions</span>
+  </button>
+
+  <ul class="dropdown-menu dropdown-menu-end mandataire-menu">
+
+    {# Afficher #}
+    <li>
+      <a class="dropdown-item d-flex align-items-center"
+         href="{{ path('app_administrateur_mandataire_show', { entite: entite.id, id: mandataire.id }) }}">
+        <i class="bi bi-eye me-2"></i> Afficher
+      </a>
+    </li>
+
+    {# Modifier #}
+    <li>
+      <a class="dropdown-item d-flex align-items-center"
+         href="{{ path('app_administrateur_mandataire_modifier', { entite: entite.id, id: mandataire.id }) }}">
+        <i class="bi bi-pencil me-2"></i> Modifier
+      </a>
+    </li>
+
+    <li><hr class="dropdown-divider"></li>
+
+    {# Supprimer #}
+    <li>
+      <button type="button"
+              class="dropdown-item d-flex align-items-center text-danger delete-btn"
+              data-bs-toggle="modal"
+              data-bs-target="#deleteModal"
+              data-url="{{ path('app_administrateur_mandataire_supprimer', { entite: entite.id, id: mandataire.id }) }}"
+              data-token="{{ csrf_token('delete_mandataire_' ~ mandataire.id) }}">
+        <i class="bi bi-trash me-2"></i> Supprimer
+      </button>
+    </li>
+
+  </ul>
+</div>

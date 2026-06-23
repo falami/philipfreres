@@ -16,6 +16,8 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 use App\Entity\Utilisateur;
 use App\Repository\UtilisateurRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
+use App\Entity\Mandataire;
+use App\Repository\MandataireRepository;
 
 class ChantierType extends AbstractType
 {
@@ -29,6 +31,23 @@ class ChantierType extends AbstractType
         'attr' => [
           'class' => 'form-control',
           'placeholder' => 'Ex : Nettoyage parcelles RD 12',
+        ],
+      ])
+
+      ->add('codeChantier', TextType::class, [
+        'required' => false,
+        'label' => 'Code chantier',
+        'attr' => [
+          'class' => 'form-control',
+          'placeholder' => 'Ex : CH-2026-001',
+        ],
+      ])
+      ->add('nominationChantier', TextType::class, [
+        'required' => false,
+        'label' => 'Nomination chantier',
+        'attr' => [
+          'class' => 'form-control',
+          'placeholder' => 'Ex : Entretien annuel - secteur nord',
         ],
       ])
       ->add('adresse', TextType::class, [
@@ -56,6 +75,28 @@ class ChantierType extends AbstractType
         'label' => 'Statut',
         'choice_label' => fn(ChantierStatut $s) => $s->label(),
         'attr' => ['class' => 'form-select'],
+      ])
+
+      ->add('mandataires', EntityType::class, [
+        'class' => Mandataire::class,
+        'label' => 'Mandataires',
+        'required' => false,
+        'multiple' => true,
+        'expanded' => false,
+        'by_reference' => false,
+        'choice_label' => fn(Mandataire $m) => (string) $m,
+        'query_builder' => function (MandataireRepository $repo) use ($entite) {
+          return $repo->createQueryBuilder('m')
+            ->andWhere('m.entite = :entite')
+            ->andWhere('m.actif = true')
+            ->setParameter('entite', $entite)
+            ->orderBy('m.societe', 'ASC')
+            ->addOrderBy('m.nom', 'ASC');
+        },
+        'attr' => [
+          'class' => 'form-select js-ts-mandataires',
+          'placeholder' => 'Sélectionner un ou plusieurs mandataires',
+        ],
       ])
       ->add('dateDebutPrevisionnelle', DateTimeType::class, [
         'widget' => 'single_text',

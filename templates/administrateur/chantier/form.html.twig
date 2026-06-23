@@ -806,6 +806,27 @@
       border-color:rgba(220,53,69,.45) !important;
       box-shadow:0 0 0 .22rem rgba(220,53,69,.10), 0 18px 45px rgba(220,53,69,.12) !important;
     }
+
+
+
+    .js-ts-mandataires + .ts-wrapper .ts-control {
+      min-height: 48px;
+    }
+
+    .js-ts-mandataires + .ts-wrapper.multi .ts-control > div {
+      border-radius: 999px;
+      background: rgba(255,193,7,.16);
+      border: 1px solid rgba(255,193,7,.28);
+      color: var(--ink);
+      font-weight: 700;
+      padding: .32rem .6rem;
+    }
+
+    .js-ts-mandataires + .ts-wrapper .remove {
+      border-left: 1px solid rgba(0,0,0,.10);
+      margin-left: .45rem;
+      padding-left: .45rem;
+    }
   </style>
 {% endblock %}
 
@@ -912,7 +933,13 @@
         <div class="p-3 p-md-4">
           <div class="row g-3">
             <div class="col-md-6">{{ form_row(form.nom) }}</div>
-            <div class="col-md-6">{{ form_row(form.statut) }}</div>
+            <div class="col-md-6">{{ form_row(form.codeChantier) }}</div>
+
+            <div class="col-md-8">{{ form_row(form.nominationChantier) }}</div>
+            <div class="col-md-4">{{ form_row(form.statut) }}</div>
+
+
+            <div class="col-md-12">{{ form_row(form.mandataires) }}</div>
 
             <div class="col-md-6">{{ form_row(form.adresse) }}</div>
             <div class="col-md-6">{{ form_row(form.complement) }}</div>
@@ -1096,6 +1123,20 @@
             <div class="resume-line">
               <span class="text-muted">Nom</span>
               <span class="fw-semibold text-end" id="resume-nom">{{ chantier.nom ?: '-' }}</span>
+            </div>
+
+            <div class="resume-line">
+              <span class="text-muted">Code chantier</span>
+              <span class="fw-semibold text-end" id="resume-code-chantier">
+                {{ chantier.codeChantier ?: '-' }}
+              </span>
+            </div>
+
+            <div class="resume-line">
+              <span class="text-muted">Nomination</span>
+              <span class="fw-semibold text-end" id="resume-nomination-chantier">
+                {{ chantier.nominationChantier ?: '-' }}
+              </span>
             </div>
             <div class="resume-line">
               <span class="text-muted">Statut</span>
@@ -1464,6 +1505,7 @@
         scope.querySelectorAll('select').forEach(select => {
           if (
             select.classList.contains('no-tomselect') ||
+            select.classList.contains('js-ts-mandataires') ||
             select.dataset.noTomselect === '1'
           ) {
             return;
@@ -2100,12 +2142,21 @@
 
       const fields = {
         nom: document.getElementById('{{ form.nom.vars.id }}'),
+        codeChantier: document.getElementById('{{ form.codeChantier.vars.id }}'),
+        nominationChantier: document.getElementById('{{ form.nominationChantier.vars.id }}'),
         statut: document.getElementById('{{ form.statut.vars.id }}'),
         ville: document.getElementById('{{ form.ville.vars.id }}')
       };
 
+      Object.values(fields).forEach(field => {
+        field?.addEventListener('input', refreshResume);
+        field?.addEventListener('change', refreshResume);
+      });
+
       const resume = {
         nom: document.getElementById('resume-nom'),
+        codeChantier: document.getElementById('resume-code-chantier'),
+        nominationChantier: document.getElementById('resume-nomination-chantier'),
         statut: document.getElementById('resume-statut'),
         ville: document.getElementById('resume-ville'),
         zones: document.getElementById('resume-zones'),
@@ -2113,8 +2164,7 @@
         engins: document.getElementById('resume-engins'),
         materiels: document.getElementById('resume-materiels'),
         dechets: document.getElementById('resume-dechets'),
-        photos: document.getElementById('resume-photos'),
-        pill: document.getElementById('resume-valid-pill')
+        photos: document.getElementById('resume-photos')
       };
 
       function selectedText(selectEl) {
@@ -2131,13 +2181,27 @@
         if (resume.nom) resume.nom.textContent = (fields.nom?.value || '').trim() || '-';
         if (resume.statut) resume.statut.textContent = selectedText(fields.statut) || '-';
         if (resume.ville) resume.ville.textContent = (fields.ville?.value || '').trim() || '-';
-
+        if (resume.codeChantier) {
+          resume.codeChantier.textContent = fields.codeChantier?.value?.trim() || '-';
+        }
+        if (resume.nominationChantier) {
+          resume.nominationChantier.textContent = fields.nominationChantier?.value?.trim() || '-';
+        }
         if (resume.zones) resume.zones.textContent = document.querySelectorAll('#zones-holder > .collection-item').length;
         if (resume.rh) resume.rh.textContent = document.querySelectorAll('[id$="-ressourcesHumaines-holder"] .collection-item').length;
         if (resume.engins) resume.engins.textContent = document.querySelectorAll('[id$="-ressourcesEngins-holder"] .collection-item').length;
         if (resume.materiels) resume.materiels.textContent = document.querySelectorAll('[id$="-ressourcesMateriels-holder"] .collection-item').length;
         if (resume.dechets) resume.dechets.textContent = document.querySelectorAll('[id$="-dechets-holder"] .collection-item').length;
         if (resume.photos) resume.photos.textContent = document.querySelectorAll('[id$="-photos-holder"] .collection-item').length;
+
+
+        document.getElementById('resume-code-chantier').textContent =
+          codeChantierEl?.value?.trim() || '-';
+
+        document.getElementById('resume-nomination-chantier').textContent =
+          nominationChantierEl?.value?.trim() || '-';
+
+
 
         const hasNom = !!((fields.nom?.value || '').trim());
         const hasStatut = !!((fields.statut?.value || '').trim());
@@ -2289,6 +2353,12 @@
         el?.addEventListener('change', refreshResume);
       });
 
+
+      [codeChantierEl, nominationChantierEl].forEach(el => {
+        el?.addEventListener('input', refreshResume);
+        el?.addEventListener('change', refreshResume);
+      });
+
       fields.statut?.addEventListener('change', refreshResume);
 
 
@@ -2338,6 +2408,9 @@
         const uniteInput = document.getElementById('quickResourceUnite');
         const errorBox = document.getElementById('quickResourceError');
         const submitBtn = document.getElementById('quickResourceSubmit');
+
+        const codeChantierEl = document.getElementById('{{ form.codeChantier.vars.id }}');
+        const nominationChantierEl = document.getElementById('{{ form.nominationChantier.vars.id }}');
 
         function hideError() {
           errorBox.classList.add('d-none');
@@ -2807,4 +2880,59 @@
       refreshResume();
     });
   </script>
+
+
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.js-ts-mandataires').forEach(function (select) {
+      if (select.tomselect) {
+        select.tomselect.destroy();
+      }
+
+      new TomSelect(select, {
+        plugins: ['remove_button'],
+        maxItems: null,
+        persist: false,
+        create: false,
+        allowEmptyOption: false,
+        dropdownParent: 'body',
+        placeholder: 'Rechercher un mandataire...',
+        searchField: ['text'],
+        sortField: {
+          field: 'text',
+          direction: 'asc'
+        },
+        render: {
+          no_results: function () {
+            return `
+              <div class="px-3 py-3 text-muted">
+                <i class="bi bi-search me-1"></i>
+                Aucun mandataire trouvé.
+              </div>
+            `;
+          },
+          option: function (data, escape) {
+            return `
+              <div class="py-2">
+                <div class="fw-bold">
+                  <i class="bi bi-person-vcard me-1 text-warning"></i>
+                  ${escape(data.text)}
+                </div>
+              </div>
+            `;
+          },
+          item: function (data, escape) {
+            return `
+              <div>
+                <i class="bi bi-person-vcard me-1"></i>
+                ${escape(data.text)}
+              </div>
+            `;
+          }
+        }
+      });
+    });
+  });
+</script>
 {% endblock %}

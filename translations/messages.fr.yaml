@@ -451,6 +451,7 @@ navbar:
     title: "Chantier"
     list: "Lister"
     add: "Ajouter"
+    mandataire: "Mandataire"
 
   produit:
     title: "Produit"

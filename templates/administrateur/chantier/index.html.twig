@@ -125,23 +125,32 @@
       align-items:end;
     }
 
-    .fcol-statut{ grid-column: span 3; }
+    .fcol-statut{ grid-column: span 2; }
+    .fcol-mandataire{ grid-column: span 3; }
     .fcol-semaine{ grid-column: span 2; }
-    .fcol-ville{ grid-column: span 3; }
-    .fcol-search{ grid-column: span 3; }
+    .fcol-ville{ grid-column: span 2; }
+    .fcol-search{ grid-column: span 2; }
     .fcol-actions{ grid-column: span 1; }
 
     @media (max-width: 1200px){
       .fcol-statut{ grid-column: span 6; }
       .fcol-semaine{ grid-column: span 6; }
       .fcol-ville{ grid-column: span 6; }
+      .fcol-mandataire{ grid-column: span 6; }
       .fcol-search{ grid-column: span 6; }
       .fcol-actions{ grid-column: span 12; }
     }
 
     @media (max-width: 768px){
       .filterbar__body{ padding:.85rem; }
-      .fcol-statut, .fcol-semaine, .fcol-ville, .fcol-search, .fcol-actions{ grid-column: span 12; }
+      .fcol-statut,
+      .fcol-mandataire,
+      .fcol-semaine,
+      .fcol-ville,
+      .fcol-search,
+      .fcol-actions{
+        grid-column: span 12;
+      }
       .hero{ border-radius:16px; }
     }
 
@@ -563,7 +572,7 @@
 
           <button type="button" class="btn btn-outline-light btn-sm fw-semibold"
                   onclick="document.getElementById('filtersCollapse')?.scrollIntoView({behavior:'smooth'})">
-            <i class="bi bi-funnel me-1"></i> Filtres
+            <i class="bi bi-funnel me-1"></i> Filtres 
           </button>
         </div>
       </div>
@@ -613,6 +622,25 @@
                   <option value="en_cours">En cours</option>
                   <option value="termine">Terminé</option>
                   <option value="annule">Annulé</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="filter-control fcol-mandataire">
+            <div class="form-label">Mandataire</div>
+            <div class="filterbox">
+              <div class="filterrow">
+                <div class="filter-icon"><i class="bi bi-person-vcard"></i></div>
+
+                <select id="mandataireFilter" class="form-select form-select-sm">
+                  <option value="all">Tous</option>
+
+                  {% for mandataire in mandataires|default([]) %}
+                    <option value="{{ mandataire.id }}">
+                      {{ mandataire }}
+                    </option>
+                  {% endfor %}
                 </select>
               </div>
             </div>
@@ -674,6 +702,7 @@
           <th>#</th>
           <th>Nom</th>
           <th>Chef de chantier</th>
+          <th>Mandataires</th>
           <th>Ville</th>
           <th>Semaine</th>
           <th>Période</th>
@@ -734,6 +763,7 @@
       const $semaine = $('#semaineFilter');
       const $ville   = $('#villeFilter');
       const $search  = $('#searchName');
+      const $mandataire = $('#mandataireFilter');
 
       function nowLabel(){
         const d = new Date();
@@ -747,22 +777,34 @@
       }
 
       let tsStatut = null;
+      let tsMandataire = null;
 
       function initTomSelect(){
         tsStatut?.destroy();
+        tsMandataire?.destroy();
 
-        tsStatut = new TomSelect('#statutFilter', {
+        const common = {
           create: false,
           allowEmptyOption: true,
           maxItems: 1,
           plugins: ['clear_button'],
-          placeholder: 'Tous',
           render: {
             no_results: () => '<div class="px-2 py-1 text-muted">Aucun résultat</div>'
           }
+        };
+
+        tsStatut = new TomSelect('#statutFilter', {
+          ...common,
+          placeholder: 'Tous'
+        });
+
+        tsMandataire = new TomSelect('#mandataireFilter', {
+          ...common,
+          placeholder: 'Tous les mandataires'
         });
 
         tsStatut.on('change', () => refreshAll(true));
+        tsMandataire.on('change', () => refreshAll(true));
       }
 
       function updateResetUi(count){
@@ -801,6 +843,15 @@
           items.push({ key:'ville', label:'Ville', value: ville });
         }
 
+        const mandataire = $mandataire.val();
+        if(mandataire && mandataire !== 'all'){
+          items.push({
+            key:'mandataire',
+            label:'Mandataire',
+            value: $('#mandataireFilter option:selected').text()
+          });
+        }
+
         const search = ($search.val() || '').trim();
         if(search){
           items.push({ key:'search', label:'Recherche', value: search });
@@ -835,6 +886,9 @@
                 break;
               case 'ville':
                 $ville.val('');
+                break;
+              case 'mandataire':
+                tsMandataire.setValue('all', true);
                 break;
               case 'search':
                 $search.val('');
@@ -922,10 +976,11 @@
           url:"{{ path('app_administrateur_chantier_ajax', { entite: entite.id }) }}",
           type:"POST",
           data: d => {
-            d.statutFilter  = $statut.val() || 'all';
+            d.statutFilter = $statut.val() || 'all';
+            d.mandataireFilter = $mandataire.val() || 'all';
             d.semaineFilter = $semaine.val() || '';
-            d.villeFilter   = $ville.val() || '';
-            d.searchName    = $search.val() || '';
+            d.villeFilter = $ville.val() || '';
+            d.searchName = $search.val() || '';
           }
         },
 
@@ -944,21 +999,22 @@
         language:{ url:'https://cdn.datatables.net/plug-ins/2.2.2/i18n/fr-FR.json' },
         order:[[0,'desc']],
 
-        columns:[
+        columns: [
           {data:'id', name:'id'},
           {data:'nom', name:'nom'},
-          {data:'chefChantier', name:'chefChantier'},
+          {data:'chefChantier', name:'chefChantier', orderable:false, searchable:false},
+          {data:'mandataires', name:'mandataires', orderable:false, searchable:false},
           {data:'ville', name:'ville'},
           {data:'semaine', name:'semaine'},
           {data:'periode', name:'periode'},
-          {data:'statut', name:'statut', orderable:false, searchable:false},
+          {data:'statut', name:'statut'},
           {data:'ressources', name:'ressources', orderable:false, searchable:false},
           {data:'actions', name:'actions', orderable:false, searchable:false}
         ],
 
         columnDefs:[
-          {targets:8, className:'action-column text-end'},
-          {targets:[1,2,3,4,5,6,7], className:'text-center'}
+          {targets:9, className:'action-column text-end', orderable:false, searchable:false},
+          {targets:[1,2,3,4,5,6,7,8], className:'text-center'}
         ],
 
         initComplete:function(){
@@ -1013,6 +1069,7 @@
         $ville.val('');
         $search.val('');
         table.search('');
+        tsMandataire.setValue('all', true);
         refreshAll(true);
       });
 
