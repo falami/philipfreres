@@ -850,6 +850,88 @@
     select.js-ts-affectations.tomselected{
       display:none !important;
     }
+
+
+    .dynamic-table-toolbar{
+      display:flex;
+      gap:.5rem;
+      flex-wrap:wrap;
+    }
+
+    .dynamic-table-wrap{
+      overflow:auto;
+      border:1px solid var(--stroke);
+      border-radius:18px;
+      background:#fff;
+      box-shadow:0 12px 28px rgba(15,23,42,.06);
+    }
+
+    .dynamic-table{
+      width:100%;
+      min-width:720px;
+      border-collapse:separate;
+      border-spacing:0;
+    }
+
+    .dynamic-table th,
+    .dynamic-table td{
+      border-right:1px solid rgba(15,23,42,.08);
+      border-bottom:1px solid rgba(15,23,42,.08);
+      padding:.45rem;
+    }
+
+    .dynamic-table th{
+      background:linear-gradient(180deg, rgba(255,193,7,.14), rgba(255,255,255,.95));
+    }
+
+    .dynamic-table input{
+      width:100%;
+      border:0;
+      background:transparent;
+      padding:.45rem .55rem;
+      font-weight:600;
+    }
+
+    .dynamic-table input:focus{
+      outline:none;
+      background:rgba(255,193,7,.10);
+      border-radius:10px;
+    }
+
+    .dynamic-table .remove-cell-btn{
+      border:0;
+      background:rgba(220,53,69,.10);
+      color:#dc3545;
+      border-radius:10px;
+      width:30px;
+      height:30px;
+    }
+
+
+    .dynamic-col-head{
+      display:flex;
+      align-items:center;
+      gap:.45rem;
+    }
+
+    .dynamic-col-head input{
+      flex:1;
+    }
+
+    .remove-column-btn{
+      border:0;
+      background:rgba(220,53,69,.10);
+      color:#dc3545;
+      border-radius:10px;
+      width:30px;
+      height:30px;
+      flex-shrink:0;
+    }
+
+    .remove-column-btn:hover{
+      background:#dc3545;
+      color:#fff;
+    }
   </style>
 {% endblock %}
 
@@ -1030,6 +1112,43 @@
             </div>
 
             <div class="col-12">{{ form_row(form.difficultesRencontrees) }}</div>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="cardx mb-4">
+        <div class="cardx-h">
+          <h5 class="cardx-title">
+            <i class="bi bi-table text-warning"></i>
+            Tableau personnalisé
+          </h5>
+
+          <span class="chip">Excel premium</span>
+        </div>
+
+        <div class="p-3 p-md-4">
+          {{ form_widget(form.tableauDynamique) }}
+
+          <div class="dynamic-table-toolbar mb-3">
+            <button type="button" class="btn btn-warning btn-sm fw-bold" id="addDynamicRow">
+              <i class="bi bi-plus-circle me-1"></i> Ajouter une ligne
+            </button>
+
+            <button type="button" class="btn btn-outline-secondary btn-sm fw-bold" id="addDynamicColumn">
+              <i class="bi bi-layout-three-columns me-1"></i> Ajouter une colonne
+            </button>
+          </div>
+
+          <div class="dynamic-table-wrap">
+            <table class="dynamic-table" id="dynamicTable">
+              <thead></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div class="form-text mt-2">
+            Ce tableau sera repris automatiquement dans le PDF final.
           </div>
         </div>
       </div>
@@ -2997,6 +3116,163 @@
         }
       });
     });
+  });
+
+
+
+  document.addEventListener('DOMContentLoaded', function(){
+    const input = document.querySelector('.js-dynamic-table-data');
+    const table = document.getElementById('dynamicTable');
+    const thead = table?.querySelector('thead');
+    const tbody = table?.querySelector('tbody');
+
+    if(!input || !table || !thead || !tbody) return;
+
+    let data = {
+      columns: ['Colonne 1',],
+      rows: [
+        ['']
+      ]
+    };
+
+    try {
+      if(input.value) {
+        const parsed = JSON.parse(input.value);
+        if(parsed.columns && parsed.rows) data = parsed;
+      }
+    } catch(e) {}
+
+    function sync(){
+      input.value = JSON.stringify(data);
+    }
+
+    function render(){
+      thead.innerHTML = '';
+      tbody.innerHTML = '';
+
+      const headRow = document.createElement('tr');
+
+      data.columns.forEach((col, index) => {
+        const th = document.createElement('th');
+        th.innerHTML = `
+          <div class="dynamic-col-head">
+            <input value="${escapeHtml(col)}" data-col="${index}" class="js-dt-col">
+
+            <button type="button"
+                    class="remove-column-btn js-remove-column"
+                    data-col="${index}"
+                    title="Supprimer cette colonne">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+        `;
+        headRow.appendChild(th);
+      });
+
+      const actionTh = document.createElement('th');
+      actionTh.style.width = '48px';
+      headRow.appendChild(actionTh);
+      thead.appendChild(headRow);
+
+      data.rows.forEach((row, rowIndex) => {
+        const tr = document.createElement('tr');
+
+        data.columns.forEach((_, colIndex) => {
+          const td = document.createElement('td');
+          td.innerHTML = `
+            <input value="${escapeHtml(row[colIndex] || '')}" data-row="${rowIndex}" data-col="${colIndex}" class="js-dt-cell">
+          `;
+          tr.appendChild(td);
+        });
+
+        const actionTd = document.createElement('td');
+        actionTd.className = 'text-center';
+        actionTd.innerHTML = `
+          <button type="button" class="remove-cell-btn js-remove-row" data-row="${rowIndex}">
+            <i class="bi bi-trash"></i>
+          </button>
+        `;
+        tr.appendChild(actionTd);
+
+        tbody.appendChild(tr);
+      });
+
+      sync();
+    }
+
+    function escapeHtml(str){
+      return String(str ?? '').replace(/[&<>"']/g, s => ({
+        '&':'&amp;',
+        '<':'&lt;',
+        '>':'&gt;',
+        '"':'&quot;',
+        "'":'&#039;'
+      }[s]));
+    }
+
+    table.addEventListener('input', function(e){
+      if(e.target.classList.contains('js-dt-col')){
+        data.columns[e.target.dataset.col] = e.target.value;
+      }
+
+      if(e.target.classList.contains('js-dt-cell')){
+        data.rows[e.target.dataset.row][e.target.dataset.col] = e.target.value;
+      }
+
+      sync();
+    });
+
+    document.getElementById('addDynamicRow')?.addEventListener('click', function(){
+      data.rows.push(data.columns.map(() => ''));
+      render();
+    });
+
+    document.getElementById('addDynamicColumn')?.addEventListener('click', function(){
+      if(data.columns.length >= 10) {
+        alert('Tu peux ajouter jusqu’à 10 colonnes maximum.');
+        return;
+      }
+
+      data.columns.push('Colonne ' + (data.columns.length + 1));
+      data.rows = data.rows.map(row => [...row, '']);
+      render();
+    });
+
+    table.addEventListener('click', function(e){
+      const rowBtn = e.target.closest('.js-remove-row');
+      const colBtn = e.target.closest('.js-remove-column');
+
+      if(rowBtn){
+        data.rows.splice(parseInt(rowBtn.dataset.row, 10), 1);
+        render();
+        return;
+      }
+
+      if(colBtn){
+        const colIndex = parseInt(colBtn.dataset.col, 10);
+
+        if(data.columns.length <= 1){
+          alert('Le tableau doit contenir au moins une colonne.');
+          return;
+        }
+
+        if(!confirm('Supprimer cette colonne ?')){
+          return;
+        }
+
+        data.columns.splice(colIndex, 1);
+
+        data.rows = data.rows.map(row => {
+          const nextRow = [...row];
+          nextRow.splice(colIndex, 1);
+          return nextRow;
+        });
+
+        render();
+      }
+    });
+
+    render();
   });
 </script>
 {% endblock %}

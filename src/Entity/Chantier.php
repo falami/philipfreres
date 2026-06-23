@@ -109,6 +109,10 @@ class Chantier
     private Collection $mandataires;
 
 
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $tableauDynamique = null;
+
+
 
     public function __construct()
     {
@@ -345,6 +349,20 @@ class Chantier
         }
 
         return $this;
+    }
+
+
+    public function getSemaineReelle(): ?string
+    {
+        if (!$this->dateDebutReelle) {
+            return null;
+        }
+
+        return sprintf(
+            'S%02d - %s',
+            (int) $this->dateDebutReelle->format('W'),
+            $this->dateDebutReelle->format('Y')
+        );
     }
 
     public function getSemainePrevisionnelle(): ?string
@@ -606,6 +624,18 @@ class Chantier
     public function setAnnee(?int $annee): static
     {
         $this->annee = $annee;
+        return $this;
+    }
+
+
+    public function getTableauDynamique(): ?array
+    {
+        return $this->tableauDynamique;
+    }
+
+    public function setTableauDynamique(?array $tableauDynamique): static
+    {
+        $this->tableauDynamique = $tableauDynamique;
         return $this;
     }
 }

@@ -20,6 +20,8 @@ use App\Entity\Mandataire;
 use App\Repository\MandataireRepository;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
+use Symfony\Component\Form\Extension\Core\Type\HiddenType;
+use Symfony\Component\Form\CallbackTransformer;
 
 class ChantierType extends AbstractType
 {
@@ -186,7 +188,32 @@ class ChantierType extends AbstractType
           'entite' => $entite,
         ],
       ])
+      ->add('tableauDynamique', HiddenType::class, [
+        'required' => false,
+        'attr' => [
+          'class' => 'js-dynamic-table-data',
+        ],
+      ])
     ;
+
+    $b->get('tableauDynamique')->addModelTransformer(new CallbackTransformer(
+      function (?array $value): string {
+        return $value ? json_encode($value, JSON_UNESCAPED_UNICODE) : '';
+      },
+      function (?string $value): ?array {
+        if (!$value) {
+          return null;
+        }
+
+        $decoded = json_decode($value, true);
+
+        if (!is_array($decoded)) {
+          return null;
+        }
+
+        return $decoded;
+      }
+    ));
     if ($o['can_manage_affectations']) {
       $b->add('utilisateursAffectes', EntityType::class, [
         'class' => Utilisateur::class,

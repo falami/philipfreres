@@ -102,7 +102,7 @@
 }
 
 .cover-inner {
-  padding: 50px 54px 0 120px;
+  padding: 20px 54px 0 120px;
   position: relative;
   z-index: 2;
 }
@@ -123,7 +123,7 @@
 }
 
 .logo-box {
-  width: 300px;
+  width: 200px;
   height: 130px;
   background: #fff;
   border-radius: 14px;
@@ -145,7 +145,7 @@
 }
 
 .cover-ref-card {
-  width: 210px;
+  width: 300px;
   background: rgba(255,255,255,.09);
   border: 1px solid rgba(255,255,255,.25);
   padding: 14px 16px;
@@ -190,7 +190,7 @@
 }
 
 .cover-title {
-  margin-top: 14px;
+  margin-top: 1px;
   width: 650px;
   font-size: 42px;
   line-height: 1.05;
@@ -208,14 +208,14 @@
 }
 
 .cover-rule {
-  margin-top: 22px;
+  margin-top: 10px;
   width: 130px;
   height: 4px;
   background: {{ secondary }};
 }
 
 .cover-project {
-  margin-top: 34px;
+  margin-top: 20px;
   width: 580px;
   background: rgba(255,255,255,.08);
   border: 1px solid rgba(255,255,255,.20);
@@ -236,6 +236,14 @@
   font-weight: bold;
   line-height: 1.25;
   color: #fff;
+}
+
+.cover-project-saison-annee{
+  font-size: 10px;
+  font-weight: bold;
+  line-height: 1.25;
+  color: #fff;
+
 }
 
 .cover-project-address {
@@ -408,13 +416,20 @@
       border: 1px solid {{ border }};
     }
 
+
+    .cover-partners-box{
+      padding: 0px 40px;
+
+    }
+
     .cover-partners {
-      margin-top: 42px;
-      width: 580px;
+
+      margin-top: 10px;
+      width: 500px;
       background: rgba(255,255,255,.08);
       border: 1px solid rgba(255,255,255,.22);
       border-radius: 16px;
-      padding: 14px 16px;
+      padding: 8px 14px;
     }
 
     .cover-partners-label {
@@ -425,25 +440,28 @@
       margin-bottom: 10px;
     }
 
+    .cover-partner-logo {
+        background: #fff;
+        padding: 8px 8px;
+        border-radius: 4px;
+        display: inline-block;
+    }
+
     .cover-partners-table {
       width: 100%;
       border-collapse: separate;
       border-spacing: 10px 0;
     }
 
-    .cover-partners-table td {
-      width: 33.33%;
-      height: 72px;
-      background: #ffffff;
+    .cover-partners-table td {     
       border-radius: 14px;
-      text-align: center;
-      vertical-align: middle;
       padding: 8px;
     }
 
     .cover-partners-table img {
       max-width: 150px;
       max-height: 58px;
+      border-radius: 4px;
     }
   </style>
 </head>
@@ -474,7 +492,7 @@
   <div class="cover-inner">
     <table class="cover-header-table">
       <tr>
-        <td style="width: 58%;">
+        <td style="width: 50%;">
           <div class="logo-box">
             {% if logoPath %}
               <img src="{{ logoPath }}" alt="{{ entite.nom }}">
@@ -484,45 +502,57 @@
           </div>
         </td>
 
-        <td style="width: 42%; text-align: right;">
+        <td style="width: 50%; text-align: right;">
           <div class="cover-ref-card">
             <div class="cover-ref-label">Rapport généré le</div>
             <div class="cover-ref-value">{{ "now"|date('d/m/Y') }}</div>
+            {% if chantier.codeChantier %}
+                <div class="cover-ref-label" style="margin-top:10px;">Code chantier</div>
+                <div class="cover-ref-value">
+                    {{ chantier.codeChantier }}
+                </div>
+            {% endif %}
 
-            <div style="height: 8px;"></div>
-
-            <div class="cover-ref-label">Référence chantier</div>
-            <div class="cover-ref-value">#{{ chantier.id }}</div>
+            {% if chantier.nominationChantier %}
+                <div class="cover-ref-label" style="margin-top:10px;">Nomination</div>
+                <div class="cover-ref-value" style="font-size:9px; line-height:1.4;">
+                    {{ chantier.nominationChantier }}
+                </div>
+            {% endif %}
           </div>
         </td>
       </tr>
     </table>
 
     {% if prestatairesAvecLogo|length > 0 %}
-      <div class="cover-partners">
-        <div class="cover-partners-label">Prestataires / Mandataires associés</div>
+      <div class="cover-partners-box">
+        <div class="cover-partners">
+          <div class="cover-partners-label">Prestataires / Mandataires associés</div>
 
-        <table class="cover-partners-table">
-          <tr>
-            {% for mandataire in prestatairesAvecLogo %}
-              <td>
-                <img
-                  src="{{ absolute_url(asset('uploads/mandataires/logos/' ~ mandataire.logo)) }}"
-                  alt="{{ mandataire.societe ?: mandataire.nom }}"
-                >
-              </td>
-            {% endfor %}
+          <table class="cover-partners-table">
+            <tr>
+              {% for mandataire in prestatairesAvecLogo %}
+                <td>
+                  <div class="cover-partner-logo">
+                    <img
+                      src="{{ absolute_url(asset('uploads/mandataires/logos/' ~ mandataire.logo)) }}"
+                      alt="{{ mandataire.societe ?: mandataire.nom }}"
+                    >
+                  </div>
+                </td>
+              {% endfor %}
 
-            {% for i in prestatairesAvecLogo|length..2 %}
-              {% if prestatairesAvecLogo|length < 3 %}
-                <td style="background: transparent;"></td>
-              {% endif %}
-            {% endfor %}
-          </tr>
-        </table>
+              {% for i in prestatairesAvecLogo|length..2 %}
+                {% if prestatairesAvecLogo|length < 3 %}
+                  <td style="background: transparent;"></td>
+                {% endif %}
+              {% endfor %}
+            </tr>
+          </table>
+        </div>
       </div>
 
-      <div class="cover-category" style="margin-top: 36px;">
+      <div class="cover-category" style="margin-top: 20px;">
         Compte rendu d’intervention
       </div>
     {% else %}
@@ -542,6 +572,7 @@
     <div class="cover-project">
       <div class="cover-project-label">Chantier concerné</div>
       <div class="cover-project-name">{{ chantier.nom ?: '-' }}</div>
+      <div class="cover-project-saison-annee">{% if chantier.saison %} Saison : {{ chantier.saison }}{% endif %}{% if chantier.annee %} - Année : {{ chantier.annee }}{% endif %}</div>
 
       <div class="cover-project-address">
         {{ chantier.adresse ?: '' }}
@@ -555,15 +586,15 @@
     <table class="cover-kpi-table">
       <tr>
         <td>
-          <div class="cover-kpi-label">Semaine</div>
-          <div class="cover-kpi-value">{{ chantier.semainePrevisionnelle ?: '-' }}</div>
+          <div class="cover-kpi-label">Période d'exécution</div>
+          <div class="cover-kpi-value">{{ chantier.semaineReelle ?: '-' }}</div>
         </td>
         <td>
-          <div class="cover-kpi-label">Période prévue</div>
+          <div class="cover-kpi-label">Date réelle</div>
           <div class="cover-kpi-value">
-            {{ chantier.dateDebutPrevisionnelle ? chantier.dateDebutPrevisionnelle|date('d/m/Y') : '-' }}
-            {% if chantier.dateFinPrevisionnelle %}
-              <br>{{ chantier.dateFinPrevisionnelle|date('d/m/Y') }}
+            {{ chantier.dateDebutReelle ? chantier.dateDebutReelle|date('d/m/Y') : '-' }}
+            {% if chantier.dateFinReelle %}
+              <br>{{ chantier.dateFinReelle|date('d/m/Y') }}
             {% endif %}
           </div>
         </td>
@@ -813,6 +844,36 @@
   </div>
 {% endfor %}
 
+
+
+
+{% if chantier.tableauDynamique and chantier.tableauDynamique.columns is defined and chantier.tableauDynamique.rows is defined %}
+  <div class="page-break"></div>
+  <div class="keep-together">
+    <h2>Analyse</h2>
+
+    <table class="table-data w-100">
+      <thead>
+        <tr>
+          {% for col in chantier.tableauDynamique.columns %}
+            <th>{{ col }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for row in chantier.tableauDynamique.rows %}
+          <tr>
+            {% for cell in row %}
+              <td>{{ cell ?: '-' }}</td>
+            {% endfor %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endif %}
+
 <div class="page-break"></div>
 
 {# --- REPORTAGE PHOTOS --- #}
@@ -893,6 +954,8 @@
     </div>
   {% endfor %}
 {% endfor %}
+
+
 
 {% if not hasAnyPhoto %}
   <div style="text-align: center; padding: 40px; border: 1px solid {{ border }};">Aucune photo enregistrée pour ce chantier.</div>
