@@ -1880,7 +1880,7 @@
         }, options));
       }
 
-      function initTomSelect(scope = document) {
+      function initGenericTomSelect(scope = document) {
         if (!window.TomSelect) return;
 
         scope.querySelectorAll('select').forEach(select => {
@@ -1897,14 +1897,11 @@
         });
       }
 
-
-      function initAffectationsTomSelect(scope = document) {
+      function initMandatairesTomSelect(scope = document) {
         if (!window.TomSelect) return;
 
-        scope.querySelectorAll('.js-ts-affectations').forEach(select => {
-          if (select.tomselect) {
-            return;
-          }
+        scope.querySelectorAll('.js-ts-mandataires').forEach(select => {
+          if (select.tomselect) return;
 
           new TomSelect(select, {
             plugins: ['remove_button'],
@@ -1912,20 +1909,87 @@
             persist: false,
             create: false,
             dropdownParent: 'body',
-            placeholder: 'Rechercher un utilisateur...',
+            placeholder: 'Sélectionner un ou plusieurs mandataires',
             searchField: ['text'],
+            sortField: { field: 'text', direction: 'asc' },
+            onChange: () => refreshResume()
+          });
+        });
+      }
+
+      function normalizeSearch(value) {
+        return String(value || '')
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '');
+      }
+
+      function initAffectationsTomSelect(scope = document) {
+        if (!window.TomSelect) return;
+
+        scope.querySelectorAll('.js-ts-affectations').forEach(select => {
+          if (select.tomselect) {
+            select.tomselect.destroy();
+          }
+
+          const options = [...select.options]
+            .filter(option => option.value !== '')
+            .map(option => ({
+              value: option.value,
+              text: option.textContent.trim(),
+              search: normalizeSearch(option.textContent.trim())
+            }));
+
+          new TomSelect(select, {
+            options: options,
+            items: [...select.selectedOptions].map(option => option.value),
+
+            plugins: ['remove_button'],
+            maxItems: null,
+            persist: false,
+            create: false,
+            dropdownParent: 'body',
+
+            valueField: 'value',
+            labelField: 'text',
+            searchField: ['text', 'search'],
+
+            placeholder: 'Rechercher un utilisateur...',
+
+            score: function(search) {
+              const normalizedSearch = normalizeSearch(search);
+
+              return function(item) {
+                return item.search.includes(normalizedSearch) ? 1 : 0;
+              };
+            },
+
             sortField: {
               field: 'text',
               direction: 'asc'
             },
+
             render: {
-              no_results: () => `
-                <div class="px-3 py-3 text-muted">
-                  <i class="bi bi-search me-1"></i>
-                  Aucun utilisateur trouvé.
-                </div>
-              `
+              option: function(item, escape) {
+                return `
+                  <div class="px-3 py-2">
+                    <div class="fw-bold">${escape(item.text)}</div>
+                  </div>
+                `;
+              },
+              item: function(item, escape) {
+                return `<div>${escape(item.text)}</div>`;
+              },
+              no_results: function() {
+                return `
+                  <div class="px-3 py-3 text-muted">
+                    <i class="bi bi-search me-1"></i>
+                    Aucun utilisateur trouvé.
+                  </div>
+                `;
+              }
             },
+
             onChange: () => refreshResume()
           });
         });
@@ -1933,7 +1997,8 @@
 
       function initWidgets(scope = document) {
         initFlatpickr(scope);
-        initTomSelect(scope);
+        initGenericTomSelect(scope);
+        initMandatairesTomSelect(scope);
         initAffectationsTomSelect(scope);
       }
 

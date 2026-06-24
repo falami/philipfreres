@@ -22,6 +22,7 @@ use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\CallbackTransformer;
+use App\Entity\UtilisateurEntite;
 
 class ChantierType extends AbstractType
 {
@@ -222,19 +223,24 @@ class ChantierType extends AbstractType
         'multiple' => true,
         'expanded' => false,
         'by_reference' => false,
-        'choice_label' => fn(Utilisateur $u) => trim(($u->getPrenom() ?: '') . ' ' . ($u->getNom() ?: '')),
+
+        'choice_label' => fn(Utilisateur $u) =>
+        trim(($u->getPrenom() ?: '') . ' ' . ($u->getNom() ?: '')) ?: $u->getEmail(),
+
         'query_builder' => function (UtilisateurRepository $repo) use ($entite) {
           return $repo->createQueryBuilder('u')
-            ->andWhere('u.entite = :entite')
+            ->distinct()
+            ->leftJoin('u.utilisateurEntites', 'ue')
+            ->andWhere('u.entite = :entite OR ue.entite = :entite')
             ->setParameter('entite', $entite)
             ->orderBy('u.nom', 'ASC')
             ->addOrderBy('u.prenom', 'ASC');
         },
+
         'attr' => [
           'class' => 'form-select js-ts-affectations',
           'placeholder' => 'Sélectionner un ou plusieurs utilisateurs',
         ],
-        'help' => 'Ces utilisateurs pourront voir et modifier ce chantier, sauf s’il est en brouillon.',
       ]);
     }
   }
