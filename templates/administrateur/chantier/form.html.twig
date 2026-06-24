@@ -1932,7 +1932,7 @@
             select.tomselect.destroy();
           }
 
-          const options = [...select.options]
+          const options = Array.from(select.options || [])
             .filter(option => option.value !== '')
             .map(option => ({
               value: option.value,
@@ -1942,7 +1942,7 @@
 
           new TomSelect(select, {
             options: options,
-            items: [...select.selectedOptions].map(option => option.value),
+            items: Array.from(select.selectedOptions || []).map(option => option.value),
 
             plugins: ['remove_button'],
             maxItems: null,
