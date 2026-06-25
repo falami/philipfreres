@@ -1839,9 +1839,7 @@
             minuteIncrement: 15,
             defaultHour: defaultHour,
             defaultMinute: 0,
-            dateFormat: 'Y-m-d H:i',
-            altInput: true,
-            altFormat: 'd/m/Y H:i',
+            dateFormat: 'd/m/Y H:i',
             allowInput: true,
             locale: 'fr',
             onReady: () => updateWeekLabel(el),
@@ -2018,7 +2016,7 @@
               target.value = source.value;
 
               if (target._flatpickr) {
-                target._flatpickr.setDate(source.value, true, 'Y-m-d H:i');
+                target._flatpickr.setDate(source.value, true, 'd/m/Y H:i');
               }
 
               updateWeekLabel(target);
