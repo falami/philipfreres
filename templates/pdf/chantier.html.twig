@@ -809,8 +809,16 @@
         <tr>
           <th>Période prév.</th>
           <td>
-            Du {{ zone.dateDebutPrevisionnelle ? zone.dateDebutPrevisionnelle|date('d/m/Y H:i') : '-' }} 
-            {% if zone.dateFinPrevisionnelle %} au {{ zone.dateFinPrevisionnelle|date('d/m/Y H:i') }}{% endif %}
+            {% if zone.dateDebutPrevisionnelle or zone.dateFinPrevisionnelle %}
+                {% if zone.dateDebutPrevisionnelle %}
+                    Du {{ zone.dateDebutPrevisionnelle|date('d/m/Y H:i') }}
+                {% endif %}
+
+                {% if zone.dateFinPrevisionnelle %}
+                    {% if zone.dateDebutPrevisionnelle %} au {% else %}Jusqu'au {% endif %}
+                    {{ zone.dateFinPrevisionnelle|date('d/m/Y H:i') }}
+                {% endif %}
+            {% endif %}
           </td>
         </tr>
         <tr>
