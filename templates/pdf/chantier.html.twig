@@ -824,8 +824,16 @@
         <tr>
           <th>Période réelle</th>
           <td>
-            Du {{ zone.dateDebutReelle ? zone.dateDebutReelle|date('d/m/Y H:i') : '-' }} 
-            {% if zone.dateFinReelle %} au {{ zone.dateFinReelle|date('d/m/Y H:i') }}{% endif %}
+            {% if zone.dateDebutReelle or zone.dateFinReelle %}
+                {% if zone.dateDebutReelle %}
+                    Du {{ zone.dateDebutReelle|date('d/m/Y H:i') }}
+                {% endif %}
+
+                {% if zone.dateFinReelle %}
+                    {% if zone.dateDebutReelle %} au {% else %}Jusqu'au {% endif %}
+                    {{ zone.dateFinReelle|date('d/m/Y H:i') }}
+                {% endif %}
+            {% endif %}
           </td>
         </tr>
       </table>
