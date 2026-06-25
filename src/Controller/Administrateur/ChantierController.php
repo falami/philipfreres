@@ -71,7 +71,7 @@ final class ChantierController extends AbstractController
     $length = $request->request->getInt('length', 25);
 
     // 🔎 Recherche globale DataTables
-    $searchDT = trim((string) (($request->request->all('search')['value'] ?? '')));
+    $searchDT = trim((string) $request->request->get('searchValue', ''));
 
     // 🔎 Filtres custom
     $searchCustom  = trim((string) $request->request->get('searchName', ''));
@@ -87,9 +87,8 @@ final class ChantierController extends AbstractController
     $qb = $repo->createVisibleListQb($entite, $user, $isTenantAdmin, $search);
 
     // 🔃 ORDER
-    $order = (array) $request->request->all('order');
-    $col   = (int) ($order[0]['column'] ?? 0);
-    $dir   = strtolower((string) ($order[0]['dir'] ?? 'desc')) === 'asc' ? 'ASC' : 'DESC';
+    $col = $request->request->getInt('orderColumn', 0);
+    $dir = strtolower((string) $request->request->get('orderDir', 'desc')) === 'asc' ? 'ASC' : 'DESC';
 
     $orderMap = [
       0 => 'c.id',
