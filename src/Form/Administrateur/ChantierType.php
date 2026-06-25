@@ -129,17 +129,21 @@ class ChantierType extends AbstractType
         'required' => false,
         'label' => 'Début prévisionnel global',
         'html5' => false,
+        'format' => 'yyyy-MM-dd HH:mm',
         'attr' => [
           'class' => 'form-control js-datetime',
           'placeholder' => 'JJ/MM/AAAA HH:MM',
           'data-week-target' => 'week-dateDebutPrevisionnelle',
         ],
       ])
+
+
       ->add('dateFinPrevisionnelle', DateTimeType::class, [
         'widget' => 'single_text',
         'required' => false,
         'label' => 'Fin prévisionnelle globale',
         'html5' => false,
+        'format' => 'yyyy-MM-dd HH:mm',
         'attr' => [
           'class' => 'form-control js-datetime',
           'placeholder' => 'JJ/MM/AAAA HH:MM',
@@ -151,6 +155,7 @@ class ChantierType extends AbstractType
         'required' => false,
         'label' => 'Début réel global',
         'html5' => false,
+        'format' => 'yyyy-MM-dd HH:mm',
         'attr' => [
           'class' => 'form-control js-datetime',
           'placeholder' => 'JJ/MM/AAAA HH:MM',
@@ -162,6 +167,7 @@ class ChantierType extends AbstractType
         'required' => false,
         'label' => 'Fin réelle globale',
         'html5' => false,
+        'format' => 'yyyy-MM-dd HH:mm',
         'attr' => [
           'class' => 'form-control js-datetime',
           'placeholder' => 'JJ/MM/AAAA HH:MM',
