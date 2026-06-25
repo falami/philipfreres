@@ -371,7 +371,6 @@ final class FuelDashboardRepository
 
     $byEmpProvAmount = $this->db->fetchAllAssociative("
   SELECT
-    COALESCE(x.employe_label,'(Non rattaché)') AS label,
     COALESCE(x.employe_id, 0) AS filter_id,
     COALESCE(x.employe_label,'(Non rattaché)') AS label,
     SUM(CASE WHEN x.provider = 'alx' THEN x.qty ELSE 0 END) AS alx,

@@ -22,7 +22,6 @@ use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\CallbackTransformer;
-use App\Entity\UtilisateurEntite;
 
 class ChantierType extends AbstractType
 {

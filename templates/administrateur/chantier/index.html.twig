@@ -972,15 +972,26 @@
         scrollCollapse:true,
         responsive:false,
 
-        ajax:{
-          url:"{{ path('app_administrateur_chantier_ajax', { entite: entite.id }) }}",
-          type:"POST",
-          data: d => {
-            d.statutFilter = $statut.val() || 'all';
-            d.mandataireFilter = $mandataire.val() || 'all';
-            d.semaineFilter = $semaine.val() || '';
-            d.villeFilter = $ville.val() || '';
-            d.searchName = $search.val() || '';
+        ajax: {
+          url: "{{ path('app_administrateur_chantier_ajax', { entite: entite.id }) }}",
+          type: "POST",
+          data: function (d) {
+            return {
+              draw: d.draw,
+              start: d.start,
+              length: d.length,
+
+              orderColumn: d.order?.[0]?.column ?? 0,
+              orderDir: d.order?.[0]?.dir ?? 'desc',
+
+              searchValue: d.search?.value ?? '',
+
+              statutFilter: $statut.val() || 'all',
+              mandataireFilter: $mandataire.val() || 'all',
+              semaineFilter: $semaine.val() || '',
+              villeFilter: $ville.val() || '',
+              searchName: $search.val() || ''
+            };
           }
         },
 
