@@ -1102,7 +1102,8 @@
   {{ form_start(form, {
     attr: {
       id: form.vars.id,
-      novalidate: 'novalidate'
+      novalidate: 'novalidate',
+      name: 'chantier_administrateur'
     }
   }) }}
   {% set formHasErrors = form.vars.submitted and not form.vars.valid %}
@@ -1838,16 +1839,18 @@
             minuteIncrement: 15,
             defaultHour: defaultHour,
             defaultMinute: 0,
-            dateFormat: 'Y-m-d H:i',
+            dateFormat: 'Y-m-d\\TH:i', // Interopérabilité parfaite avec type="datetime-local"
             altInput: true,
             altFormat: 'd/m/Y H:i',
             allowInput: true,
-            allowInvalidPreload: true,  // ← ajout
             locale: 'fr',
+            // Permet de parser correctement la date si l'utilisateur écrit au clavier
+            parseDate: (datestr, format) => {
+              return window.flatpickr.parseDate(datestr, format) || window.flatpickr.parseDate(datestr, 'd/m/Y H:i');
+            },
             onReady: (_, __, fp) => {
-              // Empêche l'altInput de soumettre sa valeur
               if (fp.altInput) {
-                fp.altInput.removeAttribute('name');  // ← fix clé
+                fp.altInput.removeAttribute('name'); 
               }
               updateWeekLabel(el);
             },
@@ -1858,6 +1861,7 @@
           updateWeekLabel(el);
         });
 
+        // Reste du code pour les datepickers classiques...
         scope.querySelectorAll('input[type="date"], .js-datepicker, [data-flatpickr]').forEach(el => {
           if (el._flatpickr || el.classList.contains('js-datetime')) return;
 
