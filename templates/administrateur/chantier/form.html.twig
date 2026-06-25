@@ -1843,8 +1843,15 @@
             altInput: true,
             altFormat: 'd/m/Y H:i',
             allowInput: true,
+            allowInvalidPreload: true,  // ← ajout
             locale: 'fr',
-            onReady: () => updateWeekLabel(el),
+            onReady: (_, __, fp) => {
+              // Empêche l'altInput de soumettre sa valeur
+              if (fp.altInput) {
+                fp.altInput.removeAttribute('name');  // ← fix clé
+              }
+              updateWeekLabel(el);
+            },
             onChange: () => updateWeekLabel(el),
             onValueUpdate: () => updateWeekLabel(el),
           });
