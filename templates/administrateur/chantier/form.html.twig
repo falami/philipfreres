@@ -1102,8 +1102,7 @@
   {{ form_start(form, {
     attr: {
       id: form.vars.id,
-      novalidate: 'novalidate',
-      name: 'chantier_administrateur'
+      novalidate: 'novalidate'
     }
   }) }}
   {% set formHasErrors = form.vars.submitted and not form.vars.valid %}
