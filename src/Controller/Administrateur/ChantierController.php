@@ -55,7 +55,7 @@ final class ChantierController extends AbstractController
     ]);
   }
 
-  #[Route('/ajax', name: 'app_administrateur_chantier_ajax', methods: ['POST'])]
+  #[Route('/ajax', name: 'app_administrateur_chantier_ajax', methods: ['GET', 'POST'])]
   public function ajax(Entite $entite, Request $request, ChantierRepository $repo): JsonResponse
   {
 
@@ -66,19 +66,19 @@ final class ChantierController extends AbstractController
 
 
 
-    $draw   = $request->request->getInt('draw', 0);
-    $start  = max(0, $request->request->getInt('start', 0));
-    $length = $request->request->getInt('length', 25);
+    $draw   = $request->query->getInt('draw', 0);
+    $start  = max(0, $request->query->getInt('start', 0));
+    $length = $request->query->getInt('length', 25);
 
     // 🔎 Recherche globale DataTables
-    $searchDT = trim((string) $request->request->get('searchValue', ''));
+    $searchDT = trim((string) $request->query->get('searchValue', ''));
 
     // 🔎 Filtres custom
-    $searchCustom  = trim((string) $request->request->get('searchName', ''));
-    $statutFilter  = (string) $request->request->get('statutFilter', 'all');
-    $semaineFilter = trim((string) $request->request->get('semaineFilter', ''));
-    $villeFilter   = trim((string) $request->request->get('villeFilter', ''));
-    $mandataireFilter = (string) $request->request->get('mandataireFilter', 'all');
+    $searchCustom  = trim((string) $request->query->get('searchName', ''));
+    $statutFilter  = (string) $request->query->get('statutFilter', 'all');
+    $semaineFilter = trim((string) $request->query->get('semaineFilter', ''));
+    $villeFilter   = trim((string) $request->query->get('villeFilter', ''));
+    $mandataireFilter = (string) $request->query->get('mandataireFilter', 'all');
 
     // 🔀 Fusion recherche DataTables + champ custom
     $search = trim($searchDT . ' ' . $searchCustom);
@@ -87,8 +87,8 @@ final class ChantierController extends AbstractController
     $qb = $repo->createVisibleListQb($entite, $user, $isTenantAdmin, $search);
 
     // 🔃 ORDER
-    $col = $request->request->getInt('orderColumn', 0);
-    $dir = strtolower((string) $request->request->get('orderDir', 'desc')) === 'asc' ? 'ASC' : 'DESC';
+    $col = $request->query->getInt('orderColumn', 0);
+    $dir = strtolower((string) $request->query->get('orderDir', 'desc')) === 'asc' ? 'ASC' : 'DESC';
 
     $orderMap = [
       0 => 'c.id',

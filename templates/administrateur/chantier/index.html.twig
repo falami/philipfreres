@@ -974,18 +974,15 @@
 
         ajax: {
           url: "{{ path('app_administrateur_chantier_ajax', { entite: entite.id }) }}",
-          type: "POST",
+          type: "GET",
           data: function (d) {
             return {
               draw: d.draw,
               start: d.start,
               length: d.length,
-
               orderColumn: d.order?.[0]?.column ?? 0,
               orderDir: d.order?.[0]?.dir ?? 'desc',
-
               searchValue: d.search?.value ?? '',
-
               statutFilter: $statut.val() || 'all',
               mandataireFilter: $mandataire.val() || 'all',
               semaineFilter: $semaine.val() || '',
