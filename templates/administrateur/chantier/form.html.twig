@@ -1040,90 +1040,257 @@
       font-weight:700;
     }
 
-
 /* =========================
-   Flatpickr premium
+   Flatpickr ULTRA PREMIUM
    ========================= */
 
 .flatpickr-calendar {
-  width: 360px !important;
+  width: 340px !important;
   border: 0 !important;
-  border-radius: 22px !important;
-  overflow: hidden !important;
-  box-shadow: 0 24px 70px rgba(15, 23, 42, .22) !important;
+  border-radius: 24px !important;
+  overflow: visible !important;
+  box-shadow:
+    0 0 0 1px rgba(15,23,42,.06),
+    0 32px 80px rgba(15,23,42,.22),
+    0 8px 24px rgba(15,23,42,.10) !important;
   z-index: 999999 !important;
   font-family: inherit !important;
+  padding: 0 !important;
+  background: #fff !important;
 }
 
+/* ---- Header ---- */
 .flatpickr-months {
-  height: 62px !important;
+  height: 68px !important;
   display: flex !important;
   align-items: center !important;
-  background: #fff !important;
-  border-bottom: 1px solid rgba(15,23,42,.08);
+  background: linear-gradient(
+    135deg,
+    var(--theme-color-principal, #233342),
+    color-mix(in srgb, var(--theme-color-principal, #233342) 72%, #fff)
+  ) !important;
+  border-radius: 24px 24px 0 0 !important;
+  padding: 0 12px !important;
+  border-bottom: none !important;
+}
+
+.flatpickr-month {
+  flex: 1 !important;
+  height: 68px !important;
+  overflow: visible !important;
+  background: transparent !important;
+  color: #fff !important;
 }
 
 .flatpickr-prev-month,
 .flatpickr-next-month {
   position: static !important;
-  width: 46px !important;
-  height: 46px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
   padding: 0 !important;
-  color: #0f172a !important;
+  border-radius: 14px !important;
+  background: rgba(255,255,255,.12) !important;
+  border: 1px solid rgba(255,255,255,.18) !important;
+  color: #fff !important;
+  transition: background .15s !important;
 }
 
-.flatpickr-month {
-  flex: 1 !important;
-  height: 62px !important;
-  overflow: visible !important;
+.flatpickr-prev-month:hover,
+.flatpickr-next-month:hover {
+  background: rgba(255,255,255,.22) !important;
+  color: #fff !important;
+}
+
+.flatpickr-prev-month svg,
+.flatpickr-next-month svg {
+  fill: #fff !important;
+  width: 16px !important;
+  height: 16px !important;
 }
 
 .flatpickr-current-month {
   position: static !important;
   width: 100% !important;
-  height: 62px !important;
-  padding: 0 !important;
+  height: 68px !important;
+  padding: 0 8px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 10px !important;
+  gap: 8px !important;
   transform: none !important;
+  font-size: 1rem !important;
 }
 
+/* Dropdown mois — VISIBLE et stylé */
 .flatpickr-current-month .flatpickr-monthDropdown-months {
-  width: 165px !important;
-  min-width: 165px !important;
-  height: 42px !important;
-  padding: 0 34px 0 14px !important;
-  border-radius: 14px !important;
-  border: 1px solid rgba(15,23,42,.12) !important;
-  background: #f8fafc !important;
-  color: #0f172a !important;
-  font-size: 18px !important;
-  font-weight: 900 !important;
   appearance: auto !important;
   -webkit-appearance: menulist !important;
+  -moz-appearance: menulist !important;
+  height: 38px !important;
+  min-width: 130px !important;
+  padding: 0 10px !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(255,255,255,.28) !important;
+  background: rgba(255,255,255,.16) !important;
+  color: #fff !important;
+  font-size: .95rem !important;
+  font-weight: 800 !important;
+  cursor: pointer !important;
+  outline: none !important;
+  /* Force le texte blanc dans Chrome */
+  -webkit-text-fill-color: #fff !important;
 }
 
+.flatpickr-current-month .flatpickr-monthDropdown-months:focus {
+  background: rgba(255,255,255,.24) !important;
+  border-color: rgba(255,255,255,.50) !important;
+}
+
+/* Options du select dans le dropdown natif */
+.flatpickr-current-month .flatpickr-monthDropdown-months option {
+  color: #0f172a !important;
+  background: #fff !important;
+  font-weight: 700 !important;
+}
+
+/* Input année */
 .flatpickr-current-month .numInputWrapper {
-  width: 92px !important;
-  height: 42px !important;
+  width: 80px !important;
+  height: 38px !important;
+  overflow: visible !important;
 }
 
 .flatpickr-current-month input.cur-year {
-  width: 92px !important;
-  height: 42px !important;
+  width: 80px !important;
+  height: 38px !important;
   padding: 0 10px !important;
-  border-radius: 14px !important;
-  border: 1px solid rgba(15,23,42,.12) !important;
-  background: #f8fafc !important;
-  color: #0f172a !important;
-  font-size: 18px !important;
-  font-weight: 900 !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(255,255,255,.28) !important;
+  background: rgba(255,255,255,.16) !important;
+  color: #fff !important;
+  font-size: .95rem !important;
+  font-weight: 800 !important;
   text-align: center !important;
+  outline: none !important;
+  -webkit-text-fill-color: #fff !important;
+}
+
+.flatpickr-current-month input.cur-year:focus {
+  background: rgba(255,255,255,.24) !important;
+  border-color: rgba(255,255,255,.50) !important;
+}
+
+.numInputWrapper span.arrowUp,
+.numInputWrapper span.arrowDown {
+  border-color: rgba(255,255,255,.5) !important;
+}
+
+/* ---- Jours de semaine ---- */
+.flatpickr-weekdays {
+  background: #f8fafc !important;
+  border-bottom: 1px solid rgba(15,23,42,.07) !important;
+  height: 36px !important;
+}
+
+span.flatpickr-weekday {
+  color: var(--theme-color-principal, #233342) !important;
+  font-weight: 900 !important;
+  font-size: .78rem !important;
+  letter-spacing: .04em !important;
+  text-transform: uppercase !important;
+  background: transparent !important;
+}
+
+/* ---- Grille des jours ---- */
+.flatpickr-days {
+  width: 340px !important;
+  border: none !important;
+}
+
+.dayContainer {
+  width: 340px !important;
+  min-width: 340px !important;
+  max-width: 340px !important;
+  padding: 8px 12px !important;
+  gap: 2px !important;
+}
+
+.flatpickr-day {
+  width: 40px !important;
+  max-width: 40px !important;
+  height: 40px !important;
+  line-height: 40px !important;
+  border-radius: 14px !important;
+  font-weight: 700 !important;
+  font-size: .88rem !important;
+  color: #0f172a !important;
+  border: 1px solid transparent !important;
+  transition: all .15s !important;
+}
+
+.flatpickr-day:hover:not(.flatpickr-disabled):not(.selected) {
+  background: color-mix(in srgb, var(--theme-color-principal, #233342) 10%, transparent) !important;
+  border-color: color-mix(in srgb, var(--theme-color-principal, #233342) 20%, transparent) !important;
+  color: var(--theme-color-principal, #233342) !important;
+}
+
+.flatpickr-day.today:not(.selected) {
+  background: color-mix(in srgb, var(--theme-color-secondaire, #ffc107) 18%, transparent) !important;
+  border-color: color-mix(in srgb, var(--theme-color-secondaire, #ffc107) 45%, transparent) !important;
+  color: #0f172a !important;
+  font-weight: 900 !important;
+}
+
+.flatpickr-day.selected,
+.flatpickr-day.selected:hover {
+  background: linear-gradient(
+    135deg,
+    var(--theme-color-principal, #233342),
+    color-mix(in srgb, var(--theme-color-principal, #233342) 72%, #fff)
+  ) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--theme-color-principal, #233342) 40%, transparent) !important;
+}
+
+.flatpickr-day.flatpickr-disabled,
+.flatpickr-day.prevMonthDay,
+.flatpickr-day.nextMonthDay {
+  color: rgba(15,23,42,.22) !important;
+  font-weight: 400 !important;
+}
+
+/* ---- Time picker ---- */
+.flatpickr-time {
+  border-top: 1px solid rgba(15,23,42,.08) !important;
+  height: 52px !important;
+  background: #f8fafc !important;
+  border-radius: 0 0 24px 24px !important;
+  overflow: hidden !important;
+}
+
+.flatpickr-time input,
+.flatpickr-time .flatpickr-time-separator {
+  color: var(--theme-color-principal, #233342) !important;
+  font-weight: 900 !important;
+  font-size: 1.1rem !important;
+}
+
+.flatpickr-time input:hover,
+.flatpickr-time input:focus {
+  background: color-mix(in srgb, var(--theme-color-principal, #233342) 8%, transparent) !important;
+}
+
+.flatpickr-time .numInputWrapper span {
+  border-color: rgba(15,23,42,.12) !important;
+}
+
+.flatpickr-time .numInputWrapper span svg path {
+  fill: var(--theme-color-principal, #233342) !important;
 }
   </style>
 {% endblock %}
