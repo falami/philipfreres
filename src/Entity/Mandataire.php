@@ -81,7 +81,7 @@ class Mandataire
 
   public function __toString(): string
   {
-    return trim(($this->societe ? $this->societe . ' - ' : ''));
+    return trim(($this->societe ? $this->societe : ''));
   }
 
   public function getId(): ?int
