@@ -1040,6 +1040,50 @@
       font-weight:700;
     }
 
+
+
+    .flatpickr-calendar {
+  z-index: 99999 !important;
+  width: 340px !important;
+  border-radius: 16px !important;
+}
+
+.flatpickr-months {
+  padding-top: 6px;
+}
+
+.flatpickr-current-month {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  left: 12.5% !important;
+  width: 75% !important;
+  padding-top: 4px !important;
+}
+
+.flatpickr-current-month .flatpickr-monthDropdown-months {
+  width: 145px !important;
+  min-width: 145px !important;
+  display: inline-block !important;
+  font-weight: 700 !important;
+}
+
+.flatpickr-current-month .numInputWrapper {
+  width: 82px !important;
+  display: inline-block !important;
+}
+
+.flatpickr-current-month input.cur-year {
+  display: inline-block !important;
+  width: 72px !important;
+  min-width: 72px !important;
+  color: #111827 !important;
+  opacity: 1 !important;
+  font-weight: 800 !important;
+  font-size: 16px !important;
+}
+
   </style>
 {% endblock %}
 
@@ -1842,6 +1886,7 @@
             dateFormat: 'd/m/Y H:i',
             allowInput: true,
             locale: 'fr',
+            appendTo: document.body,
             onReady: () => updateWeekLabel(el),
             onChange: () => updateWeekLabel(el),
             onValueUpdate: () => updateWeekLabel(el),
