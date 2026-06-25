@@ -754,7 +754,25 @@
         <td>
           <strong>{{ zone.nom ?: 'Sous-chantier' }}</strong><br>
           <span style="font-size: 8px; color: #6b7280;">
-            Parcelle : {{ zone.parcelle ?: '-' }} · {{ zone.surfaceTraitee ?: 0 }} m² · {{ zone.lineaireTraite ?: 0 }} ml · {{ zone.photos|length }} Photos
+            {% set infos = [] %}
+
+            {% if zone.parcelle %}
+                {% set infos = infos|merge(['Parcelle : ' ~ zone.parcelle]) %}
+            {% endif %}
+
+            {% if zone.surfaceTraitee and zone.surfaceTraitee > 0 %}
+                {% set infos = infos|merge([zone.surfaceTraitee ~ ' m²']) %}
+            {% endif %}
+
+            {% if zone.lineaireTraite and zone.lineaireTraite > 0 %}
+                {% set infos = infos|merge([zone.lineaireTraite ~ ' ml']) %}
+            {% endif %}
+
+            {% if zone.photos|length > 0 %}
+                {% set infos = infos|merge([zone.photos|length ~ ' Photo' ~ (zone.photos|length > 1 ? 's' : '')]) %}
+            {% endif %}
+
+            {{ infos|join(' · ') }}
           </span>
         </td>
       </tr>
