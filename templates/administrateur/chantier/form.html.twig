@@ -2130,7 +2130,38 @@ span.flatpickr-weekday {
             locale: 'fr',
             appendTo: document.body,
             monthSelectorType: 'dropdown',
-            onReady: () => updateWeekLabel(el),
+            onReady: (_, __, fp) => {
+            // Wrap le select natif avec un label custom
+            const select = fp.monthsDropdownContainer;
+            if (select && !select.parentElement.classList.contains('fp-month-wrapper')) {
+              const wrapper = document.createElement('div');
+              wrapper.className = 'fp-month-wrapper';
+
+              const label = document.createElement('span');
+              label.className = 'fp-month-label';
+
+              const months = ['Janvier','Février','Mars','Avril','Mai','Juin',
+                              'Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+
+              label.textContent = months[fp.currentMonth];
+
+              select.parentElement.insertBefore(wrapper, select);
+              wrapper.appendChild(label);
+              wrapper.appendChild(select);
+
+              // Met à jour le label quand le mois change
+              select.addEventListener('change', () => {
+                label.textContent = months[parseInt(select.value)];
+              });
+
+              // Synchronise aussi via monthChange de Flatpickr
+              fp.config.onMonthChange.push(() => {
+                label.textContent = months[fp.currentMonth];
+              });
+            }
+
+            updateWeekLabel(el);
+          },
             onChange: () => updateWeekLabel(el),
             onValueUpdate: () => updateWeekLabel(el),
           });
