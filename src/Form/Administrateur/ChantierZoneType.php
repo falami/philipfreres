@@ -50,6 +50,7 @@ class ChantierZoneType extends AbstractType
         'required' => false,
         'label' => 'Début prévisionnel',
         'html5' => false,
+        'format' => 'dd/MM/yyyy HH:mm',
         'attr' => [
           'class' => 'form-control js-datetime',
           'placeholder' => 'JJ/MM/AAAA HH:MM',
@@ -60,6 +61,7 @@ class ChantierZoneType extends AbstractType
         'required' => false,
         'label' => 'Fin prévisionnelle',
         'html5' => false,
+        'format' => 'dd/MM/yyyy HH:mm',
         'attr' => [
           'class' => 'form-control js-datetime',
           'placeholder' => 'JJ/MM/AAAA HH:MM',
@@ -70,6 +72,7 @@ class ChantierZoneType extends AbstractType
         'required' => false,
         'label' => 'Début réel',
         'html5' => false,
+        'format' => 'dd/MM/yyyy HH:mm',
         'attr' => [
           'class' => 'form-control js-datetime',
           'placeholder' => 'JJ/MM/AAAA HH:MM',
@@ -80,6 +83,7 @@ class ChantierZoneType extends AbstractType
         'required' => false,
         'label' => 'Fin réelle',
         'html5' => false,
+        'format' => 'dd/MM/yyyy HH:mm',
         'attr' => [
           'class' => 'form-control js-datetime',
           'placeholder' => 'JJ/MM/AAAA HH:MM',
