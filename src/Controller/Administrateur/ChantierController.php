@@ -315,31 +315,37 @@ final class ChantierController extends AbstractController
 
       $uploadPath = $this->getParameter('chantier_photo_upload_dir');
 
-      $zones = array_values($chantier->getZones()->toArray());
+      foreach ($form->get('zones') as $zoneForm) {
 
-      foreach ($form->get('zones') as $zoneIndex => $zoneForm) {
-        $zone = $zones[$zoneIndex] ?? null;
+        /** @var \App\Entity\ChantierZone|null $zone */
+        $zone = $zoneForm->getData();
 
-        if (!$zone) {
+        if (!$zone || !$zoneForm->has('photos')) {
           continue;
         }
 
-        if (!$zoneForm->has('photos')) {
-          continue;
-        }
+        foreach ($zoneForm->get('photos') as $photoForm) {
 
-        $photos = array_values($zone->getPhotos()->toArray());
-
-        foreach ($zoneForm->get('photos') as $photoIndex => $photoForm) {
-          $photoEntity = $photos[$photoIndex] ?? null;
+          /** @var \App\Entity\ChantierPhoto|null $photoEntity */
+          $photoEntity = $photoForm->getData();
 
           if (!$photoEntity) {
             continue;
           }
 
+          // =========================
+          // PHOTO AVANT
+          // =========================
+
           $avantFile = $photoForm->get('avantFile')->getData();
 
           if ($avantFile) {
+
+            // On lit les EXIF AVANT de déplacer/redimensionner le fichier
+            $gpsAvant = $this->photoGpsExtractor->extractFromFile(
+              $avantFile->getPathname()
+            );
+
             $this->photoManager->handleSingleImageUpload(
               file: $avantFile,
               setter: fn(string $name) => $photoEntity->setPhotoAvant($name),
@@ -349,11 +355,27 @@ final class ChantierController extends AbstractController
               sizeH: 1200,
               oldFilename: $photoEntity->getPhotoAvant()
             );
+
+            // Si GPS EXIF présent, il est prioritaire
+            if ($gpsAvant) {
+              $photoEntity->setLatitudeAvant($gpsAvant['latitude']);
+              $photoEntity->setLongitudeAvant($gpsAvant['longitude']);
+              $photoEntity->setSourceLocalisationAvant('exif');
+            }
           }
+
+          // =========================
+          // PHOTO APRÈS
+          // =========================
 
           $apresFile = $photoForm->get('apresFile')->getData();
 
           if ($apresFile) {
+
+            $gpsApres = $this->photoGpsExtractor->extractFromFile(
+              $apresFile->getPathname()
+            );
+
             $this->photoManager->handleSingleImageUpload(
               file: $apresFile,
               setter: fn(string $name) => $photoEntity->setPhotoApres($name),
@@ -363,36 +385,21 @@ final class ChantierController extends AbstractController
               sizeH: 1200,
               oldFilename: $photoEntity->getPhotoApres()
             );
+
+            if ($gpsApres) {
+              $photoEntity->setLatitudeApres($gpsApres['latitude']);
+              $photoEntity->setLongitudeApres($gpsApres['longitude']);
+              $photoEntity->setSourceLocalisationApres('exif');
+            }
           }
 
-          if (!$photoEntity->getLatitudeAvant() || !$photoEntity->getLongitudeAvant()) {
-            if ($photoEntity->getPhotoAvant()) {
-              $absoluteAvant = rtrim($uploadPath, '/') . '/' . $photoEntity->getPhotoAvant();
-              $gpsAvant = $this->photoGpsExtractor->extractFromFile($absoluteAvant);
-
-              if ($gpsAvant) {
-                $photoEntity->setLatitudeAvant($gpsAvant['latitude']);
-                $photoEntity->setLongitudeAvant($gpsAvant['longitude']);
-                $photoEntity->setSourceLocalisationAvant('exif');
-              }
-            }
-          } elseif (!$photoEntity->getSourceLocalisationAvant()) {
-            $photoEntity->setSourceLocalisationAvant('manuel');
-          }
-
-          if (!$photoEntity->getLatitudeApres() || !$photoEntity->getLongitudeApres()) {
-            if ($photoEntity->getPhotoApres()) {
-              $absoluteApres = rtrim($uploadPath, '/') . '/' . $photoEntity->getPhotoApres();
-              $gpsApres = $this->photoGpsExtractor->extractFromFile($absoluteApres);
-
-              if ($gpsApres) {
-                $photoEntity->setLatitudeApres($gpsApres['latitude']);
-                $photoEntity->setLongitudeApres($gpsApres['longitude']);
-                $photoEntity->setSourceLocalisationApres('exif');
-              }
-            }
-          } elseif (!$photoEntity->getSourceLocalisationApres()) {
-            $photoEntity->setSourceLocalisationApres('manuel');
+          // Sécurité : pas de localisation "après" sans photo après
+          if (!$photoEntity->getPhotoApres()) {
+            $photoEntity->setAdresseApres(null);
+            $photoEntity->setLatitudeApres(null);
+            $photoEntity->setLongitudeApres(null);
+            $photoEntity->setSourceLocalisationApres(null);
+            $photoEntity->setDatePriseVueApres(null);
           }
         }
       }

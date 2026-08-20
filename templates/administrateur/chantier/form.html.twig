@@ -1919,101 +1919,127 @@ span.flatpickr-weekday {
       const codeChantierEl = document.getElementById('{{ form.codeChantier.vars.id }}');
       const nominationChantierEl = document.getElementById('{{ form.nominationChantier.vars.id }}');
 
-      let currentBrowserLocationPromise = null;
-
       function getBrowserLocation() {
-        if (currentBrowserLocationPromise) {
-          return currentBrowserLocationPromise;
-        }
+        return new Promise((resolve) => {
+            if (!navigator.geolocation) {
+                resolve(null);
+                return;
+            }
 
-        currentBrowserLocationPromise = new Promise((resolve) => {
-          if (!navigator.geolocation) {
-            resolve(null);
-            return;
-          }
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const lat = Number(position.coords.latitude).toFixed(7);
+                    const lng = Number(position.coords.longitude).toFixed(7);
 
-          navigator.geolocation.getCurrentPosition(
-            async (position) => {
-              const lat = Number(position.coords.latitude).toFixed(7);
-              const lng = Number(position.coords.longitude).toFixed(7);
+                    let address = null;
 
-              let address = null;
+                    try {
+                        const url = new URL(
+                            "{{ path('app_administrateur_chantier_reverse_geocode', {entite: entite.id}) }}",
+                            window.location.origin
+                        );
 
-              try {
-                const url = new URL("{{ path('app_administrateur_chantier_reverse_geocode', {entite: entite.id}) }}", window.location.origin);
-                url.searchParams.set('lat', lat);
-                url.searchParams.set('lng', lng);
+                        url.searchParams.set('lat', lat);
+                        url.searchParams.set('lng', lng);
 
-                const response = await fetch(url.toString(), {
-                  headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                });
+                        const response = await fetch(url.toString(), {
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
 
-                const data = await response.json();
+                        const data = await response.json();
 
-                if (response.ok && data.ok) {
-                  address = data.display_name || null;
+                        if (response.ok && data.ok) {
+                            address = data.display_name || null;
+                        }
+                    } catch (_) {}
+
+                    resolve({
+                        lat,
+                        lng,
+                        address,
+                        source: 'browser'
+                    });
+                },
+                () => resolve(null),
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+
+                    // IMPORTANT
+                    maximumAge: 0
                 }
-              } catch (_) {}
-
-              resolve({
-                lat,
-                lng,
-                address,
-                source: 'browser'
-              });
-            },
-            () => resolve(null),
-            {
-              enableHighAccuracy: true,
-              timeout: 8000,
-              maximumAge: 120000
-            }
-          );
+            );
         });
-
-        return currentBrowserLocationPromise;
       }
 
-      async function applyDefaultLocationToPhotoItem(item) {
-        if (!item || item.dataset.defaultLocationApplied === '1') {
-          return;
+      async function applyCurrentLocationToPhoto(item, kind) {
+        if (!item || !['avant', 'apres'].includes(kind)) {
+            return;
         }
 
-        item.dataset.defaultLocationApplied = '1';
+        const latInput = item.querySelector(`.js-photo-lat-${kind}`);
+        const lngInput = item.querySelector(`.js-photo-lng-${kind}`);
+        const sourceInput = item.querySelector(`.js-photo-source-${kind}`);
+        const addressInput = item.querySelector(`.js-photo-address-${kind}`);
 
-        const browserLocation = await getBrowserLocation();
+        const latVisible = item.querySelector(`.js-photo-lat-visible-${kind}`);
+        const lngVisible = item.querySelector(`.js-photo-lng-visible-${kind}`);
 
-        ['avant', 'apres'].forEach(kind => {
-          const latInput = item.querySelector(`.js-photo-lat-${kind}`);
-          const lngInput = item.querySelector(`.js-photo-lng-${kind}`);
-          const sourceInput = item.querySelector(`.js-photo-source-${kind}`);
-          const addressInput = item.querySelector(`.js-photo-address-${kind}`);
-          const latVisible = item.querySelector(`.js-photo-lat-visible-${kind}`);
-          const lngVisible = item.querySelector(`.js-photo-lng-visible-${kind}`);
-
-          if (!latInput || !lngInput) return;
-          if (latInput.value && lngInput.value) return;
-
-          if (browserLocation) {
-            latInput.value = browserLocation.lat;
-            lngInput.value = browserLocation.lng;
-
-            if (latVisible) latVisible.value = browserLocation.lat;
-            if (lngVisible) lngVisible.value = browserLocation.lng;
-            if (sourceInput) sourceInput.value = browserLocation.source;
-            if (addressInput && browserLocation.address && !addressInput.value) {
-              addressInput.value = browserLocation.address;
-            }
-
+        if (!latInput || !lngInput) {
             return;
-          }
+        }
 
-          const chantierAddress = (window.CHANTIER_DEFAULT_LOCATION?.address || '').trim();
-          if (chantierAddress && addressInput && !addressInput.value) {
-            addressInput.value = chantierAddress;
-          }
-        });
+        // Nouvelle photo = l'ancienne localisation ne doit pas être conservée
+        latInput.value = '';
+        lngInput.value = '';
+
+        if (latVisible) latVisible.value = '';
+        if (lngVisible) lngVisible.value = '';
+        if (sourceInput) sourceInput.value = '';
+        if (addressInput) addressInput.value = '';
+
+        const location = await getBrowserLocation();
+
+        if (!location) {
+            return;
+        }
+
+        latInput.value = location.lat;
+        lngInput.value = location.lng;
+
+        if (latVisible) latVisible.value = location.lat;
+        if (lngVisible) lngVisible.value = location.lng;
+
+        if (sourceInput) {
+            sourceInput.value = 'browser';
+        }
+
+        if (addressInput && location.address) {
+            addressInput.value = location.address;
+        }
+
+        const mapEl = item.querySelector(`.js-photo-map[data-kind="${kind}"]`);
+
+        if (mapEl?._leafletMap) {
+            mapEl._leafletMap.setView(
+                [Number(location.lat), Number(location.lng)],
+                17
+            );
+        }
+
+        if (mapEl?._leafletMarker) {
+            mapEl._leafletMarker.setLatLng([
+                Number(location.lat),
+                Number(location.lng)
+            ]);
+
+            mapEl._leafletMarker.setOpacity(1);
+        }
       }
+
+
 
       function getIsoWeek(date) {
         const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -2360,12 +2386,6 @@ span.flatpickr-weekday {
 
           const isNewPhoto = item.dataset.newPhoto === '1';
 
-          // ✅ On propose la position navigateur uniquement pour une NOUVELLE photo
-          // ✅ Jamais pour une photo déjà chargée depuis la base
-          if (isNewPhoto && (!hasSavedAvant || !hasSavedApres)) {
-            await applyDefaultLocationToPhotoItem(item);
-          }
-
           item.dataset.mapInit = '1';
 
           const configs = ['avant', 'apres'];
@@ -2641,6 +2661,7 @@ span.flatpickr-weekday {
             fixMapSize();
 
             mapEl._leafletMap = map;
+            mapEl._leafletMarker = marker;
           }
         }
       }
@@ -2707,39 +2728,55 @@ span.flatpickr-weekday {
             clearPreview();
           });
 
-          input.addEventListener('change', () => {
+          input.addEventListener('change', async () => {
             const file = input.files?.[0];
 
             if (file) {
-              showPreview(file);
+                showPreview(file);
 
-              const item = zone.closest('.js-photo-item') || zone.closest('.collection-item');
-              const isAvant = input.name.includes('[avantFile]');
-              const isApres = input.name.includes('[apresFile]');
+                const item =
+                    zone.closest('.js-photo-item') ||
+                    zone.closest('.collection-item');
 
-              const dateInput = isAvant
-                ? item?.querySelector('.js-photo-date-avant')
-                : isApres
-                  ? item?.querySelector('.js-photo-date-apres')
-                  : null;
+                const isAvant = input.name.includes('[avantFile]');
+                const isApres = input.name.includes('[apresFile]');
 
-              if (dateInput && !dateInput.value) {
-                const suggestedDate = new Date(file.lastModified || Date.now());
-                const yyyy = suggestedDate.getFullYear();
-                const mm = String(suggestedDate.getMonth() + 1).padStart(2, '0');
-                const dd = String(suggestedDate.getDate()).padStart(2, '0');
-                const value = `${yyyy}-${mm}-${dd}`;
+                const kind = isAvant
+                    ? 'avant'
+                    : isApres
+                        ? 'apres'
+                        : null;
 
-                dateInput.value = value;
-
-                if (dateInput._flatpickr) {
-                  dateInput._flatpickr.setDate(value, true);
+                // GPS frais au moment exact où cette photo est ajoutée
+                if (item && kind) {
+                    await applyCurrentLocationToPhoto(item, kind);
                 }
-              }
+
+                const dateInput = isAvant
+                    ? item?.querySelector('.js-photo-date-avant')
+                    : isApres
+                        ? item?.querySelector('.js-photo-date-apres')
+                        : null;
+
+                if (dateInput && !dateInput.value) {
+                    const suggestedDate = new Date(file.lastModified || Date.now());
+
+                    const yyyy = suggestedDate.getFullYear();
+                    const mm = String(suggestedDate.getMonth() + 1).padStart(2, '0');
+                    const dd = String(suggestedDate.getDate()).padStart(2, '0');
+
+                    const value = `${yyyy}-${mm}-${dd}`;
+
+                    dateInput.value = value;
+
+                    if (dateInput._flatpickr) {
+                        dateInput._flatpickr.setDate(value, true);
+                    }
+                }
             } else {
-              clearPreview();
+                clearPreview();
             }
-          });
+        });
 
           ['dragenter', 'dragover'].forEach(eventName => {
             zone.addEventListener(eventName, e => {
