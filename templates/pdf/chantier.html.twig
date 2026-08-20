@@ -5,686 +5,642 @@
   <meta charset="UTF-8">
   <style>
     {# --- CONFIGURATION DES COULEURS --- #}
-    {% set primary = entite.couleurPrincipal ?: '#1f3344' %}
-    {% set secondary = entite.couleurSecondaire ?: '#f5b400' %}
-    {% set light = '#f6f8fb' %}
-    {% set border = '#d8dee8' %}
+    {% set primary = entite.couleurPrincipal ?: '#111e2e' %}
+    {% set secondary = entite.couleurSecondaire ?: '#d97706' %}
+    {% set light = '#f8fafc' %}
+    {% set border = '#e2e8f0' %}
     {% set logoPath = entite.logo ? absolute_url(asset('uploads/photos/entite/logo/' ~ entite.logo)) : null %}
     {% set prestatairesAvecLogo = chantier.mandataires|filter(m => m.actif and m.logo)|slice(0, 3) %}
 
     {# --- VARIABLES DE SYNTHÈSE --- #}
-    {% set totalHumains = chantier.nbRessourcesHumaines %}
-    {% set totalEngins = chantier.nbRessourcesEngins %}
-    {% set totalMateriels = chantier.nbRessourcesMateriels %}
-    {% set totalDechets = chantier.nbDechets %}
-    {% set totalPhotos = chantier.nbPhotos %}
+    {% set totalHumains = chantier.nbRessourcesHumaines ?: 0 %}
+    {% set totalEngins = chantier.nbRessourcesEngins ?: 0 %}
+    {% set totalMateriels = chantier.nbRessourcesMateriels ?: 0 %}
+    {% set totalDechets = chantier.nbDechets ?: 0 %}
+    {% set totalPhotos = chantier.nbPhotos ?: 0 %}
 
     @page {
-      margin: 24px 24px 42px 24px;
+      margin: 20px 22px 38px 22px;
+      size: A4 portrait;
     }
 
     body {
       margin: 0;
       padding: 0;
-      font-family: 'DejaVu Sans', sans-serif;
-      font-size: 10px;
-      color: #1f2937;
-      background: #fff;
+      font-family: 'DejaVu Sans', Helvetica, Arial, sans-serif;
+      font-size: 9.5px;
+      color: #1e293b;
+      background: #ffffff;
+      line-height: 1.4;
     }
 
     {# --- FOOTER FIXE --- #}
     .footer {
       position: fixed;
-      bottom: -30px;
+      bottom: -28px;
       left: 0;
       right: 0;
-      height: 30px;
-      border-top: 1px solid #e5e7eb;
-      padding-top: 5px;
-      font-size: 8px;
-      color: #6b7280;
+      height: 24px;
+      border-top: 1px solid #cbd5e1;
+      padding-top: 4px;
+      font-size: 7.5px;
+      color: #64748b;
     }
 
-    {# --- STRUCTURES DE MISE EN PAGE --- #}
+    {# --- UTILITAIRES DE MISE EN PAGE --- #}
     .w-100 { width: 100%; }
+    .text-left { text-align: left; }
     .text-center { text-align: center; }
     .text-right { text-align: right; }
-    
     .page-break { page-break-before: always; }
     .keep-together { page-break-inside: avoid; }
 
-    {# --- PAGE DE GARDE PREMIUM CORRIGÉE DOMPDF --- #}
-.cover {
-  height: 1074px;
-  margin: -24px -24px -24px -24px;
-  padding: 0;
-  position: relative;
-  background: {{ primary }};
-  color: #fff;
-  overflow: hidden;
-}
+    /* =========================================================
+       PAGE DE GARDE ULTRA PREMIUM
+       ========================================================= */
+    .cover-container {
+      margin: -20px -22px -38px -22px;
+      height: 1115px;
+      background: {{ primary }};
+      color: #ffffff;
+      position: relative;
+    }
 
-.cover-band {
-  height: 14px;
-  background: {{ secondary }};
-}
+    .cover-top-accent {
+      height: 6px;
+      background: {{ secondary }};
+      width: 100%;
+    }
 
-.cover-side {
-  position: absolute;
-  top: 14px;
-  left: 0;
-  bottom: 0;
-  width: 72px;
-  background: rgba(0,0,0,.16);
-}
+    /* Filigrane discret */
+    .cover-watermark-bg {
+      position: absolute;
+      right: -40px;
+      top: 260px;
+      font-size: 88px;
+      font-weight: bold;
+      color: rgba(255, 255, 255, 0.028);
+      text-transform: uppercase;
+      letter-spacing: 6px;
+      line-height: 0.9;
+      pointer-events: none;
+    }
 
-.cover-side-text {
-  position: absolute;
-  left: 18px;
-  bottom: 96px;
-  width: 42px;
-  color: rgba(255,255,255,.45);
-  font-size: 8px;
-  line-height: 1.45;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-}
+    .cover-layout-table {
+      width: 100%;
+      height: 1080px;
+      border-collapse: collapse;
+    }
 
-.cover-watermark {
-  position: absolute;
-  right: -120px;
-  top: 240px;
-  font-size: 78px;
-  line-height: .95;
-  font-weight: bold;
-  color: rgba(255,255,255,.035);
-  text-transform: uppercase;
-}
-
-.cover-inner {
-  padding: 20px 54px 0 120px;
-  position: relative;
-  z-index: 2;
-}
-
-.cover-header-table,
-.cover-kpi-table,
-.cover-footer-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.cover-header-table td,
-.cover-kpi-table td,
-.cover-footer-table td {
-  border: 0;
-  padding: 0;
-  vertical-align: top;
-}
-
-.logo-box {
-  width: 200px;
-  height: 130px;
-  background: #fff;
-  border-radius: 14px;
-  padding: 14px;
-  text-align: center;
-}
-
-.logo-box img {
-  max-width: 300px;
-  max-height: 130px;
-}
-
-.logo-fallback {
-  color: {{ primary }};
-  font-size: 18px;
-  font-weight: bold;
-  padding-top: 45px;
-  text-transform: uppercase;
-}
-
-.cover-ref-card {
-  width: 300px;
-  background: rgba(255,255,255,.09);
-  border: 1px solid rgba(255,255,255,.25);
-  padding: 14px 16px;
-  text-align: right;
-  border-radius: 14px;
-}
-
-.cover-ref-label {
-  font-size: 7px;
-  color: #cbd5e1;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 4px;
-}
-
-.cover-ref-value {
-  font-size: 11px;
-  color: #fff;
-  font-weight: bold;
-  line-height: 1.5;
-  text-transform: uppercase;
-}
-
-.cover-status {
-  display: inline-block;
-  margin-top: 10px;
-  padding: 5px 10px;
-  background: #ffffff;
-  color: {{ primary }};
-  font-size: 8px;
-  font-weight: bold;
-  text-transform: uppercase;
-}
-
-.cover-category {
-  margin-top: 50px;
-  color: {{ secondary }};
-  font-size: 10px;
-  font-weight: bold;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-}
-
-.cover-title {
-  margin-top: 1px;
-  width: 650px;
-  font-size: 42px;
-  line-height: 1.05;
-  font-weight: bold;
-  text-transform: uppercase;
-}
-
-.cover-title-small {
-  display: block;
-  margin-top: 8px;
-  font-size: 20px;
-  color: #dbeafe;
-  font-weight: normal;
-  letter-spacing: 1px;
-}
-
-.cover-rule {
-  margin-top: 10px;
-  width: 130px;
-  height: 4px;
-  background: {{ secondary }};
-}
-
-.cover-project {
-  margin-top: 10px;
-  width: 580px;
-  background: rgba(255,255,255,.08);
-  border: 1px solid rgba(255,255,255,.20);
-  padding: 16px 20px;
-  border-radius: 14px;
-}
-
-.cover-project-label {
-  font-size: 7px;
-  color: #cbd5e1;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 8px;
-}
-
-.cover-project-name {
-  font-size: 18px;
-  font-weight: bold;
-  line-height: 1.25;
-  color: #fff;
-}
-
-.cover-project-saison-annee{
-  font-size: 10px;
-  font-weight: bold;
-  line-height: 1.25;
-  color: #fff;
-
-}
-
-.cover-project-address {
-  margin-top: 10px;
-  font-size: 9px;
-  color: #dbeafe;
-  line-height: 1.5;
-}
-
-.cover-kpi-table {
-  margin-top: 26px;
-  border-collapse: separate;
-  border-spacing: 8px 0;
-}
-
-.cover-kpi-table + .cover-kpi-table {
-  margin-top: 10px;
-}
-
-.cover-kpi-table td {
-  width: 25%;
-  height: 72px;
-  background: rgba(255,255,255,.085);
-  padding: 11px 12px;
-  border-radius: 14px;
-}
-
-.cover-kpi-label {
-  font-size: 6.5px;
-  color: #cbd5e1;
-  text-transform: uppercase;
-  letter-spacing: .8px;
-  margin-bottom: 6px;
-}
-
-.cover-kpi-value {
-  font-size: 16px;
-  font-weight: bold;
-  color: #fff;
-  line-height: 1.35;
-  text-align: center;
-}
-
-.cover-signature {
-  position: absolute;
-  left: 120px;
-  right: 54px;
-  bottom: 10px;
-  padding-top: 10px;
-  border-top: 1px solid rgba(255,255,255,.22);
-}
-
-.cover-company {
-  font-size: 12px;
-  font-weight: bold;
-  color: #fff;
-}
-
-.cover-contact {
-  margin-top: 4px;
-  font-size: 8px;
-  color: #d1d5db;
-  line-height: 1.45;
-}
-
-.cover-doc-type {
-  text-align: right;
-  font-size: 7px;
-  color: #cbd5e1;
-  text-transform: uppercase;
-  letter-spacing: 1.2px;
-}
-
-.cover-page-mark {
-  margin-top: 5px;
-  font-size: 16px;
-  color: {{ secondary }};
-  font-weight: bold;
-}
-
-    {# --- TITRES ET SECTIONS --- #}
-    h2 {
-      margin: 20px 0 10px 0;
-      padding-bottom: 6px;
-      border-bottom: 2px solid {{ secondary }};
-      color: {{ primary }};
-      font-size: 13px;
+    /* Bande latérale gauche */
+    .cover-sidebar-td {
+      width: 48px;
+      background: rgba(0, 0, 0, 0.22);
+      border-right: 1px solid rgba(255, 255, 255, 0.06);
+      vertical-align: bottom;
+      padding: 0 0 45px 0;
       text-align: center;
-      text-transform: uppercase;
     }
 
-    h3 {
-      margin: 15px 0 8px 0;
-      padding: 6px 10px;
-      background: #eef0f3;
-      border-left: 5px solid {{ secondary }};
-      color: {{ primary }};
-      font-size: 10px;
+    .cover-sidebar-text {
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 8px;
+      letter-spacing: 4px;
       text-transform: uppercase;
+      transform: rotate(-90deg);
+      white-space: nowrap;
+      display: block;
+      margin-bottom: 80px;
     }
 
-    {# --- TABLEAUX DE DONNÉES --- #}
-    table { width: 100%; border-collapse: collapse; }
-    
-    .table-data { margin-bottom: 15px; }
-    .table-data th, .table-data td {
-      border: 1px solid {{ border }};
-      padding: 7px;
+    /* Zone de contenu principal */
+    .cover-main-td {
+      padding: 30px 38px 25px 38px;
       vertical-align: top;
     }
 
-    .table-data th {
-      background: #f0f2f5;
-      color: #374151;
-      font-size: 8px;
-      text-transform: uppercase;
-      text-align: center;
+    /* En-tête : Logo & Boîte de référence */
+    .cover-header-table {
+      width: 100%;
+      border-collapse: collapse;
     }
 
-    {# --- BLOCS KPI (SYNTHÈSE) --- #}
-    .kpi-table { margin-bottom: 20px; border-spacing: 5px; border-collapse: separate; }
-    .kpi-box {
-      background: {{ light }};
-      border: 1px solid {{ border }};
-      border-top: 4px solid {{ secondary }};
-      padding: 10px 5px;
-      text-align: center;
-      width: 20%;
-    }
-    .kpi-number { display: block; font-size: 18px; font-weight: bold; color: {{ primary }}; }
-    .kpi-label { display: block; font-size: 7px; color: #6b7280; text-transform: uppercase; }
-
-    {# --- SOMMAIRE (TOC) --- #}
-    .toc-row td { border-top: 1px solid #e5e7eb; padding: 8px; }
-    .toc-index { background: {{ light }}; color: {{ primary }}; font-weight: bold; width: 35px; text-align: center; }
-
-    {# --- PHOTOS --- #}
-    .photo-table { margin-bottom: 20px; table-layout: fixed; }
-    .photo-cell {
-      height: 520px;
-      background: {{ light }};
+    .logo-container {
+      width: 220px;
+      height: 90px;
+      background: #ffffff;
+      border-radius: 8px;
       text-align: center;
       vertical-align: middle;
-      border: 1px solid {{ border }};
-    }
-    .photo-cell img {
-        max-width: 95%;
-        max-height: 500px;
-        border-radius: 6px;
-        border: 1px solid #d8dee8;
-        padding: 2px;
-        background: #ffffff;
-        box-shadow: 0 3px 10px rgba(0,0,0,.18);
-    }
-    .photo-meta { font-size: 8px; padding: 5px; color: #4b5563; }
-
-    .badge {
-      background: #fff7d6;
-      border: 1px solid {{ secondary }};
-      color: #8a5a00;
-      padding: 2px 6px;
-      font-weight: bold;
-      text-transform: uppercase;
-      font-size: 8px;
-    }
-
-    .map-cell {
-      height: 170px;
-      background: {{ light }};
-      text-align: center;
-      vertical-align: middle;
-      border: 1px solid {{ border }};
-    }
-
-    .map-cell img {
-      width: 95%;
-      max-height: 160px;
-      border: 1px solid {{ border }};
-    }
-
-
-    .cover-partners-box{
-      padding: 0px 40px;
-
-    }
-
-    .cover-partners {
-
-      margin-top: 10px;
-      width: 500px;
-      background: rgba(255,255,255,.08);
-      border: 1px solid rgba(255,255,255,.22);
-      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
       padding: 8px 14px;
     }
 
-    .cover-partners-label {
-      font-size: 7px;
-      color: #cbd5e1;
+    .logo-container img {
+      max-width: 200px;
+      max-height: 75px;
+    }
+
+    .logo-fallback-text {
+      color: {{ primary }};
+      font-size: 16px;
+      font-weight: bold;
+      letter-spacing: 1px;
       text-transform: uppercase;
-      letter-spacing: 1.2px;
-      margin-bottom: 10px;
+      padding-top: 25px;
     }
 
-    .cover-partner-logo {
-        background: #fff;
-        padding: 8px 8px;
-        border-radius: 4px;
-        display: inline-block;
+    .cover-meta-badge {
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-right: 4px solid {{ secondary }};
+      border-radius: 6px;
+      padding: 10px 16px;
+      width: 260px;
+      text-align: right;
     }
 
-    .cover-partners-table {
+    .cover-meta-label {
+      font-size: 7px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 2px;
+    }
+
+    .cover-meta-val {
+      font-size: 11px;
+      font-weight: bold;
+      color: #ffffff;
+      margin-bottom: 6px;
+    }
+
+    /* Catégorie & Titre Principal */
+    .cover-doc-tag {
+      margin-top: 32px;
+      display: inline-block;
+      color: {{ secondary }};
+      font-size: 9px;
+      font-weight: bold;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+    }
+
+    .cover-main-title {
+      font-size: 34px;
+      line-height: 1.1;
+      font-weight: bold;
+      text-transform: uppercase;
+      color: #ffffff;
+      margin-top: 4px;
+      letter-spacing: 0.5px;
+    }
+
+    .cover-sub-title {
+      font-size: 14px;
+      color: #cbd5e1;
+      font-weight: 300;
+      margin-top: 6px;
+      letter-spacing: 1px;
+    }
+
+    .cover-divider {
+      width: 80px;
+      height: 3px;
+      background: {{ secondary }};
+      margin: 16px 0 20px 0;
+      border-radius: 2px;
+    }
+
+    /* Carte descriptive du chantier */
+    .cover-project-card {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin-bottom: 18px;
+    }
+
+    .cover-project-title {
+      font-size: 17px;
+      font-weight: bold;
+      color: #ffffff;
+      margin-bottom: 4px;
+    }
+
+    .cover-project-meta {
+      font-size: 9px;
+      color: {{ secondary }};
+      font-weight: bold;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .cover-project-loc {
+      font-size: 9px;
+      color: #94a3b8;
+      line-height: 1.4;
+    }
+
+    /* Grille de KPI Premium */
+    .cover-kpi-grid {
       width: 100%;
       border-collapse: separate;
-      border-spacing: 10px 0;
+      border-spacing: 8px 6px;
+      margin-left: -8px;
+      margin-right: -8px;
+      margin-bottom: 12px;
     }
 
-    .cover-partners-table td {     
-      border-radius: 14px;
-      padding: 8px;
+    .cover-kpi-item {
+      width: 33.33%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-top: 2.5px solid {{ secondary }};
+      border-radius: 6px;
+      padding: 9px 10px;
+      text-align: center;
     }
 
-    .cover-partners-table img {
-      max-width: 150px;
-      max-height: 58px;
+    .cover-kpi-lbl {
+      font-size: 7px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    .cover-kpi-num {
+      font-size: 14px;
+      font-weight: bold;
+      color: #ffffff;
+      line-height: 1.2;
+    }
+
+    /* Section Partenaires */
+    .cover-partners-wrapper {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin-top: 14px;
+    }
+
+    .cover-partner-pill {
+      background: #ffffff;
+      padding: 4px 8px;
+      border-radius: 4px;
+      display: inline-block;
+      vertical-align: middle;
+      text-align: center;
+    }
+
+    .cover-partner-pill img {
+      max-height: 32px;
+      max-width: 110px;
+    }
+
+    /* Footer de page de garde */
+    .cover-bottom-bar {
+      margin-top: 25px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.15);
+      width: 100%;
+    }
+
+    .cover-author-firm {
+      font-size: 11px;
+      font-weight: bold;
+      color: #ffffff;
+      letter-spacing: 0.5px;
+    }
+
+    .cover-author-details {
+      font-size: 8px;
+      color: #94a3b8;
+      margin-top: 3px;
+      line-height: 1.4;
+    }
+
+    /* =========================================================
+       SECTIONS DE CONTENU DU RAPPORT
+       ========================================================= */
+    h2 {
+      margin: 18px 0 10px 0;
+      padding-bottom: 6px;
+      border-bottom: 2px solid {{ secondary }};
+      color: {{ primary }};
+      font-size: 12.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    h3 {
+      margin: 14px 0 8px 0;
+      padding: 6px 10px;
+      background: #f1f5f9;
+      border-left: 4px solid {{ secondary }};
+      color: {{ primary }};
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+    
+    .table-data { margin-bottom: 14px; }
+    .table-data th, .table-data td {
+      border: 1px solid {{ border }};
+      padding: 6px 8px;
+      vertical-align: middle;
+    }
+
+    .table-data th {
+      background: #f8fafc;
+      color: #475569;
+      font-size: 7.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: bold;
+    }
+
+    /* Synthèse KPIs internes */
+    .kpi-table { margin-bottom: 18px; border-spacing: 6px; border-collapse: separate; }
+    .kpi-box {
+      background: {{ light }};
+      border: 1px solid {{ border }};
+      border-top: 3px solid {{ secondary }};
+      padding: 8px 4px;
+      text-align: center;
+      width: 20%;
       border-radius: 4px;
     }
+    .kpi-number { display: block; font-size: 17px; font-weight: bold; color: {{ primary }}; }
+    .kpi-label { display: block; font-size: 6.5px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
 
-    
+    .badge {
+      background: #fef3c7;
+      border: 1px solid {{ secondary }};
+      color: #92400e;
+      padding: 2px 6px;
+      font-weight: bold;
+      border-radius: 3px;
+      text-transform: uppercase;
+      font-size: 7.5px;
+    }
+
+    /* Sommaire */
+    .toc-row td { border-top: 1px solid #e2e8f0; padding: 7px 8px; }
+    .toc-index { background: {{ light }}; color: {{ primary }}; font-weight: bold; width: 32px; text-align: center; font-size: 10px; }
+
+    /* Reportage photos */
+    .photo-table { margin-bottom: 16px; table-layout: fixed; }
+    .photo-cell {
+      height: 460px;
+      background: {{ light }};
+      text-align: center;
+      vertical-align: middle;
+      border: 1px solid {{ border }};
+      padding: 6px;
+    }
+    .photo-cell img {
+      max-width: 96%;
+      max-height: 445px;
+      border-radius: 4px;
+      border: 1px solid #cbd5e1;
+      padding: 2px;
+      background: #ffffff;
+    }
+    .photo-meta { font-size: 8px; padding: 6px 8px; color: #334155; background: #fafafa; border: 1px solid {{ border }}; line-height: 1.45; }
+
+    .map-cell {
+      height: 150px;
+      background: {{ light }};
+      text-align: center;
+      vertical-align: middle;
+      border: 1px solid {{ border }};
+      padding: 4px;
+    }
+    .map-cell img {
+      max-width: 96%;
+      max-height: 140px;
+      border: 1px solid {{ border }};
+      border-radius: 3px;
+    }
   </style>
 </head>
 <body>
 
-{# Footer répété sur chaque page #}
+{# --- FOOTER FIXE SUR TOUTES LES PAGES --- #}
 <div class="footer">
   <table class="w-100">
     <tr>
-      <td>{{ entite.nom ?: 'Entité' }} - Compte rendu de chantier</td>
-      <td class="text-right"></td>
+      <td class="text-left"><strong>{{ entite.nom ?: 'Entité' }}</strong> &bull; Compte rendu officiel de chantier</td>
+      <td class="text-right">{{ chantier.nom ?: '' }} &bull; Réf : {{ chantier.codeChantier ?: 'N/A' }}</td>
     </tr>
   </table>
 </div>
 
-{# --- PAGE DE GARDE PREMIUM CORRIGÉE --- #}
-<div class="cover">
-  <div class="cover-band"></div>
-
-  <div class="cover-side">
-    <div class="cover-side-text">Rapport chantier</div>
+{# =========================================================================
+   PAGE DE GARDE ULTRA PREMIUM
+   ========================================================================= #}
+<div class="cover-container">
+  <div class="cover-top-accent"></div>
+  
+  {# Filigrane texturé en arrière plan #}
+  <div class="cover-watermark-bg">
+    RAPPORT<br>CHANTIER
   </div>
 
-  <div class="cover-watermark">
-    SUIVI<br>CHANTIER
-  </div>
+  <table class="cover-layout-table">
+    <tr>
+      {# Bande latérale technique #}
+      <td class="cover-sidebar-td">
+        <span class="cover-sidebar-text">RAPPORT D'INTERVENTION &bull; SUIVI TECHNIQUE</span>
+      </td>
 
-  <div class="cover-inner">
-    <table class="cover-header-table">
-      <tr>
-        <td style="width: 50%;">
-          <div class="logo-box">
-            {% if logoPath %}
-              <img src="{{ logoPath }}" alt="{{ entite.nom }}">
-            {% else %}
-              <div class="logo-fallback">{{ entite.nom ?: 'ENTITÉ' }}</div>
-            {% endif %}
-          </div>
-        </td>
+      {# Corps de la page de garde #}
+      <td class="cover-main-td">
+        
+        {# 1. En-tête : Logo & Métadonnées #}
+        <table class="cover-header-table">
+          <tr>
+            <td style="vertical-align: middle;">
+              <div class="logo-container">
+                <table style="width: 100%; height: 100%;">
+                  <tr>
+                    <td style="text-align: center; vertical-align: middle;">
+                      {% if logoPath %}
+                        <img src="{{ logoPath }}" alt="{{ entite.nom }}">
+                      {% else %}
+                        <div class="logo-fallback-text">{{ entite.nom ?: 'ENTITÉ' }}</div>
+                      {% endif %}
+                    </td>
+                  </tr>
+                </table>
+              </div>
+            </td>
 
-        <td style="width: 50%; text-align: right;">
-          <div class="cover-ref-card">
-            <div class="cover-ref-label">Rapport généré le</div>
-            <div class="cover-ref-value">{{ "now"|date('d/m/Y') }}</div>
-            {% if chantier.codeChantier %}
-                <div class="cover-ref-label" style="margin-top:10px;">Code chantier</div>
-                <div class="cover-ref-value">
-                    {{ chantier.codeChantier }}
-                </div>
-            {% endif %}
+            <td style="text-align: right; vertical-align: middle;">
+              <div class="cover-meta-badge" style="float: right;">
+                <div class="cover-meta-label">Date d'émission</div>
+                <div class="cover-meta-val">{{ "now"|date('d/m/Y') }}</div>
 
-            {% if chantier.nominationChantier %}
-                <div class="cover-ref-label" style="margin-top:10px;">Nomination</div>
-                <div class="cover-ref-value" style="font-size:9px; line-height:1.4;">
-                    {{ chantier.nominationChantier }}
-                </div>
-            {% endif %}
-          </div>
-        </td>
-      </tr>
-    </table>
-
-    {% if prestatairesAvecLogo|length > 0 %}
-      <div class="cover-partners-box">
-        <div class="cover-partners">
-          <div class="cover-partners-label">Prestataires / Mandataires associés</div>
-
-          <table class="cover-partners-table">
-            <tr>
-              {% for mandataire in prestatairesAvecLogo %}
-                <td>
-                  <div class="cover-partner-logo">
-                    <img
-                      src="{{ absolute_url(asset('uploads/mandataires/logos/' ~ mandataire.logo)) }}"
-                      alt="{{ mandataire.societe ?: mandataire.nom }}"
-                    >
-                  </div>
-                </td>
-              {% endfor %}
-
-              {% for i in prestatairesAvecLogo|length..2 %}
-                {% if prestatairesAvecLogo|length < 3 %}
-                  <td style="background: transparent;"></td>
+                {% if chantier.codeChantier %}
+                  <div class="cover-meta-label">Référence Dossier</div>
+                  <div class="cover-meta-val">{{ chantier.codeChantier }}</div>
                 {% endif %}
-              {% endfor %}
+
+                {% if chantier.nominationChantier %}
+                  <div class="cover-meta-label">Nomination</div>
+                  <div class="cover-meta-val" style="font-size: 8.5px; margin-bottom: 0;">
+                    {{ chantier.nominationChantier }}
+                  </div>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+        </table>
+
+        {# 2. Titre & Sujet #}
+        <div class="cover-doc-tag">Compte Rendu d'Intervention</div>
+        <div class="cover-main-title">Rapport de Chantier</div>
+        <div class="cover-sub-title">Suivi opérationnel, contrôle terrain & synthèse d'exécution</div>
+        <div class="cover-divider"></div>
+
+        {# 3. Encadré Projet / Chantier #}
+        <div class="cover-project-card">
+          <div class="cover-meta-label">Chantier concerné</div>
+          <div class="cover-project-title">{{ chantier.nom ?: 'Nom du chantier non renseigné' }}</div>
+          
+          {% if chantier.saison or chantier.annee %}
+            <div class="cover-project-meta">
+              {% if chantier.saison %}Saison : {{ chantier.saison }}{% endif %}
+              {% if chantier.saison and chantier.annee %} &bull; {% endif %}
+              {% if chantier.annee %}Année : {{ chantier.annee }}{% endif %}
+            </div>
+          {% endif %}
+
+          <div class="cover-project-loc">
+            {{ chantier.adresse ?: '' }}
+            {% if chantier.complement %}<br>{{ chantier.complement }}{% endif %}
+            {% if chantier.codePostal or chantier.ville %}
+              <br><strong>{{ chantier.codePostal }} {{ chantier.ville }}</strong>
+            {% endif %}
+          </div>
+        </div>
+
+        {# 4. Grille des 6 KPIs Clés #}
+        <table class="cover-kpi-grid">
+          <tr>
+            <td class="cover-kpi-item">
+              <span class="cover-kpi-lbl">Période Réelle</span>
+              <span class="cover-kpi-num">{{ chantier.semaineReelle ?: '-' }}</span>
+            </td>
+            <td class="cover-kpi-item">
+              <span class="cover-kpi-lbl">Dates Réelles</span>
+              <span class="cover-kpi-num" style="font-size: 10.5px;">
+                {{ chantier.dateDebutReelle ? chantier.dateDebutReelle|date('d/m/Y') : '-' }}
+                {% if chantier.dateFinReelle %} &rarr; {{ chantier.dateFinReelle|date('d/m/Y') }}{% endif %}
+              </span>
+            </td>
+            <td class="cover-kpi-item">
+              <span class="cover-kpi-lbl">Photographies</span>
+              <span class="cover-kpi-num">{{ totalPhotos }}</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="cover-kpi-item">
+              <span class="cover-kpi-lbl">Surface Traitée</span>
+              <span class="cover-kpi-num">{{ chantier.surfaceTotale ?: 0 }} <span style="font-size: 9px; font-weight: normal;">m²</span></span>
+            </td>
+            <td class="cover-kpi-item">
+              <span class="cover-kpi-lbl">Linéaire Traité</span>
+              <span class="cover-kpi-num">{{ chantier.lineaireTotal ?: 0 }} <span style="font-size: 9px; font-weight: normal;">ml</span></span>
+            </td>
+            <td class="cover-kpi-item">
+              <span class="cover-kpi-lbl">Déchets Évacués</span>
+              <span class="cover-kpi-num">{{ totalDechets }}</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="cover-kpi-item">
+              <span class="cover-kpi-lbl">Ressources Humaines</span>
+              <span class="cover-kpi-num">{{ totalHumains }}</span>
+            </td>
+            <td class="cover-kpi-item">
+              <span class="cover-kpi-lbl">Véhicules & Engins</span>
+              <span class="cover-kpi-num">{{ totalEngins }}</span>
+            </td>
+            <td class="cover-kpi-item">
+              <span class="cover-kpi-lbl">Matériels Déployés</span>
+              <span class="cover-kpi-num">{{ totalMateriels }}</span>
+            </td>
+          </tr>
+        </table>
+
+        {# 5. Partenaires & Mandataires (Optionnel) #}
+        {% if prestatairesAvecLogo|length > 0 %}
+          <div class="cover-partners-wrapper">
+            <div class="cover-meta-label" style="margin-bottom: 6px;">Partenaires & Mandataires associés</div>
+            <table style="width: 100%;">
+              <tr>
+                {% for mandataire in prestatairesAvecLogo %}
+                  <td style="text-align: left; vertical-align: middle; padding-right: 10px;">
+                    <div class="cover-partner-pill">
+                      <img src="{{ absolute_url(asset('uploads/mandataires/logos/' ~ mandataire.logo)) }}" alt="{{ mandataire.societe ?: mandataire.nom }}">
+                    </div>
+                  </td>
+                {% endfor %}
+                <td></td>
+              </tr>
+            </table>
+          </div>
+        {% endif %}
+
+        {# 6. Pied de page de couverture #}
+        <div class="cover-bottom-bar">
+          <table style="width: 100%;">
+            <tr>
+              <td style="vertical-align: middle;">
+                <div class="cover-author-firm">{{ entite.nom ?: 'Rapport d\'entreprise' }}</div>
+                <div class="cover-author-details">
+                  {% if entite.siret %}SIRET : {{ entite.siret }} &bull; {% endif %}
+                  {{ entite.email ?: '' }}
+                  {% if entite.email and entite.telephone %} &bull; {% endif %}
+                  {{ entite.telephone ?: '' }}
+                </div>
+              </td>
+              <td style="text-align: right; vertical-align: middle;">
+                <span class="badge" style="background: rgba(255,255,255,0.1); border-color: {{ secondary }}; color: #ffffff;">
+                  DOCUMENT CERTIFIÉ CONFORME
+                </span>
+              </td>
             </tr>
           </table>
         </div>
-      </div>
 
-      <div class="cover-category" style="margin-top: 15px;">
-        Compte rendu d’intervention
-      </div>
-    {% else %}
-      <div class="cover-category">
-        Compte rendu d’intervention
-      </div>
-    {% endif %}
-
-
-    <div class="cover-title">
-      Rapport de chantier
-      <span class="cover-title-small">Suivi opérationnel & reportage terrain</span>
-    </div>
-
-    <div class="cover-rule"></div>
-
-    <div class="cover-project">
-      <div class="cover-project-label">Chantier concerné</div>
-      <div class="cover-project-name">{{ chantier.nom ?: '-' }}</div>
-      <div class="cover-project-saison-annee">{% if chantier.saison %} Saison : {{ chantier.saison }}{% endif %}{% if chantier.annee %} - Année : {{ chantier.annee }}{% endif %}</div>
-
-      <div class="cover-project-address">
-        {{ chantier.adresse ?: '' }}
-        {% if chantier.complement %}<br>{{ chantier.complement }}{% endif %}
-        {% if chantier.codePostal or chantier.ville %}
-          <br>{{ chantier.codePostal }} {{ chantier.ville }}
-        {% endif %}
-      </div>
-    </div>
-
-    <table class="cover-kpi-table">
-      <tr>
-        <td>
-          <div class="cover-kpi-label">Période d'exécution</div>
-          <div class="cover-kpi-value">{{ chantier.semaineReelle ?: '-' }}</div>
-        </td>
-        <td>
-          <div class="cover-kpi-label">Date réelle</div>
-          <div class="cover-kpi-value">
-            {{ chantier.dateDebutReelle ? chantier.dateDebutReelle|date('d/m/Y') : '-' }}
-            {% if chantier.dateFinReelle %}
-              <br>{{ chantier.dateFinReelle|date('d/m/Y') }}
-            {% endif %}
-          </div>
-        </td>
-        <td>
-          <div class="cover-kpi-label">Photos</div>
-          <div class="cover-kpi-value">{{ totalPhotos }}</div>
-        </td>
-      </tr>
-    </table>
-
-    <table class="cover-kpi-table">
-      <tr>
-        <td>
-          <div class="cover-kpi-label">Surface traitée</div>
-          <div class="cover-kpi-value">{{ chantier.surfaceTotale ?: 0 }} m²</div>
-        </td>
-        <td>
-          <div class="cover-kpi-label">Linéaire traité</div>
-          <div class="cover-kpi-value">{{ chantier.lineaireTotal ?: 0 }} ml</div>
-        </td>
-        <td>
-          <div class="cover-kpi-label">Déchets</div>
-          <div class="cover-kpi-value">{{ totalDechets }}</div>
-        </td>
-      </tr>
-    </table>
-
-
-    <table class="cover-kpi-table">
-      <tr>
-        <td>
-          <div class="cover-kpi-label">{% if totalHumains > 1 %}Ressources Humaines{% else %} Ressource Humaine {% endif %}</div>
-          <div class="cover-kpi-value">{{ totalHumains }} </div>
-        </td>
-        <td>
-          <div class="cover-kpi-label">{% if totalEngins > 1 %}Ressources vehicules{% else %} Ressource vehicule {% endif %}</div>
-          <div class="cover-kpi-value">{{ totalEngins }}</div>
-        </td>
-        <td>
-          <div class="cover-kpi-label">{% if totalEngins > 1 %}Ressources Matériel{% else %} Ressource matériels {% endif %}</div>
-          <div class="cover-kpi-value">{{ totalMateriels }}</div>
-        </td>
-      </tr>
-    </table>
-  </div>
-
-  <div class="cover-signature">
-    <table class="cover-footer-table">
-      <tr>
-        <td style="width: 65%;">
-          <div class="cover-company">{{ entite.nom ?: '-' }}</div>
-          <div class="cover-contact">
-            {% if entite.siret %}SIRET : {{ entite.siret }}<br>{% endif %}
-            {{ entite.email ?: '' }}
-            {% if entite.email and entite.telephone %} · {% endif %}
-            {{ entite.telephone ?: '' }}
-          </div>
-        </td>
-
-        <td style="width: 35%; text-align: right;">
-          <div class="cover-doc-type">Document de synthèse</div>
-          <div class="cover-page-mark">PDF</div>
-        </td>
-      </tr>
-    </table>
-  </div>
+      </td>
+    </tr>
+  </table>
 </div>
 
 <div class="page-break"></div>
 
-{# --- SYNTHÈSE --- #}
-<h2>Synthèse du chantier</h2>
+{# =========================================================================
+   CORPS DU DOCUMENT / SYNTHÈSE & DÉTAILS
+   ========================================================================= #}
+<h2>Synthèse globale du chantier</h2>
 
 <table class="kpi-table w-100">
   <tr>
-    <td class="kpi-box"><span class="kpi-number">{{ chantier.zones|length }}</span><span class="kpi-label">Zones</span></td>
-    <td class="kpi-box"><span class="kpi-number">{{ totalHumains }}</span><span class="kpi-label">Humains</span></td>
-    <td class="kpi-box"><span class="kpi-number">{{ totalEngins }}</span><span class="kpi-label">Engins</span></td>
+    <td class="kpi-box"><span class="kpi-number">{{ chantier.zones|length }}</span><span class="kpi-label">Sous-chantiers</span></td>
+    <td class="kpi-box"><span class="kpi-number">{{ totalHumains }}</span><span class="kpi-label">Ressources Humaines</span></td>
+    <td class="kpi-box"><span class="kpi-number">{{ totalEngins }}</span><span class="kpi-label">Engins & Véhicules</span></td>
     <td class="kpi-box"><span class="kpi-number">{{ totalMateriels }}</span><span class="kpi-label">Matériels</span></td>
-    <td class="kpi-box"><span class="kpi-number">{{ totalPhotos }}</span><span class="kpi-label">Photos</span></td>
+    <td class="kpi-box"><span class="kpi-number">{{ totalPhotos }}</span><span class="kpi-label">Photographies</span></td>
   </tr>
 </table>
 
@@ -693,13 +649,13 @@
     <tr>
       <th>Chantier</th>
       <th>Ville</th>
-      <th>Semaine</th>
+      <th>Semaine Prév.</th>
       <th>Statut</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td>{{ chantier.nom ?: '-' }}</td>
+      <td><strong>{{ chantier.nom ?: '-' }}</strong></td>
       <td>{{ chantier.ville ?: '-' }}</td>
       <td class="text-center">{{ chantier.semainePrevisionnelle ?: '-' }}</td>
       <td class="text-center"><span class="badge">{{ chantier.statut ? chantier.statut.label() : '-' }}</span></td>
@@ -710,8 +666,8 @@
 <table class="table-data w-100">
   <thead>
     <tr>
-      <th>Début prév.</th>
-      <th>Fin prév.</th>
+      <th>Début prévisionnel</th>
+      <th>Fin prévisionnelle</th>
       <th>Début réel</th>
       <th>Fin réelle</th>
     </tr>
@@ -726,15 +682,13 @@
   </tbody>
 </table>
 
-
-
 <table class="table-data w-100">
   <thead>
     <tr>
-      <th>Durée prév.</th>
-      <th>Durée réelle</th>
-      <th>Surface tot.</th>
-      <th>Linéaire tot.</th>
+      <th>Durée prévisionnelle</th>
+      <th>Durée constatée</th>
+      <th>Surface totale</th>
+      <th>Linéaire total</th>
     </tr>
   </thead>
   <tbody>
@@ -742,58 +696,44 @@
       <td class="text-center">
         {{ chantier.dureePrevisionnelleJoursOuvres ?? '-' }} j / {{ chantier.dureePrevisionnelleHeuresOuvrees ?? '-' }} h
       </td>
-
       <td class="text-center">
         {{ chantier.dureeReelleJoursOuvres ?? '-' }} j / {{ chantier.dureeReelleHeuresOuvrees ?? '-' }} h
       </td>
-      <td class="text-center">{{ chantier.surfaceTotale ?: 0 }} m²</td>
-      <td class="text-center">{{ chantier.lineaireTotal ?: 0 }} ml</td>
+      <td class="text-center"><strong>{{ chantier.surfaceTotale ?: 0 }}</strong> m²</td>
+      <td class="text-center"><strong>{{ chantier.lineaireTotal ?: 0 }}</strong> ml</td>
     </tr>
   </tbody>
 </table>
 
 {# --- SOMMAIRE --- #}
 <div class="keep-together">
-  <h2>Sommaire des sous-chantiers</h2>
+  <h2>Sommaire des sous-chantiers / zones</h2>
   <table class="table-data">
     {% for zone in chantier.zones %}
       <tr class="toc-row">
         <td class="toc-index">{{ loop.index }}</td>
         <td>
           <strong>{{ zone.nom ?: 'Sous-chantier' }}</strong><br>
-          <span style="font-size: 8px; color: #6b7280;">
+          <span style="font-size: 8px; color: #64748b;">
             {% set infos = [] %}
-
-            {% if zone.parcelle %}
-                {% set infos = infos|merge(['Parcelle : ' ~ zone.parcelle]) %}
-            {% endif %}
-
-            {% if zone.surfaceTraitee and zone.surfaceTraitee > 0 %}
-                {% set infos = infos|merge([zone.surfaceTraitee ~ ' m²']) %}
-            {% endif %}
-
-            {% if zone.lineaireTraite and zone.lineaireTraite > 0 %}
-                {% set infos = infos|merge([zone.lineaireTraite ~ ' ml']) %}
-            {% endif %}
-
-            {% if zone.photos|length > 0 %}
-                {% set infos = infos|merge([zone.photos|length ~ ' Photo' ~ (zone.photos|length > 1 ? 's' : '')]) %}
-            {% endif %}
-
-            {{ infos|join(' · ') }}
+            {% if zone.parcelle %}{% set infos = infos|merge(['Parcelle : ' ~ zone.parcelle]) %}{% endif %}
+            {% if zone.surfaceTraitee and zone.surfaceTraitee > 0 %}{% set infos = infos|merge([zone.surfaceTraitee ~ ' m²']) %}{% endif %}
+            {% if zone.lineaireTraite and zone.lineaireTraite > 0 %}{% set infos = infos|merge([zone.lineaireTraite ~ ' ml']) %}{% endif %}
+            {% if zone.photos|length > 0 %}{% set infos = infos|merge([zone.photos|length ~ ' Photo' ~ (zone.photos|length > 1 ? 's' : '')]) %}{% endif %}
+            {{ infos|join(' &bull; ') }}
           </span>
         </td>
       </tr>
     {% else %}
-      <tr><td colspan="2">Aucun sous-chantier renseigné.</td></tr>
+      <tr><td colspan="2" class="text-center" style="color: #94a3b8; font-style: italic;">Aucun sous-chantier renseigné.</td></tr>
     {% endfor %}
   </table>
 </div>
 
 {% if chantier.difficultesRencontrees %}
-  <div class="keep-together">
-    <h3>Difficultés générales rencontrées</h3>
-    <div style="padding: 10px; border: 1px solid {{ border }}; line-height: 1.5;">
+  <div class="keep-together" style="margin-top: 14px;">
+    <h3>Observations & Difficultés générales</h3>
+    <div style="padding: 10px; border: 1px solid {{ border }}; background: #fffdfa; line-height: 1.5; font-size: 8.5px; border-left: 4px solid #f59e0b;">
       {{ chantier.difficultesRencontrees|nl2br }}
     </div>
   </div>
@@ -805,8 +745,8 @@
 <h2>Détail des sous-chantiers</h2>
 
 {% for zone in chantier.zones %}
-  <div class="keep-together" style="margin-bottom: 30px; border: 1px solid {{ border }};">
-    <div style="background: {{ primary }}; color: #fff; padding: 8px 10px; font-weight: bold;">
+  <div class="keep-together" style="margin-bottom: 24px; border: 1px solid {{ border }}; border-radius: 4px; overflow: hidden;">
+    <div style="background: {{ primary }}; color: #ffffff; padding: 7px 10px; font-weight: bold; font-size: 10.5px;">
       {{ loop.index }}. {{ zone.nom ?: 'Sous-chantier' }}
     </div>
     
@@ -815,33 +755,21 @@
         <tr><th colspan="2">Nature de la prestation</th></tr>
         <tr><td colspan="2">{{ zone.naturePrestation ?: '-' }}</td></tr>
         <tr>
-          <th>Période prév.</th>
+          <th style="width: 25%;">Période prév.</th>
           <td>
             {% if zone.dateDebutPrevisionnelle or zone.dateFinPrevisionnelle %}
-                {% if zone.dateDebutPrevisionnelle %}
-                    Du {{ zone.dateDebutPrevisionnelle|date('d/m/Y H:i') }}
-                {% endif %}
-
-                {% if zone.dateFinPrevisionnelle %}
-                    {% if zone.dateDebutPrevisionnelle %} au {% else %}Jusqu'au {% endif %}
-                    {{ zone.dateFinPrevisionnelle|date('d/m/Y H:i') }}
-                {% endif %}
-            {% endif %}
+              {% if zone.dateDebutPrevisionnelle %}Du {{ zone.dateDebutPrevisionnelle|date('d/m/Y H:i') }}{% endif %}
+              {% if zone.dateFinPrevisionnelle %}{% if zone.dateDebutPrevisionnelle %} au {% else %}Jusqu'au {% endif %}{{ zone.dateFinPrevisionnelle|date('d/m/Y H:i') }}{% endif %}
+            {% else %}-{% endif %}
           </td>
         </tr>
         <tr>
           <th>Période réelle</th>
           <td>
             {% if zone.dateDebutReelle or zone.dateFinReelle %}
-                {% if zone.dateDebutReelle %}
-                    Du {{ zone.dateDebutReelle|date('d/m/Y H:i') }}
-                {% endif %}
-
-                {% if zone.dateFinReelle %}
-                    {% if zone.dateDebutReelle %} au {% else %}Jusqu'au {% endif %}
-                    {{ zone.dateFinReelle|date('d/m/Y H:i') }}
-                {% endif %}
-            {% endif %}
+              {% if zone.dateDebutReelle %}Du {{ zone.dateDebutReelle|date('d/m/Y H:i') }}{% endif %}
+              {% if zone.dateFinReelle %}{% if zone.dateDebutReelle %} au {% else %}Jusqu'au {% endif %}{{ zone.dateFinReelle|date('d/m/Y H:i') }}{% endif %}
+            {% else %}-{% endif %}
           </td>
         </tr>
       </table>
@@ -849,53 +777,49 @@
       <table class="table-data">
         <thead>
           <tr>
-            <th>Humains</th>
-            <th>Engins / Matériels</th>
-            <th>Déchets</th>
+            <th>Ressources Humaines</th>
+            <th>Engins & Matériels</th>
+            <th>Déchets / Rebuts</th>
           </tr>
         </thead>
         <tbody>
           <tr>
             <td>
               {% for r in zone.ressourcesHumaines %}
-                • {{ r.utilisateur ? r.utilisateur.prenom ~ ' ' ~ r.utilisateur.nom : '-' }} <small>({{ r.fonction ?: '-' }})</small><br>
-              {% else %}-{% endfor %}
+                &bull; {{ r.utilisateur ? r.utilisateur.prenom ~ ' ' ~ r.utilisateur.nom : '-' }} <small style="color:#64748b;">({{ r.fonction ?: '-' }})</small><br>
+              {% else %}<span style="color:#94a3b8;">-</span>{% endfor %}
             </td>
             <td>
               {% for r in zone.ressourcesEngins %}
-                • {{ r.engin ? r.engin.nom : '-' }} <small>(Engin)</small><br>
+                &bull; {{ r.engin ? r.engin.nom : '-' }} <small style="color:#64748b;">(Engin)</small><br>
               {% endfor %}
               {% for r in zone.ressourcesMateriels %}
-                • {{ r.materiel ? r.materiel.nom : '-' }} <small>(x{{ r.quantite ?: 1 }})</small><br>
+                &bull; {{ r.materiel ? r.materiel.nom : '-' }} <small style="color:#64748b;">(x{{ r.quantite ?: 1 }})</small><br>
               {% endfor %}
-              {% if zone.ressourcesEngins|length == 0 and zone.ressourcesMateriels|length == 0 %}-{% endif %}
+              {% if zone.ressourcesEngins|length == 0 and zone.ressourcesMateriels|length == 0 %}<span style="color:#94a3b8;">-</span>{% endif %}
             </td>
             <td>
               {% for d in zone.dechets %}
-                • {{ d.quantite }} {{ d.typeDechet ? d.typeDechet.unite : '' }} ({{ d.typeDechet ? d.typeDechet.nom : '-' }})<br>
-              {% else %}-{% endfor %}
+                &bull; {{ d.quantite }} {{ d.typeDechet ? d.typeDechet.unite : '' }} <small style="color:#64748b;">({{ d.typeDechet ? d.typeDechet.nom : '-' }})</small><br>
+              {% else %}<span style="color:#94a3b8;">-</span>{% endfor %}
             </td>
           </tr>
         </tbody>
       </table>
 
       {% if zone.difficultesRencontrees %}
-        <div style="font-size: 8px; color: #d32f2f; margin-top: 5px;">
-          <strong>Difficultés :</strong> {{ zone.difficultesRencontrees }}
+        <div style="font-size: 8px; color: #b91c1c; margin-top: 4px; padding: 6px 8px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 3px;">
+          <strong>Difficultés signalées :</strong> {{ zone.difficultesRencontrees }}
         </div>
       {% endif %}
     </div>
   </div>
 {% endfor %}
 
-
-
-
 {% if chantier.tableauDynamique and chantier.tableauDynamique.columns is defined and chantier.tableauDynamique.rows is defined %}
   <div class="page-break"></div>
   <div class="keep-together">
-    <h2>Bilan récapitulatif chantier</h2>
-
+    <h2>Bilan récapitulatif synthétique</h2>
     <table class="table-data w-100">
       <thead>
         <tr>
@@ -904,7 +828,6 @@
           {% endfor %}
         </tr>
       </thead>
-
       <tbody>
         {% for row in chantier.tableauDynamique.rows %}
           <tr>
@@ -921,181 +844,107 @@
 <div class="page-break"></div>
 
 {# --- REPORTAGE PHOTOS --- #}
-<h2>Reportage photos avant / après</h2>
+<h2>Reportage photographique Avant / Après</h2>
 
 {% set hasAnyPhoto = false %}
 {% for zone in chantier.zones %}
   {% for p in zone.photos %}
     {% set hasAnyPhoto = true %}
-    <div class="keep-together">
-      <h3>{{ zone.nom }} {% if p.titre %}- {{ p.titre }}{% endif %}</h3>
+    <div class="keep-together" style="margin-bottom: 20px;">
+      <h3>{{ zone.nom }} {% if p.titre %}&bull; {{ p.titre }}{% endif %}</h3>
       
       <table class="photo-table w-100">
         <tr>
-            <th style="background: {{ primary }}; color: #fff;">
-                Avant intervention
-            </th>
-
-            <th style="background: {{ primary }}; color: #fff;">
-                Après intervention
-            </th>
+          <th style="background: {{ primary }}; color: #ffffff; width: 50%;">Constat Avant Intervention</th>
+          <th style="background: {{ primary }}; color: #ffffff; width: 50%;">Constat Après Intervention</th>
         </tr>
 
         <tr>
-            <td class="photo-cell">
-                {% if p.photoAvant %}
-                    <img src="{{ absolute_url(asset('uploads/photos/chantiers/' ~ p.photoAvant)) }}">
-                {% else %}
-                    <span style="color:#9ca3af;font-style:italic;">
-                        Champ non renseigné
-                    </span>
-                {% endif %}
-            </td>
-
-            <td class="photo-cell">
-                {% if p.photoApres %}
-                    <img src="{{ absolute_url(asset('uploads/photos/chantiers/' ~ p.photoApres)) }}">
-                {% else %}
-                    <span style="color:#9ca3af;font-style:italic;">
-                        Champ non renseigné
-                    </span>
-                {% endif %}
-            </td>
-        </tr>
-
-        <tr>
-            <td class="map-cell">
-              {% set mapAvant = photoMaps[p.id].avant ?? null %}
-
-              {% if p.photoAvant and mapAvant %}
-                  <img src="{{ mapAvant }}" alt="Carte photo avant">
-              {% else %}
-                  <span style="color:#9ca3af;font-style:italic;">
-                      Champ non renseigné
-                  </span>
-              {% endif %}
+          <td class="photo-cell">
+            {% if p.photoAvant %}
+              <img src="{{ absolute_url(asset('uploads/photos/chantiers/' ~ p.photoAvant)) }}" alt="Photo Avant">
+            {% else %}
+              <span style="color:#94a3b8; font-style:italic;">Cliché non disponible</span>
+            {% endif %}
           </td>
 
-            <td class="map-cell">
-                {% set mapApres = photoMaps[p.id].apres ?? null %}
-
-                {% if p.photoApres and mapApres %}
-                    <img src="{{ mapApres }}" alt="Carte photo après">
-                {% else %}
-                    <span style="color:#9ca3af;font-style:italic;">
-                        Champ non renseigné
-                    </span>
-                {% endif %}
-            </td>
+          <td class="photo-cell">
+            {% if p.photoApres %}
+              <img src="{{ absolute_url(asset('uploads/photos/chantiers/' ~ p.photoApres)) }}" alt="Photo Après">
+            {% else %}
+              <span style="color:#94a3b8; font-style:italic;">Cliché non disponible</span>
+            {% endif %}
+          </td>
         </tr>
 
         <tr>
-            <td class="photo-meta">
-
-              {% if p.photoAvant %}
-
-                  <strong>Date :</strong>
-                  {{ p.datePriseVueAvant
-                      ? p.datePriseVueAvant|date('d/m/Y')
-                      : 'Champ non renseigné'
-                  }}
-                  <br>
-
-                  <strong>Adresse :</strong>
-                  {{ p.adresseAvant ?: 'Champ non renseigné' }}
-                  <br>
-
-                  <strong>Latitude / Longitude :</strong>
-                  {% if p.latitudeAvant is not null and p.longitudeAvant is not null %}
-                      {{ p.latitudeAvant }}, {{ p.longitudeAvant }}
-                  {% else %}
-                      Champ non renseigné
-                  {% endif %}
-
-              {% else %}
-
-                  <strong>Date :</strong>
-                  <span style="color:#9ca3af;font-style:italic;">
-                      Champ non renseigné
-                  </span>
-                  <br>
-
-                  <strong>Adresse :</strong>
-                  <span style="color:#9ca3af;font-style:italic;">
-                      Champ non renseigné
-                  </span>
-                  <br>
-
-                  <strong>Latitude / Longitude :</strong>
-                  <span style="color:#9ca3af;font-style:italic;">
-                      Champ non renseigné
-                  </span>
-
-              {% endif %}
-
+          <td class="map-cell">
+            {% set mapAvant = photoMaps[p.id].avant ?? null %}
+            {% if p.photoAvant and mapAvant %}
+              <img src="{{ mapAvant }}" alt="Localisation avant">
+            {% else %}
+              <span style="color:#94a3b8; font-style:italic;">Cartographie indisponible</span>
+            {% endif %}
           </td>
 
-            <td class="photo-meta">
+          <td class="map-cell">
+            {% set mapApres = photoMaps[p.id].apres ?? null %}
+            {% if p.photoApres and mapApres %}
+              <img src="{{ mapApres }}" alt="Localisation après">
+            {% else %}
+              <span style="color:#94a3b8; font-style:italic;">Cartographie indisponible</span>
+            {% endif %}
+          </td>
+        </tr>
 
-              {% if p.photoApres %}
-
-                  <strong>Date :</strong>
-                  {{ p.datePriseVueApres ? p.datePriseVueApres|date('d/m/Y') : 'Champ non renseigné' }}
-                  <br>
-
-                  <strong>Adresse :</strong>
-                  {{ p.adresseApres ?: 'Champ non renseigné' }}
-                  <br>
-
-                  <strong>Latitude / Longitude :</strong>
-
-                  {% if p.latitudeApres is not null and p.longitudeApres is not null %}
-                      {{ p.latitudeApres }}, {{ p.longitudeApres }}
-                  {% else %}
-                      Champ non renseigné
-                  {% endif %}
-
+        <tr>
+          <td class="photo-meta">
+            {% if p.photoAvant %}
+              <strong>Date :</strong> {{ p.datePriseVueAvant ? p.datePriseVueAvant|date('d/m/Y H:i') : 'Non renseignée' }}<br>
+              <strong>Adresse :</strong> {{ p.adresseAvant ?: 'Non renseignée' }}<br>
+              <strong>Coordonnées GPS :</strong> 
+              {% if p.latitudeAvant is not null and p.longitudeAvant is not null %}
+                {{ p.latitudeAvant }}, {{ p.longitudeAvant }}
               {% else %}
-
-                  <strong>Date :</strong>
-                  <span style="color:#9ca3af;font-style:italic;">
-                      Champ non renseigné
-                  </span>
-                  <br>
-
-                  <strong>Adresse :</strong>
-                  <span style="color:#9ca3af;font-style:italic;">
-                      Champ non renseigné
-                  </span>
-                  <br>
-
-                  <strong>Latitude / Longitude :</strong>
-                  <span style="color:#9ca3af;font-style:italic;">
-                      Champ non renseigné
-                  </span>
-
+                Non renseignées
               {% endif %}
+            {% else %}
+              <span style="color:#94a3b8; font-style:italic;">Données métadonnées non renseignées</span>
+            {% endif %}
+          </td>
 
+          <td class="photo-meta">
+            {% if p.photoApres %}
+              <strong>Date :</strong> {{ p.datePriseVueApres ? p.datePriseVueApres|date('d/m/Y H:i') : 'Non renseignée' }}<br>
+              <strong>Adresse :</strong> {{ p.adresseApres ?: 'Non renseignée' }}<br>
+              <strong>Coordonnées GPS :</strong> 
+              {% if p.latitudeApres is not null and p.longitudeApres is not null %}
+                {{ p.latitudeApres }}, {{ p.longitudeApres }}
+              {% else %}
+                Non renseignées
+              {% endif %}
+            {% else %}
+              <span style="color:#94a3b8; font-style:italic;">Données métadonnées non renseignées</span>
+            {% endif %}
           </td>
         </tr>
 
         {% if p.commentaire %}
-            <tr>
-                <td colspan="2"
-                    style="border:1px solid {{ border }};padding:8px;font-style:italic;">
-                    <strong>Note :</strong> {{ p.commentaire }}
-                </td>
-            </tr>
+          <tr>
+            <td colspan="2" style="border: 1px solid {{ border }}; padding: 7px 10px; font-style: italic; background: #fffdfa;">
+              <strong>Note de constat :</strong> {{ p.commentaire }}
+            </td>
+          </tr>
         {% endif %}
-    </table>
+      </table>
     </div>
   {% endfor %}
 {% endfor %}
 
-
-
 {% if not hasAnyPhoto %}
-  <div style="text-align: center; padding: 40px; border: 1px solid {{ border }};">Aucune photo enregistrée pour ce chantier.</div>
+  <div style="text-align: center; padding: 35px; border: 1px dashed {{ border }}; color: #94a3b8; font-style: italic; border-radius: 4px;">
+    Aucun reportage photographique enregistré sur ce dossier.
+  </div>
 {% endif %}
 
 </body>
