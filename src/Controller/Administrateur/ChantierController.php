@@ -393,6 +393,15 @@ final class ChantierController extends AbstractController
             }
           }
 
+          // Sécurité : pas de localisation "avant" sans photo avant
+          if (!$photoEntity->getPhotoAvant()) {
+            $photoEntity->setAdresseAvant(null);
+            $photoEntity->setLatitudeAvant(null);
+            $photoEntity->setLongitudeAvant(null);
+            $photoEntity->setSourceLocalisationAvant(null);
+            $photoEntity->setDatePriseVueAvant(null);
+          }
+
           // Sécurité : pas de localisation "après" sans photo après
           if (!$photoEntity->getPhotoApres()) {
             $photoEntity->setAdresseApres(null);
@@ -655,14 +664,19 @@ final class ChantierController extends AbstractController
     foreach ($chantier->getZones() as $zone) {
       foreach ($zone->getPhotos() as $photo) {
         $photoMaps[$photo->getId()] = [
-          'avant' => $this->buildStaticMapBase64(
-            $photo->getLatitudeAvant(),
-            $photo->getLongitudeAvant()
-          ),
-          'apres' => $this->buildStaticMapBase64(
-            $photo->getLatitudeApres(),
-            $photo->getLongitudeApres()
-          ),
+          'avant' => $photo->getPhotoAvant()
+            ? $this->buildStaticMapBase64(
+              $photo->getLatitudeAvant(),
+              $photo->getLongitudeAvant()
+            )
+            : null,
+
+          'apres' => $photo->getPhotoApres()
+            ? $this->buildStaticMapBase64(
+              $photo->getLatitudeApres(),
+              $photo->getLongitudeApres()
+            )
+            : null,
         ];
       }
     }

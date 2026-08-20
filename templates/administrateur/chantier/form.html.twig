@@ -1895,19 +1895,6 @@ span.flatpickr-weekday {
 
 
   <script>
-  window.CHANTIER_DEFAULT_LOCATION = {
-    address: {{ [
-      chantier.adresse ?? '',
-      chantier.complement ?? '',
-      chantier.codePostal ?? '',
-      chantier.ville ?? ''
-    ]|filter(v => v is not empty)|join(' ')|json_encode|raw }},
-    lat: null,
-    lng: null
-  };
-</script>
-
-  <script>
     document.addEventListener('DOMContentLoaded', async () => {
       if (window.flatpickr && window.flatpickr.l10ns && window.flatpickr.l10ns.fr) {
         flatpickr.localize(flatpickr.l10ns.fr);
@@ -2376,16 +2363,6 @@ span.flatpickr-weekday {
         for (const item of items) {
           if (item.dataset.mapInit === '1') continue;
 
-          const hasSavedAvant =
-            item.querySelector('.js-photo-lat-avant')?.value &&
-            item.querySelector('.js-photo-lng-avant')?.value;
-
-          const hasSavedApres =
-            item.querySelector('.js-photo-lat-apres')?.value &&
-            item.querySelector('.js-photo-lng-apres')?.value;
-
-          const isNewPhoto = item.dataset.newPhoto === '1';
-
           item.dataset.mapInit = '1';
 
           const configs = ['avant', 'apres'];
@@ -2554,7 +2531,7 @@ span.flatpickr-weekday {
             startLivePositionForAfterMap();
 
             if (!hasCoords) {
-              marker.setOpacity(0.55);
+              marker.setOpacity(0);
             }
 
             async function setCoords(lat, lng, source = 'manuel', center = true, updateAddress = false) {
@@ -2683,14 +2660,33 @@ span.flatpickr-weekday {
           zone.dataset.uploadInit = '1';
 
           const inputId = zone.dataset.targetInputId;
-          const input = zone.querySelector(`#${CSS.escape(inputId)}`) || document.getElementById(inputId);
+          const input =
+              zone.querySelector(`#${CSS.escape(inputId)}`) ||
+              document.getElementById(inputId);
+
           const preview = zone.querySelector('.js-photo-preview');
           const previewImg = zone.querySelector('.js-photo-preview-img');
           const replaceBtn = zone.querySelector('.js-photo-replace');
           const removeBtn = zone.querySelector('.js-photo-remove');
           const inner = zone.querySelector('.photo-dropzone__inner');
 
-          if (!input || !preview || !previewImg || !inner) return;
+          // D'abord on vérifie
+          if (!input || !preview || !previewImg || !inner) {
+              return;
+          }
+
+          const item =
+              zone.closest('.js-photo-item') ||
+              zone.closest('.collection-item');
+
+          const isAvant = input.name.includes('[avantFile]');
+          const isApres = input.name.includes('[apresFile]');
+
+          const kind = isAvant
+              ? 'avant'
+              : isApres
+                  ? 'apres'
+                  : null;
 
           function showPreview(file) {
             if (!file || !file.type.startsWith('image/')) return;
@@ -2709,7 +2705,44 @@ span.flatpickr-weekday {
             previewImg.src = '';
             preview.classList.add('d-none');
             inner.classList.remove('d-none');
-          }
+
+            if (!item || !kind) {
+                return;
+            }
+
+            const latInput = item.querySelector(`.js-photo-lat-${kind}`);
+            const lngInput = item.querySelector(`.js-photo-lng-${kind}`);
+            const sourceInput = item.querySelector(`.js-photo-source-${kind}`);
+            const addressInput = item.querySelector(`.js-photo-address-${kind}`);
+            const dateInput = item.querySelector(`.js-photo-date-${kind}`);
+
+            const latVisible = item.querySelector(`.js-photo-lat-visible-${kind}`);
+            const lngVisible = item.querySelector(`.js-photo-lng-visible-${kind}`);
+
+            if (latInput) latInput.value = '';
+            if (lngInput) lngInput.value = '';
+            if (sourceInput) sourceInput.value = '';
+            if (addressInput) addressInput.value = '';
+
+            if (latVisible) latVisible.value = '';
+            if (lngVisible) lngVisible.value = '';
+
+            if (dateInput) {
+                dateInput.value = '';
+
+                if (dateInput._flatpickr) {
+                    dateInput._flatpickr.clear();
+                }
+            }
+
+            const mapEl = item.querySelector(
+                `.js-photo-map[data-kind="${kind}"]`
+            );
+
+            if (mapEl?._leafletMarker) {
+                mapEl._leafletMarker.setOpacity(0);
+            }
+        }
 
           zone.addEventListener('click', e => {
             if (e.target.closest('.js-photo-remove') || e.target.closest('.js-photo-replace')) return;

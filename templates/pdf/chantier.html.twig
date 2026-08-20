@@ -965,16 +965,16 @@
 
         <tr>
             <td class="map-cell">
-                {% set mapAvant = photoMaps[p.id].avant ?? null %}
+              {% set mapAvant = photoMaps[p.id].avant ?? null %}
 
-                {% if mapAvant %}
-                    <img src="{{ mapAvant }}" alt="Carte photo avant">
-                {% else %}
-                    <span style="color:#9ca3af;font-style:italic;">
-                        Champ non renseigné
-                    </span>
-                {% endif %}
-            </td>
+              {% if p.photoAvant and mapAvant %}
+                  <img src="{{ mapAvant }}" alt="Carte photo avant">
+              {% else %}
+                  <span style="color:#9ca3af;font-style:italic;">
+                      Champ non renseigné
+                  </span>
+              {% endif %}
+          </td>
 
             <td class="map-cell">
                 {% set mapApres = photoMaps[p.id].apres ?? null %}
@@ -991,20 +991,49 @@
 
         <tr>
             <td class="photo-meta">
-                <strong>Date :</strong>
-                {{ p.datePriseVueAvant ? p.datePriseVueAvant|date('d/m/Y') : 'Champ non renseigné' }}
-                <br>
 
-                <strong>Adresse :</strong>
-                {{ p.adresseAvant ?: 'Champ non renseigné' }}
-                <br>
+              {% if p.photoAvant %}
 
-                <strong>GPS :</strong>
-                {{ p.latitudeAvant and p.longitudeAvant
-                    ? p.latitudeAvant ~ ', ' ~ p.longitudeAvant
-                    : 'Champ non renseigné'
-                }}
-            </td>
+                  <strong>Date :</strong>
+                  {{ p.datePriseVueAvant
+                      ? p.datePriseVueAvant|date('d/m/Y')
+                      : 'Champ non renseigné'
+                  }}
+                  <br>
+
+                  <strong>Adresse :</strong>
+                  {{ p.adresseAvant ?: 'Champ non renseigné' }}
+                  <br>
+
+                  <strong>Latitude / Longitude :</strong>
+                  {% if p.latitudeAvant is not null and p.longitudeAvant is not null %}
+                      {{ p.latitudeAvant }}, {{ p.longitudeAvant }}
+                  {% else %}
+                      Champ non renseigné
+                  {% endif %}
+
+              {% else %}
+
+                  <strong>Date :</strong>
+                  <span style="color:#9ca3af;font-style:italic;">
+                      Champ non renseigné
+                  </span>
+                  <br>
+
+                  <strong>Adresse :</strong>
+                  <span style="color:#9ca3af;font-style:italic;">
+                      Champ non renseigné
+                  </span>
+                  <br>
+
+                  <strong>Latitude / Longitude :</strong>
+                  <span style="color:#9ca3af;font-style:italic;">
+                      Champ non renseigné
+                  </span>
+
+              {% endif %}
+
+          </td>
 
             <td class="photo-meta">
 
