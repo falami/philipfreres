@@ -9,11 +9,17 @@ deploy_main() {
     export PHILIP_DEPLOY_APP_DIR="${PHILIP_DEPLOY_APP_DIR:-$HOME/apps/philipfreres}"
     deploy_origin='https://app.philipfreres.com'
     deploy_check=0
+    deploy_logging=0
     case "${1:-}" in --check) deploy_check=1 ;; '') ;; *) printf 'Usage : bash deploy.sh [--check]\n' >&2; exit 2 ;; esac
     [[ $# -le 1 ]] || exit 2
     fail() { printf 'ARRÊT : %s\n' "$*" >&2; exit 1; }
-    note() { printf '\n[%s] %s\n' "$(date -u +%FT%TZ)" "$*"; }
-    for tool in git php composer tar gzip rsync curl flock sha256sum du df awk find mktemp tee grep; do
+    note() {
+        local timestamp
+        timestamp=$(date -u +%FT%TZ)
+        printf '\n[%s] %s\n' "$timestamp" "$*"
+        if [[ $deploy_logging -eq 1 ]]; then printf '\n[%s] %s\n' "$timestamp" "$*" >&3; fi
+    }
+    for tool in git php composer tar gzip rsync curl flock sha256sum du df awk find mktemp tail grep; do
         command -v "$tool" >/dev/null || fail "Outil manquant : $tool"
     done
     dump_bin=$(command -v mariadb-dump || command -v mysqldump || true)
@@ -46,6 +52,7 @@ deploy_main() {
     before_sha=$(git rev-parse HEAD)
     run_dir=$(mktemp -d "$backups_dir/$(date -u +%Y%m%dT%H%M%SZ)-XXXXXX")
     maintenance=0
+    exec 3>&1 4>&2
     on_exit() {
         result=$?
         trap - EXIT INT TERM HUP
@@ -66,13 +73,22 @@ deploy_main() {
                 printf 'Maintenance Apache conservée. Ne pas rouvrir avant contrôle. Sauvegarde : %s\n' "$run_dir" >&2
             fi
             printf 'FAILED\n' > "$run_dir/status"
+            if [[ $deploy_logging -eq 1 ]]; then
+                printf '\nDernières lignes du journal de déploiement :\n' >&4
+                tail -n 40 "$run_dir/deployment.log" >&4
+            fi
         fi
+        exec 1>&3 2>&4
+        exec 3>&- 4>&-
         exit "$result"
     }
     trap on_exit EXIT
     trap 'exit 130' INT
     trap 'exit 143' TERM HUP
-    exec > >(tee -a "$run_dir/deployment.log") 2>&1
+    # Un fichier ordinaire fonctionne aussi dans les environnements sans /dev/fd.
+    # Les étapes restent visibles via note() ; les sorties détaillées vont au journal.
+    exec >> "$run_dir/deployment.log" 2>&1
+    deploy_logging=1
     note 'Lecture de la version distante et vérification de l’avance rapide.'
     git fetch --no-tags origin main
     target_sha=$(git rev-parse refs/remotes/origin/main)
@@ -86,10 +102,14 @@ deploy_main() {
     done
     grep -Fq 'scripts/deploy-maintenance.php' "$candidate/public/index.php" || fail 'Garde de maintenance absent du front-controller cible.'
     [[ -z $(find "$candidate" -type l -print -quit) ]] || fail 'Version cible avec liens symboliques : revue nécessaire.'
+    # Matérialiser les listes avant de les lire : une erreur Git doit arrêter le
+    # déploiement, même si Git a déjà écrit une partie de sa sortie.
+    git ls-tree -r --name-only -z "$target_sha" > "$run_dir/candidate-files.list"
+    git diff --name-only --diff-filter=D -z "$before_sha" "$target_sha" > "$run_dir/deleted-files.list"
     while IFS= read -r -d '' path; do
         case "$path" in var/*|vendor/*|public/uploads/*|public/dist/*|public/vendor/*|assets/vendor/*|.env.local|.env.local.php|.env.*.local|config/gcp/*|config/.env*) fail "Chemin privé suivi dans la version cible : $path" ;; esac
         if [[ -e "$path" || -L "$path" ]]; then git ls-files --error-unmatch -- "$path" >/dev/null 2>&1 || fail "Collision avec un fichier local : $path"; fi
-    done < <(git ls-tree -r --name-only -z "$target_sha")
+    done < "$run_dir/candidate-files.list"
     cp "$candidate/scripts/deploy-database.php" "$run_dir/database-helper.php"
     db_helper="$run_dir/database-helper.php"
     note 'Contrôle de la base et de la configuration de production, sans écriture métier.'
@@ -162,7 +182,7 @@ PHP
         case "$path" in public/index.php|public/.htaccess) fail 'La version cible retire un garde indispensable.' ;; esac
         [[ ! -d "$path" ]] || fail "Suppression ambiguë d’un répertoire : $path"
         rm -f -- "$path"
-    done < <(git diff --name-only --diff-filter=D -z "$before_sha" "$target_sha")
+    done < "$run_dir/deleted-files.list"
     git update-ref refs/heads/main "$target_sha" "$before_sha"
     git read-tree "$target_sha"
     note 'Installation des dépendances verrouillées sans scripts automatiques.'

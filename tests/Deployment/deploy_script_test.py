@@ -3,6 +3,7 @@
 
 Real Git, tar, gzip and rsync exercise archive/install behaviour. PHP, Composer,
 HTTP, SQL dumps, flock, sleep and free-space checks are explicit local test doubles.
+The Git wrapper executes the real binary, except for selected failure scenarios.
 HOME is never changed and the deployment state/backups stay in TemporaryDirectory.
 Run: python3 tests/Deployment/deploy_script_test.py
 """
@@ -22,7 +23,7 @@ import unittest
 
 
 PROJECT = Path(__file__).resolve().parents[2]
-MOCKED_COMMANDS = ("php", "composer", "curl", "mysqldump", "mariadb-dump", "flock", "sleep", "df")
+MOCKED_COMMANDS = ("php", "composer", "curl", "mysqldump", "mariadb-dump", "flock", "sleep", "df", "git")
 
 SHIM = r'''#!/usr/bin/env python3
 import hashlib, json, os, pathlib, sys
@@ -34,7 +35,17 @@ with open(os.environ["DEPLOY_TEST_CALLS"], "a") as log:
 def fail(message):
     print(message, file=sys.stderr)
     sys.exit(1)
-if name == "php":
+if name == "git":
+    if mode == "git_ls_tree" and args[0] == "ls-tree":
+        # A failed producer may still have emitted a partial list. It must not
+        # silently pass through a loop running in another process.
+        sys.stdout.write("version.txt\0")
+        fail("Simulated Git ls-tree failure")
+    if mode == "git_deleted_diff" and args[0] == "diff" and "--diff-filter=D" in args:
+        sys.stdout.write("removed.txt\0")
+        fail("Simulated Git deleted-files diff failure")
+    os.execv(os.environ["DEPLOY_TEST_REAL_GIT"], [os.environ["DEPLOY_TEST_REAL_GIT"], *args])
+elif name == "php":
     if args[0] == "-r":
         if "random_bytes" in args[1]: print("a" * 64, end="")
         elif "stream_get_contents" in args[1]:
@@ -59,6 +70,7 @@ if name == "php":
             fail("Simulated migration failure")
     else: fail("Unexpected PHP invocation")
 elif name == "composer":
+    print("fixture-composer-output " + args[0])
     if args[0] == "install" and mode == "composer": fail("Simulated Composer failure")
     if args[0] == "install" and mode == "installed_dirty": pathlib.Path("version.txt").write_text("unexpected installed change\n")
     if args[0] == "dump-env": pathlib.Path(".env.local.php").write_text("<?php return [];\n")
@@ -112,6 +124,7 @@ class DeploymentScriptTest(unittest.TestCase):
             raise unittest.SkipTest("Explicit deployment state override required for isolation")
 
     def setUp(self):
+        self.real_git = shutil.which("git")
         self.temp = tempfile.TemporaryDirectory(prefix="philip-deploy-test-")
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name).resolve()
@@ -137,6 +150,7 @@ class DeploymentScriptTest(unittest.TestCase):
             "DEPLOY_DRAIN_SECONDS": "30",
             "DEPLOY_TEST_CALLS": str(self.calls_file),
             "DEPLOY_TEST_FAILURE": "",
+            "DEPLOY_TEST_REAL_GIT": self.real_git,
             "GIT_CONFIG_NOSYSTEM": "1",
             "GIT_CONFIG_GLOBAL": os.devnull,
             "GIT_AUTHOR_NAME": "Deployment fixture",
@@ -238,6 +252,15 @@ class DeploymentScriptTest(unittest.TestCase):
         self.assertIn("previous-version", (backup / "original-public/index.php").read_text())
         self.assertEqual(0o700, backup.stat().st_mode & 0o777)
 
+    def assertPrivateLog(self, *messages):
+        self.assertEqual(1, len(self.runs), self.output)
+        path = self.runs[0] / "deployment.log"
+        self.assertTrue(path.is_file(), self.output)
+        self.assertEqual(0o600, path.stat().st_mode & 0o777)
+        contents = path.read_text()
+        for message in messages:
+            self.assertIn(message, contents)
+
     def test_success_retains_verified_private_backup_and_deploys_exact_commit(self):
         result = self.deploy()
         self.assertEqual(0, result.returncode, self.output)
@@ -257,6 +280,10 @@ class DeploymentScriptTest(unittest.TestCase):
         install = next(call for call in self.calls if call[:2] == ["composer", "install"])
         self.assertIn("--no-scripts", install)
         self.assertIn("--no-dev", install)
+        self.assertPrivateLog("Déploiement validé", "Sauvegarde vérifiée", "fixture-composer-output install")
+        self.assertIn("Lecture de la version distante", self.output)
+        self.assertIn("Sauvegarde vérifiée", self.output)
+        self.assertIn("Déploiement validé", self.output)
 
     def test_check_is_read_only_for_code_database_and_maintenance(self):
         result = self.deploy(check=True)
@@ -267,6 +294,8 @@ class DeploymentScriptTest(unittest.TestCase):
         self.assertFalse(self.called("composer", "install"))
         self.assertFalse(self.called("mariadb-dump"))
         self.assertEqual("CHECKED\n", (self.runs[0] / "status").read_text())
+        self.assertPrivateLog("Précontrôles terminés", "fixture-composer-output validate")
+        self.assertIn("Précontrôles terminés", self.output)
 
     def test_dump_failure_preserves_maintenance_and_never_installs_candidate(self):
         result = self.deploy("dump")
@@ -278,6 +307,10 @@ class DeploymentScriptTest(unittest.TestCase):
         self.assertFalse((self.runs[0] / "database.sql.gz").exists())
         self.assertFalse((self.runs[0] / "mysql.cnf").exists())
         self.assertEqual("FAILED\n", (self.runs[0] / "status").read_text())
+        self.assertPrivateLog("Simulated dump failure", "ÉCHEC", "Maintenance Apache conservée")
+        self.assertIn("ÉCHEC", self.output)
+        self.assertIn("Journal privé", self.output)
+        self.assertIn("Maintenance Apache conservée", self.output)
 
     def test_composer_failure_preserves_maintenance_and_backup(self):
         result = self.deploy("composer")
@@ -395,6 +428,50 @@ class DeploymentScriptTest(unittest.TestCase):
         self.assertVerifiedBackup()
         self.assertMaintenance(True)
         self.assertIn("Ressource publique indisponible : css/auth.css", self.output)
+
+    def test_launcher_does_not_depend_on_process_substitution_or_dev_fd(self):
+        # Shared hosts can provide Bash without /dev/fd. This source check also
+        # protects the loop producers, even on machines where /dev/fd exists.
+        active_lines = "\n".join(line for line in self.launcher.read_text().splitlines()
+                                 if not line.lstrip().startswith("#"))
+        self.assertNotRegex(active_lines, r"[<>]\s*\(")
+        self.assertNotIn("/dev/fd/", active_lines)
+        self.assertNotIn("/proc/self/fd/", active_lines)
+
+    def test_failed_git_tree_listing_blocks_before_any_application_mutation(self):
+        original_index = (self.app / "public/index.php").read_bytes()
+        original_apache = (self.app / "public/.htaccess").read_bytes()
+        result = self.deploy("git_ls_tree")
+        self.assertNotEqual(0, result.returncode, self.output)
+        self.assertCommit(self.before)
+        self.assertMaintenance(False)
+        self.assertNoMigration()
+        self.assertEqual(b"previous\n", (self.app / "version.txt").read_bytes())
+        self.assertEqual(original_index, (self.app / "public/index.php").read_bytes())
+        self.assertEqual(original_apache, (self.app / "public/.htaccess").read_bytes())
+        self.assertFalse(self.called("composer", "install"))
+        self.assertFalse(self.called("mariadb-dump"))
+        self.assertPrivateLog("Simulated Git ls-tree failure", "ÉCHEC")
+        self.assertIn("ÉCHEC", self.output)
+
+    def test_failed_git_deleted_files_listing_blocks_before_application_mutation(self):
+        original_index = (self.app / "public/index.php").read_bytes()
+        original_apache = (self.app / "public/.htaccess").read_bytes()
+        result = self.deploy("git_deleted_diff")
+        self.assertNotEqual(0, result.returncode, self.output)
+        self.assertMaintenance(False)
+        self.assertCommit(self.before)
+        self.assertNoMigration()
+        # Do not consume even a valid-looking partial list from a failed Git.
+        self.assertTrue((self.app / "removed.txt").is_file(), self.output)
+        self.assertEqual(b"previous\n", (self.app / "version.txt").read_bytes())
+        self.assertEqual(original_index, (self.app / "public/index.php").read_bytes())
+        self.assertEqual(original_apache, (self.app / "public/.htaccess").read_bytes())
+        self.assertFalse(self.called("git", "update-ref"))
+        self.assertFalse(self.called("composer", "install"))
+        self.assertFalse(self.called("mariadb-dump"))
+        self.assertPrivateLog("Simulated Git deleted-files diff failure", "ÉCHEC")
+        self.assertIn("ÉCHEC", self.output)
 
 
 if __name__ == "__main__":

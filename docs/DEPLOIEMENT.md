@@ -8,7 +8,7 @@ Cette livraison prépare le mécanisme. Aucun déploiement ni sauvegarde distant
 
 Tous les fichiers de cette livraison doivent être versionnés et publiés sur `origin/main` : le script seul ne suffit pas. Sont notamment requis `scripts/deploy-database.php`, `scripts/deploy-maintenance.php`, `deploy/migrations.allowlist`, `public/index.php`, `public/.htaccess`, la configuration des services et des limiteurs, les migrations de sécurité et les ressources de connexion.
 
-Placer une copie du nouveau `deploy.sh` dans **`$HOME/bin/deploy-philipfreres`** via le gestionnaire de fichiers ou SSH, hors du dépôt applicatif. Le script lit une version distante précise, contrôle que l'avancement depuis la version installée est linéaire et refuse les modifications locales et fichiers non suivis. Déplacer l'ancien `deploy.sh` hors du dépôt s'il n'est pas versionné. Ne pas effacer ni forcer les modifications locales pour contourner un refus.
+Placer une copie du nouveau `deploy.sh` dans **`$HOME/bin/deploy-philipfreres`** via le gestionnaire de fichiers ou SSH, hors du dépôt applicatif. Ce chemin désigne un fichier ; si un dossier `deploy-philipfreres` a déjà été créé et contient le script, conserver cette organisation et utiliser **`$HOME/bin/deploy-philipfreres/deploy.sh`** dans les commandes ci-dessous. Le script lit une version distante précise, contrôle que l'avancement depuis la version installée est linéaire et refuse les modifications locales et fichiers non suivis. Déplacer l'ancien `deploy.sh` hors du dépôt s'il n'est pas versionné. Ne pas effacer ni forcer les modifications locales pour contourner un refus.
 
 Dans cPanel, le domaine doit pointer vers **`$HOME/apps/philipfreres/public`**, jamais vers la racine du dépôt. PHP web et PHP CLI doivent utiliser une version compatible (8.2 minimum). Outils nécessaires : Bash, Git, Composer 2, PHP, `mysqldump` ou `mariadb-dump`, `flock`, `rsync`, `curl`, `tar`, `gzip` et `sha256sum`.
 
@@ -49,6 +49,10 @@ Les dossiers de sauvegarde sont privés (`0700`), les fichiers créés privés (
 
 Le journal `deployment.log` et le fichier `status` indiquent le résultat. Le script laisse une maintenance Apache 503, même si le garde PHP est encore présent dans un ancien OPcache. Il supprime les fichiers temporaires de connexion MySQL et de sonde. Il **ne restaure pas automatiquement la base** : les migrations DDL MySQL peuvent avoir été partiellement appliquées et une restauration aveugle pourrait détruire des données.
 
+Les étapes principales s'affichent dans le terminal ; les sorties détaillées des commandes sont conservées dans le journal privé. En cas d'échec, ses 40 dernières lignes sont également affichées. Le lanceur utilise des fichiers ordinaires pour le journal et les listes Git, sans substitution de processus Bash, afin de fonctionner sur les hébergements où `/dev/fd` n'est pas accessible.
+
+Si une ancienne copie du lanceur s'arrête sur `/dev/fd/62: No such file or directory` lors de l'ouverture du journal, remplacer uniquement la copie du lanceur hors dépôt par la version corrigée, puis relancer `--check`. Cet échec précis intervient avant la maintenance, la sauvegarde, l'installation et les migrations ; il ne nécessite aucune restauration de l'application ni de la base. Publier également la correction sur `origin/main` depuis le poste de développement.
+
 Un OPcache web configuré avec `validate_timestamps=0` exige une invalidation ou un redémarrage du processus PHP depuis l'hébergement avant validation. Un `opcache_reset()` lancé en CLI ne vide pas le cache du processus web. Le test sans sonde vérifie que les visiteurs sont bien bloqués, et un échec réinstalle la barrière Apache.
 
 Si le site est resté en maintenance, ne pas simplement supprimer le marqueur. Examiner le journal privé et la phase atteinte. Avant la copie du code, les originaux sont dans `original-public/`; après le début d'une migration, vérifier la base avant de remettre un ancien code en service. Les commandes contenant des secrets et les logs ne doivent pas être collés dans une conversation publique.
@@ -76,7 +80,7 @@ Le script ne fournit pas une transaction atomique couvrant Git, MySQL et le syst
 ## Tests réalisés
 
 - Suite PHP complète : **156 tests, 902 assertions**, incluant l'authentification, les helpers de sauvegarde, le garde de maintenance et la conservation des quotas après un vrai nettoyage du cache.
-- **18 scénarios de déploiement simulé** : vrai dépôt Git local, archives `tar/gzip`, copie `rsync` et empreintes SHA-256 ; services PHP/Composer/MySQL/HTTP simulés. Les échecs de sauvegarde, de dépendances, de migration, de configuration et de contrôle HTTP bloquent la réouverture. PHP web en développement, debug actif et ressource redirigée sont également refusés.
+- **21 tests du lanceur** : vrai dépôt Git local, archives `tar/gzip`, copie `rsync` et empreintes SHA-256 ; services PHP/Composer/MySQL/HTTP simulés. Les échecs de sauvegarde, de dépendances, de migration, de configuration et de contrôle HTTP bloquent la réouverture. PHP web en développement, debug actif et ressource redirigée sont également refusés. Les régressions couvrent aussi les erreurs Git malgré une sortie partielle, le journal privé et l'absence de dépendance aux substitutions de processus.
 - Vérification PHP-CGI locale du statut 503 et des en-têtes du garde avant chargement de Symfony.
 
 Les simulations ne constituent pas un déploiement sur o2switch ni un essai de restauration de la base distante. Le SMTP réel et la configuration Apache/OPcache du serveur restent à vérifier lors de l'installation.
