@@ -93,7 +93,9 @@ function mysqlClientOptions(array $params): string
     if (isset($params['charset'])) {
         $options['default-character-set'] = (string) $params['charset'];
     }
-    $options['connect-timeout'] = '15';
+    // Keep this shared option file compatible with both dump clients. In
+    // particular, the interactive-client connect-timeout option is not portable
+    // across dump clients and versions.
 
     $content = "[client]\n";
     foreach ($options as $name => $value) {

@@ -75,7 +75,14 @@ elif name == "composer":
     if args[0] == "install" and mode == "installed_dirty": pathlib.Path("version.txt").write_text("unexpected installed change\n")
     if args[0] == "dump-env": pathlib.Path(".env.local.php").write_text("<?php return [];\n")
 elif name in ("mysqldump", "mariadb-dump"):
-    if "--help" in args: print("--set-gtid-purged")
+    if "--help" in args:
+        config_args = [arg for arg in args if arg.startswith("--defaults-file=")]
+        if config_args and not pathlib.Path(config_args[0].split("=", 1)[1]).is_file():
+            fail("Missing generated MySQL client configuration")
+        if mode == "invalid_dump_options" and config_args:
+            fail("Simulated dump client: unknown variable 'connect-timeout=15'")
+        if config_args: print("client-help-secret-fixture")
+        print("--set-gtid-purged")
     else:
         print("-- deterministic local fixture")
         if mode == "dump": fail("Simulated dump failure")
@@ -224,6 +231,16 @@ class DeploymentScriptTest(unittest.TestCase):
     def assertNoMigration(self):
         self.assertFalse(self.called("php", "doctrine:migrations:execute"), self.output)
 
+    def dumpCalls(self):
+        return [call for call in self.calls if call[0] in ("mysqldump", "mariadb-dump")]
+
+    def clientValidationCalls(self):
+        return [call for call in self.dumpCalls() if "--help" in call
+                and any(arg.startswith("--defaults-file=") for arg in call[1:])]
+
+    def assertNoDatabaseDump(self):
+        self.assertFalse([call for call in self.dumpCalls() if "--help" not in call], self.output)
+
     def assertMaintenance(self, active):
         self.assertEqual(active, (self.app / "var/deployment-maintenance.json").exists(), self.output)
 
@@ -280,10 +297,19 @@ class DeploymentScriptTest(unittest.TestCase):
         install = next(call for call in self.calls if call[:2] == ["composer", "install"])
         self.assertIn("--no-scripts", install)
         self.assertIn("--no-dev", install)
+        help_call = self.clientValidationCalls()[0]
+        dump_call = next(call for call in self.dumpCalls() if "--help" not in call)
+        config_arg = "--defaults-file=" + str(self.runs[0] / "mysql.cnf")
+        self.assertIn(config_arg, help_call)
+        self.assertIn(config_arg, dump_call)
+        first_http = next(call for call in self.calls if call[0] == "curl")
+        self.assertLess(self.calls.index(help_call), self.calls.index(first_http))
         self.assertPrivateLog("Déploiement validé", "Sauvegarde vérifiée", "fixture-composer-output install")
         self.assertIn("Lecture de la version distante", self.output)
         self.assertIn("Sauvegarde vérifiée", self.output)
         self.assertIn("Déploiement validé", self.output)
+        self.assertNotIn("client-help-secret-fixture", self.output)
+        self.assertNotIn("client-help-secret-fixture", (self.runs[0] / "deployment.log").read_text())
 
     def test_check_is_read_only_for_code_database_and_maintenance(self):
         result = self.deploy(check=True)
@@ -292,7 +318,13 @@ class DeploymentScriptTest(unittest.TestCase):
         self.assertMaintenance(False)
         self.assertNoMigration()
         self.assertFalse(self.called("composer", "install"))
-        self.assertFalse(self.called("mariadb-dump"))
+        self.assertTrue(self.dumpCalls(), self.output)
+        self.assertNoDatabaseDump()
+        self.assertTrue(all("--help" in call for call in self.dumpCalls()))
+        self.assertIn("--defaults-file=" + str(self.runs[0] / "mysql.cnf"), self.clientValidationCalls()[0])
+        self.assertFalse((self.runs[0] / "mysql.cnf").exists())
+        self.assertNotIn("client-help-secret-fixture", self.output)
+        self.assertNotIn("client-help-secret-fixture", (self.runs[0] / "deployment.log").read_text())
         self.assertEqual("CHECKED\n", (self.runs[0] / "status").read_text())
         self.assertPrivateLog("Précontrôles terminés", "fixture-composer-output validate")
         self.assertIn("Précontrôles terminés", self.output)
@@ -376,7 +408,7 @@ class DeploymentScriptTest(unittest.TestCase):
         self.assertMaintenance(True)
         self.assertNoMigration()
         self.assertFalse(self.called("composer", "install"))
-        self.assertFalse(self.called("mariadb-dump"))
+        self.assertNoDatabaseDump()
 
     def test_failed_healthcheck_does_not_reopen_site(self):
         result = self.deploy("health")
@@ -499,6 +531,45 @@ class DeploymentScriptTest(unittest.TestCase):
         self.assertFalse((self.runs[0] / "database.sql.gz").exists())
         self.assertPrivateLog("Chemin privé suivi dans la version cible : config/.env.dev", "ÉCHEC")
         self.assertIn("Chemin privé suivi dans la version cible : config/.env.dev", self.output)
+
+    def assertInvalidDumpOptionsBlockBeforeMutation(self, check=False):
+        original_index = (self.app / "public/index.php").read_bytes()
+        original_apache = (self.app / "public/.htaccess").read_bytes()
+        result = self.deploy("invalid_dump_options", check=check)
+        self.assertNotEqual(0, result.returncode, self.output)
+        self.assertCommit(self.before)
+        self.assertMaintenance(False)
+        self.assertNoMigration()
+        self.assertNoDatabaseDump()
+        self.assertEqual(b"previous\n", (self.app / "version.txt").read_bytes())
+        self.assertEqual(original_index, (self.app / "public/index.php").read_bytes())
+        self.assertEqual(original_apache, (self.app / "public/.htaccess").read_bytes())
+        self.assertFalse(self.called("git", "update-ref"))
+        self.assertFalse(self.called("composer", "install"))
+        self.assertFalse(self.called("curl"))
+        self.assertEqual(1, len(self.runs), self.output)
+        run = self.runs[0]
+        self.assertTrue(self.called("php", "dump-config"), self.output)
+        self.assertTrue(self.dumpCalls(), self.output)
+        self.assertIn("--defaults-file=" + str(run / "mysql.cnf"), self.clientValidationCalls()[0])
+        self.assertFalse((run / "mysql.cnf").exists())
+        self.assertFalse((run / "application.tar.gz").exists())
+        self.assertFalse((run / "application.tar.gz.part").exists())
+        self.assertFalse((run / "database.sql.gz").exists())
+        self.assertFalse((run / "database.sql.gz.part").exists())
+        self.assertEqual("FAILED\n", (run / "status").read_text())
+        self.assertPrivateLog("Options refusées par le client de sauvegarde", "ÉCHEC")
+        diagnostic = run / "dump-client-check.err"
+        self.assertEqual(0o600, diagnostic.stat().st_mode & 0o777)
+        self.assertIn("Simulated dump client: unknown variable", diagnostic.read_text())
+        self.assertNotIn("Simulated dump client: unknown variable", self.output)
+        self.assertIn("ÉCHEC", self.output)
+
+    def test_invalid_dump_options_block_before_maintenance_and_backup(self):
+        self.assertInvalidDumpOptionsBlockBeforeMutation()
+
+    def test_check_rejects_invalid_dump_options_and_removes_credentials(self):
+        self.assertInvalidDumpOptionsBlockBeforeMutation(check=True)
 
 
 class RepositoryDeliveryContractTest(unittest.TestCase):

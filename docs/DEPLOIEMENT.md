@@ -20,7 +20,7 @@ Lancer d'abord :
 bash "$HOME/bin/deploy-philipfreres" --check
 ```
 
-Ce contrôle vérifie les outils, Git, la présence des fichiers cibles, la configuration privée, l'accès en lecture à MySQL, les moteurs InnoDB et l'espace disque estimé. Il crée un dossier privé de journal/candidat et récupère les objets Git ; il ne coupe pas le site, ne sauvegarde pas encore et ne modifie aucune donnée métier. Il ne valide pas la délivrabilité SMTP, le quota utilisateur cPanel, le résultat des migrations ou le comportement HTTPS final.
+Ce contrôle vérifie les outils, Git, la présence des fichiers cibles, la configuration privée, l'accès en lecture à MySQL, les moteurs InnoDB, l'espace disque estimé et l'acceptation des options par le client de sauvegarde installé. Cette dernière vérification utilise `--help` avec le fichier privé et les options du futur dump, sans exporter de données. Sa sortie détaillée reste privée. Le contrôle crée un dossier privé de journal/candidat et récupère les objets Git ; il ne coupe pas le site, ne sauvegarde pas encore et ne modifie aucune donnée métier. Il ne valide pas la délivrabilité SMTP, le quota utilisateur cPanel, tous les privilèges SQL nécessaires au dump, le résultat des migrations ou le comportement HTTPS final.
 
 Suspendre ensuite les tâches cron, imports et workers qui peuvent écrire dans cette application. Fermer les opérations d'administration en cours. Vérifier dans cPanel l'espace restant et la limite du compte : `df` ne mesure pas toujours le quota cPanel. Puis lancer :
 
@@ -80,7 +80,8 @@ Le script ne fournit pas une transaction atomique couvrant Git, MySQL et le syst
 ## Tests réalisés
 
 - Suite PHP complète : **156 tests, 902 assertions**, incluant l'authentification, les helpers de sauvegarde, le garde de maintenance et la conservation des quotas après un vrai nettoyage du cache.
-- **23 tests du lanceur** : vrai dépôt Git local, archives `tar/gzip`, copie `rsync` et empreintes SHA-256 ; services PHP/Composer/MySQL/HTTP simulés. Les échecs de sauvegarde, de dépendances, de migration, de configuration et de contrôle HTTP bloquent la réouverture. PHP web en développement, debug actif et ressource redirigée sont également refusés. Les régressions couvrent aussi les erreurs Git malgré une sortie partielle, le journal privé, l'absence de dépendance aux substitutions de processus et le refus des configurations privées suivies dans Git.
+- **25 tests du lanceur** : vrai dépôt Git local, archives `tar/gzip`, copie `rsync` et empreintes SHA-256 ; services PHP/Composer/MySQL/HTTP simulés. Les échecs de sauvegarde, de dépendances, de migration, de configuration et de contrôle HTTP bloquent la réouverture. PHP web en développement, debug actif et ressource redirigée sont également refusés. Les régressions couvrent aussi les erreurs Git malgré une sortie partielle, le journal privé, l'absence de dépendance aux substitutions de processus, le refus des configurations privées suivies dans Git et le refus des options du client SQL avant toute maintenance.
+- Correctif du helper de sauvegarde : **33 tests, 60 assertions**, avec lecture réelle des fichiers d'options synthétiques par MySQL 5.7 et 8.0 (`mysqldump --help`), sans connexion à une base. Le test utilise également MariaDB lorsqu'il est disponible localement.
 - Vérification PHP-CGI locale du statut 503 et des en-têtes du garde avant chargement de Symfony.
 
 Les simulations ne constituent pas un déploiement sur o2switch ni un essai de restauration de la base distante. Le SMTP réel et la configuration Apache/OPcache du serveur restent à vérifier lors de l'installation.

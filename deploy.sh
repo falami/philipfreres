@@ -122,6 +122,16 @@ deploy_main() {
     free_kb=$(df -Pk "$backups_dir" | awk 'END {print $4}')
     required_kb=$((app_kb * 3 + db_bytes / 1024 * 3 + 1048576))
     [[ "$free_kb" -gt "$required_kb" ]] || fail 'Espace insuffisant : sauvegarde + marge de travail + 1 Gio requis.'
+    note 'Vérification des options du client de sauvegarde, avant maintenance.'
+    dump_options=(--single-transaction --quick --hex-blob --routines --triggers --events --no-tablespaces --default-character-set=utf8mb4)
+    "$dump_bin" --no-defaults --help > "$run_dir/dump-help.txt"
+    if grep -q -- '--set-gtid-purged' "$run_dir/dump-help.txt"; then dump_options+=(--set-gtid-purged=OFF); fi
+    if grep -q -- '--no-login-paths' "$run_dir/dump-help.txt"; then dump_options+=(--no-login-paths); fi
+    php "$db_helper" dump-config "$run_dir/mysql.cnf"
+    # --help valide les options réelles sans connexion ni sauvegarde SQL. Ne pas
+    # journaliser sa sortie : certains clients affichent les valeurs configurées.
+    "$dump_bin" --defaults-file="$run_dir/mysql.cnf" "${dump_options[@]}" --help > /dev/null 2> "$run_dir/dump-client-check.err" \
+        || fail "Options refusées par le client de sauvegarde. Diagnostic privé : $run_dir/dump-client-check.err"
     (cd "$candidate" && composer validate --no-check-publish --no-plugins --no-scripts)
     if [[ $deploy_check -eq 1 ]]; then
         printf 'CHECKED\n' > "$run_dir/status"
@@ -163,11 +173,6 @@ PHP
     gzip -t "$run_dir/application.tar.gz"
     tar -tzf "$run_dir/application.tar.gz" > "$run_dir/application-files.txt"
     note 'Sauvegarde transactionnelle de la base.'
-    php "$db_helper" dump-config "$run_dir/mysql.cnf"
-    dump_options=(--single-transaction --quick --hex-blob --routines --triggers --events --no-tablespaces --default-character-set=utf8mb4)
-    "$dump_bin" --no-defaults --help > "$run_dir/dump-help.txt"
-    if grep -q -- '--set-gtid-purged' "$run_dir/dump-help.txt"; then dump_options+=(--set-gtid-purged=OFF); fi
-    if grep -q -- '--no-login-paths' "$run_dir/dump-help.txt"; then dump_options+=(--no-login-paths); fi
     "$dump_bin" --defaults-file="$run_dir/mysql.cnf" "${dump_options[@]}" --databases "$db_name" | gzip > "$run_dir/database.sql.gz.part"
     mv "$run_dir/database.sql.gz.part" "$run_dir/database.sql.gz"
     rm -f "$run_dir/mysql.cnf"

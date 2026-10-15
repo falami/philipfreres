@@ -17,6 +17,8 @@ use Doctrine\Migrations\Version\Version;
 use PhilipFreres\Deployment\DeploymentCheckFailed;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Process\ExecutableFinder;
+use Symfony\Component\Process\Process;
 
 use function PhilipFreres\Deployment\databaseName;
 use function PhilipFreres\Deployment\databaseSize;
@@ -89,6 +91,45 @@ final class DeployDatabaseTest extends TestCase
         self::assertStringContainsString('protocol="SOCKET"', $options);
         self::assertStringContainsString('socket="/run/mysql/mysql.sock"', $options);
         self::assertStringNotContainsString('host=', $options);
+    }
+
+    public function testDumpOptionsDoNotContainInteractiveClientOnlyTimeout(): void
+    {
+        self::assertStringNotContainsString('connect-timeout', mysqlClientOptions($this->params()));
+    }
+
+    #[DataProvider('dumpTransports')]
+    public function testRealDumpClientsAcceptGeneratedOptionsWithoutConnecting(array $overrides): void
+    {
+        $finder = new ExecutableFinder();
+        $clients = array_filter([
+            $finder->find('mariadb-dump'),
+            $finder->find('mysqldump'),
+            ...glob('/Applications/MAMP/Library/bin/mysql*/bin/mysqldump') ?: [],
+        ], static fn ($path) => is_string($path) && is_executable($path));
+        if ($clients === []) {
+            self::markTestSkipped('No local MySQL/MariaDB dump client available for parser integration.');
+        }
+
+        $options = $this->directory.'/synthetic-dump.cnf';
+        writePrivateOptions($options, mysqlClientOptions($this->params(array_replace([
+            // Synthetic credentials only. --help parses all options and exits
+            // without opening a database connection, for both dump clients.
+            'password' => "fake \"quoted\" \\slash #;\n[client]\nuser=also-fake\r\t",
+        ], $overrides))));
+        foreach (array_unique($clients) as $client) {
+            $process = new Process([$client, '--defaults-file='.$options, '--help']);
+            $process->setTimeout(10);
+            $process->run();
+            self::assertSame(0, $process->getExitCode(), basename($client).' rejected generated options: '.$process->getErrorOutput());
+            self::assertDoesNotMatchRegularExpression('/unknown (?:variable|option)/i', $process->getErrorOutput());
+        }
+    }
+
+    public static function dumpTransports(): iterable
+    {
+        yield 'TCP' => [['host' => '192.0.2.1', 'port' => 3306]];
+        yield 'Unix socket' => [['unix_socket' => '/nonexistent/synthetic-mysql.sock']];
     }
 
     #[DataProvider('unsafeDatabaseNames')]
