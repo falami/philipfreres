@@ -7,10 +7,7 @@
 .env.*.local
 .env.local.php.bak
 
-/config/.env
-/config/.env.local
-/config/.env.local.php
-/config/.env.prod.local
+/config/.env*
 /config/gcp/
 /assets/vendor/
 

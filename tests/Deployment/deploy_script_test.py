@@ -473,6 +473,47 @@ class DeploymentScriptTest(unittest.TestCase):
         self.assertPrivateLog("Simulated Git deleted-files diff failure", "ÉCHEC")
         self.assertIn("ÉCHEC", self.output)
 
+    def test_candidate_private_dotenv_is_rejected_before_mutation(self):
+        original_index = (self.app / "public/index.php").read_bytes()
+        original_apache = (self.app / "public/.htaccess").read_bytes()
+        # Deliberately introduce a forbidden tracked file in the isolated remote.
+        # The content is a test value; never read the project's real dotenv files.
+        self.put("config/.env.dev", "FIXTURE_ENVIRONMENT_VALUE=not-a-secret\n")
+        self.git("add", "--", "config/.env.dev", cwd=self.source)
+        self.git("commit", "-m", "Forbidden private config fixture", cwd=self.source)
+        self.git("push", "origin", "main", cwd=self.source)
+        result = self.deploy()
+        self.assertNotEqual(0, result.returncode, self.output)
+        self.assertCommit(self.before)
+        self.assertMaintenance(False)
+        self.assertNoMigration()
+        self.assertFalse((self.app / "config/.env.dev").exists())
+        self.assertEqual(b"previous\n", (self.app / "version.txt").read_bytes())
+        self.assertEqual(original_index, (self.app / "public/index.php").read_bytes())
+        self.assertEqual(original_apache, (self.app / "public/.htaccess").read_bytes())
+        self.assertFalse(self.called("git", "update-ref"))
+        self.assertFalse(self.called("php", "preflight"))
+        self.assertFalse(self.called("composer"))
+        self.assertFalse(self.called("mariadb-dump"))
+        self.assertFalse((self.runs[0] / "application.tar.gz").exists())
+        self.assertFalse((self.runs[0] / "database.sql.gz").exists())
+        self.assertPrivateLog("Chemin privé suivi dans la version cible : config/.env.dev", "ÉCHEC")
+        self.assertIn("Chemin privé suivi dans la version cible : config/.env.dev", self.output)
+
+
+class RepositoryDeliveryContractTest(unittest.TestCase):
+    def test_project_index_excludes_private_config_dotenvs(self):
+        if shutil.which("git") is None:
+            self.skipTest("Git is required to inspect the delivery index")
+        # Inspect names in the actual staged delivery only, never file contents.
+        # A local ignored copy is allowed; a tracked copy would block deployment.
+        result = subprocess.run(["git", "ls-files", "-z", "--", "config/.env*"],
+                                cwd=PROJECT, capture_output=True, check=True)
+        tracked_paths = [path.decode("utf-8", errors="replace")
+                         for path in result.stdout.split(b"\0") if path]
+        self.assertEqual([], tracked_paths,
+                         "Private config dotenv files must stay outside the Git delivery index")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
