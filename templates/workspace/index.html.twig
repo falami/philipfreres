@@ -1,335 +1,85 @@
-{# templates/base_admin.html.twig #}
-{% extends 'base_public.html.twig' %}
-{% block title %}Mon espace{% endblock %}
-
-{% block body %}
-  {% include 'header_public.html.twig' %}
-
+<!DOCTYPE html>
+<html lang="{{ app.request.locale|default('fr') }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="same-origin">
+  <title>Votre espace · Philip Frères</title>
+  <link rel="icon" href="{{ asset('uploads/photos/entite/favicon/favicon-philip-freres.webp') }}">
   <style>
-    :root {
-      --wf-primary: #0062ff;
-      --wf-primary-glow: rgba(0, 98, 255, 0.15);
-      --wf-success: #00d084;
-      --wf-ink-dark: #0a0f1d;
-      --wf-ink-light: #475467;
-      --wf-bg-main: #f8faff;
-      --wf-card-bg: rgba(255, 255, 255, 0.8);
-      --wf-border-color: rgba(0, 0, 0, 0.06);
-      --wf-radius-lg: 24px;
-      --wf-radius-md: 16px;
-    }
-
-    body {
-      background-color: var(--wf-bg-main);
-      color: var(--wf-ink-dark);
-      font-family: 'Inter', -apple-system, sans-serif;
-    }
-
-    /* Animated Background Canvas */
-    .wf-premium-canvas {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      z-index: -1;
-      background: 
-        radial-gradient(circle at 0% 0%, rgba(0, 98, 255, 0.05) 0%, transparent 40%),
-        radial-gradient(circle at 100% 100%, rgba(0, 208, 132, 0.05) 0%, transparent 40%);
-    }
-
-    /* Hero Section Refined */
-    .wf-hero-section {
-      padding: 80px 0 40px 0;
-      text-align: center;
-    }
-
-    .wf-hero-badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 6px 14px;
-      background: #fff;
-      border: 1px solid var(--wf-border-color);
-      border-radius: 100px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-      margin-bottom: 24px;
-    }
-
-    .wf-hero-badge i { color: var(--wf-primary); margin-right: 8px; }
-
-    /* Premium Grid Cards */
-    .wf-card-wrapper {
-      perspective: 1000px;
-      height: 100%;
-    }
-
-    .wf-glass-card {
-      background: var(--wf-card-bg);
-      backdrop-filter: blur(20px) saturate(180%);
-      -webkit-backdrop-filter: blur(20px) saturate(180%);
-      border: 1px solid rgba(255, 255, 255, 0.7);
-      border-radius: var(--wf-radius-lg);
-      padding: 32px;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.04);
-      position: relative;
-      overflow: hidden;
-    }
-
-    /* Subtle gradient border effect on hover */
-    .wf-glass-card:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.12);
-      border-color: rgba(0, 98, 255, 0.3);
-    }
-
-    /* Avatar & Brand Icon */
-    .wf-brand-container {
-      width: 64px;
-      height: 64px;
-      border-radius: 18px;
-      background: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.06);
-      margin-bottom: 24px;
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--wf-primary);
-      position: relative;
-    }
-
-    .wf-brand-container img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      border-radius: 18px;
-    }
-
-    /* Online Status Dot */
-    .wf-status-dot {
-      position: absolute;
-      bottom: -2px;
-      right: -2px;
-      width: 14px;
-      height: 14px;
-      background: var(--wf-success);
-      border: 3px solid #fff;
-      border-radius: 50%;
-    }
-
-    /* Typography */
-    .wf-card-title {
-      font-size: 1.25rem;
-      font-weight: 800;
-      margin-bottom: 6px;
-      letter-spacing: -0.02em;
-    }
-
-    .wf-card-meta {
-      font-size: 0.9rem;
-      color: var(--wf-ink-light);
-      margin-bottom: 20px;
-    }
-
-    /* Pill Badges */
-    .wf-tag-group {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 24px;
-    }
-
-    .wf-tag {
-      padding: 4px 12px;
-      border-radius: 8px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-      background: rgba(0, 0, 0, 0.04);
-      color: var(--wf-ink-light);
-    }
-
-    .wf-tag-primary { background: var(--wf-primary-glow); color: var(--wf-primary); }
-    /* Badges par rôle */
-    .wf-tag--dirigeant { background: rgba(111, 66, 193, .12); color: #6f42c1; }   /* violet */
-    .wf-tag--admin     { background: rgba(0, 98, 255, .12); color: #0062ff; }     /* bleu */
-    .wf-tag--of        { background: rgba(0, 208, 132, .12); color: #00a56a; }    /* vert */
-    .wf-tag--commercial{ background: rgba(255, 193, 7, .18); color: #b58100; }    /* jaune */
-    .wf-tag--entreprise{ background: rgba(13, 202, 240, .14); color: #0aa2c0; }   /* cyan */
-    .wf-tag--opco      { background: rgba(253, 126, 20, .16); color: #d66b0f; }   /* orange */
-    .wf-tag--formateur { background: rgba(32, 201, 151, .14); color: #148a68; }   /* teal */
-    .wf-tag--TENANT_EMPLOYE { background: rgba(108, 117, 125, .12); color: #495057; }  /* gris */
-    .wf-tag--platform  { background: rgba(0, 0, 0, .06); color: #111827; }        /* neutre */
-
-    /* Premium Button */
-    .wf-btn-premium {
-      margin-top: auto;
-      background: var(--wf-ink-dark);
-      color: #fff;
-      border: none;
-      padding: 14px;
-      border-radius: var(--wf-radius-md);
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      transition: all 0.3s ease;
-      text-decoration: none;
-    }
-
-    .wf-btn-premium:hover {
-      background: var(--wf-primary);
-      color: #fff;
-      transform: scale(1.02);
-    }
-
-    /* Create Card Special Style */
-    .wf-card-create {
-      border: 2px dashed rgba(0, 98, 255, 0.2);
-      background: rgba(0, 98, 255, 0.02);
-    }
-
-    .wf-card-create:hover {
-      border-style: solid;
-      background: #fff;
-    }
-
-    .wf-icon-plus {
-      width: 50px;
-      height: 50px;
-      background: var(--wf-primary-glow);
-      color: var(--wf-primary);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 20px;
-      font-size: 1.2rem;
-    }
-
+    :root{color-scheme:light;--forest:#12372f;--ink:#203a32;--muted:#65736a;--border:#d9e1d8;--gold:#d9bd87}
+    *{box-sizing:border-box}body{margin:0;background:#f9faf5;color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}a{color:inherit}button{font:inherit;cursor:pointer}a:focus-visible,button:focus-visible{outline:3px solid #9b7134;outline-offset:4px}.skip{position:absolute;left:20px;top:-80px;background:white;padding:12px;z-index:2}.skip:focus{top:12px}
+    .shell{max-width:1180px;margin:0 auto;padding:0 40px}.header{display:flex;align-items:center;justify-content:space-between;gap:24px;min-height:112px;border-bottom:1px solid var(--border)}.brand{display:flex;align-items:center;gap:15px;text-decoration:none;font-size:13px;letter-spacing:.12em;font-weight:700;text-transform:uppercase}.brand img{width:52px;height:52px;object-fit:contain;border-radius:5px}.session{display:flex;align-items:center;gap:24px}.status{font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center}.dot{width:7px;height:7px;border-radius:50%;background:#507b63}.logout{background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--ink);padding:9px 15px;font-size:13px}.logout:hover{background:#edf1e8}
+    main{padding:72px 0 88px}.eyebrow{text-transform:uppercase;letter-spacing:.17em;font-size:11px;font-weight:700;color:var(--muted);margin:0 0 20px}.welcome{display:flex;justify-content:space-between;gap:32px;align-items:end;margin-bottom:46px}h1{font-family:Georgia,"Times New Roman",serif;font-size:clamp(34px,5vw,54px);font-weight:400;letter-spacing:-.04em;line-height:1.12;margin:0 0 18px;max-width:800px}.lead{margin:0;color:var(--muted);max-width:600px}.count{font-size:12px;white-space:nowrap;color:var(--muted);border-bottom:1px solid var(--gold);padding-bottom:6px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,295px),1fr));gap:24px}.card{border:1px solid var(--border);border-radius:12px;background:#fff;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 8px 26px rgba(18,55,47,.025)}.card-main{padding:30px;flex:1}.card-heading{display:flex;justify-content:space-between;align-items:start;gap:15px;margin-bottom:25px}.monogram{width:54px;height:54px;border:1px solid var(--border);border-radius:8px;display:grid;place-items:center;background:#f3f5ef;color:var(--forest);font-family:Georgia,serif;font-size:24px;overflow:hidden}.monogram img{width:100%;height:100%;object-fit:contain;background:white}.active{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#3c6e55;border-radius:50px;background:#eef4ec;padding:4px 9px}.card h2{font-size:22px;font-weight:600;line-height:1.3;letter-spacing:-.025em;margin:0 0 12px;overflow-wrap:anywhere}.roles{display:flex;gap:6px;flex-wrap:wrap}.role{font-size:12px;color:var(--muted)}.role+.role:before{content:"·";margin-right:6px}.card form{padding:0 30px 30px}.enter{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;background:var(--forest);color:white;border:1px solid var(--forest);border-radius:7px;padding:13px 16px;text-align:left;font-size:14px;font-weight:600}.enter:hover{background:#205044}.enter svg{width:17px;height:17px;flex:none}
+    .empty{display:grid;grid-template-columns:90px 1fr;gap:26px;border:1px solid var(--border);border-radius:12px;padding:42px;background:white;max-width:900px}.empty-icon{width:72px;height:72px;display:grid;place-items:center;border:1px solid var(--border);border-radius:50%;color:var(--forest);background:#f4f6ef}.empty-icon svg{width:30px;height:30px}.empty h2{font:400 29px/1.25 Georgia,serif;margin:0 0 16px}.empty p{color:var(--muted);margin:0 0 16px;max-width:600px}.email{display:inline-block;max-width:100%;overflow-wrap:anywhere;color:var(--ink);font-size:14px;background:#f4f6ef;border:1px solid var(--border);padding:9px 13px;border-radius:7px}.note{font-size:13px;color:var(--muted);margin-top:30px;max-width:680px}.footer{border-top:1px solid var(--border);padding:24px 0 36px;display:flex;justify-content:space-between;gap:20px;font-size:11px;color:var(--muted);letter-spacing:.03em}.footer a{text-underline-offset:4px}
+    @media(max-width:640px){.shell{padding:0 22px}.header{min-height:92px;gap:12px}.brand{font-size:10px;letter-spacing:.06em;gap:9px}.brand img{width:42px;height:42px}.status{display:none}.logout{font-size:12px;padding:8px 10px}main{padding:48px 0 58px}.welcome{display:block;margin-bottom:30px}.count{display:inline-block;margin-top:22px}.card-main{padding:24px}.card form{padding:0 24px 24px}.empty{display:block;padding:28px}.empty-icon{margin-bottom:24px}.footer{flex-wrap:wrap}}
   </style>
-
-  <div class="wf-premium-canvas"></div>
-
-  <div class="container pb-5">
-    
-    {# SECTION HERO ULTRA-CLEAN #}
-    <div class="wf-hero-section">
-      <div class="wf-hero-badge">
-        <i class="fa fa-sparkles"></i> Dashboard Intelligent
-      </div>
-      <h1 class="display-5 fw-extrabold mb-3" style="letter-spacing: -1.5px;">
-        Bonjour {{ user.prenom }}, <span style="color: var(--wf-primary);">bienvenue</span> dans votre espace.
-      </h1>
-      <p class="lead text-muted mx-auto" style="max-width: 600px;">
-        Gérez vos formations et vos équipes en un clic. <br />Veuillez sélectionnez un organisme.
-      </p>
+</head>
+<body>
+<a class="skip" href="#main">Aller au contenu</a>
+<div class="shell">
+  <header class="header">
+    <a class="brand" href="{{ path('app_workspace') }}" aria-label="Philip Frères, votre espace">
+      <img src="{{ asset('uploads/photos/entite/logo/logo-philip-freres.jpg') }}" alt="" width="52" height="52">
+      <span>Philip Frères<br><span style="font-weight:400;letter-spacing:.05em">Espace professionnel</span></span>
+    </a>
+    <div class="session">
+      <span class="status"><span class="dot" aria-hidden="true"></span>Compte connecté</span>
+      <form action="{{ path('app_logout') }}" method="post">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token('logout') }}">
+        <button class="logout" type="submit">Se déconnecter</button>
+      </form>
     </div>
-
-    {# GRID #}
-    <div class="row g-4 mt-1">
-
-      {% for m in memberships %}
-        {% set e = m.entite %}
-        {% set logoUrl = e.logo ? asset('uploads/photos/entite/logo/' ~ e.logo) : null %}
-        {% set monogram = (e.nom|default('O'))|slice(0,1)|upper %}
-
-        <div class="col-12 col-md-6 col-lg-4">
-          <div class="wf-card-wrapper">
-            <div class="wf-glass-card">
-              
-              <div class="wf-brand-container">
-                {% if logoUrl %}
-                  <img src="{{ logoUrl }}" alt="Logo {{ e.nom }}">
-                {% else %}
-                  <span>{{ monogram }}</span>
-                {% endif %}
-                <div class="wf-status-dot"></div>
-              </div>
-
-              <h2 class="wf-card-title">{{ e.nom }}</h2>
-              <p class="wf-card-meta">
-                <i class="far fa-calendar-alt me-1"></i>
-                {{ e.lastActivityAt ? e.lastActivityAt|format_datetime('medium', 'short', locale='fr') : '—' }}
-              </p>
-
-              <div class="wf-tag-group">
-                
-                {% if m.hasRole('TENANT_ADMIN') %}
-                  <span class="wf-tag wf-tag--admin"><i class="fa fa-shield-halved me-1"></i> Administrateur</span>
-                {% endif %}
-
-                {% if m.hasRole('TENANT_EMPLOYE') %}
-                  <span class="wf-tag wf-tag--employe"><i class="fa fa-user-graduate me-1"></i> Employé</span>
-                {% endif %}
-
-                {% if e.id == platformEntiteId and isTenantDirigeant %}
-                  <span class="wf-tag wf-tag--platform"><i class="bi bi-stars"></i> Propriétaire</span>
-                {% endif %}
-              </div>
-
-              <form method="post" action="{{ path('app_workspace_switch', {id: e.id}) }}">
-                <input type="hidden" name="_token" value="{{ csrf_token('switch_entite_' ~ e.id) }}">
-                <button type="submit" class="wf-btn-premium w-100">
-                  Accéder au workspace
-                  <i class="fa fa-chevron-right" style="font-size: 0.8rem;"></i>
-                </button>
-              </form>
-              
-            </div>
-          </div>
-        </div>
-      {% endfor %}
-
-      {# CARTE DE CRÉATION #}
-      <div class="col-12 col-md-6 col-lg-4">
-        <div class="wf-card-wrapper">
-          <div class="wf-glass-card wf-card-create">
-            <div class="wf-icon-plus">
-              <i class="fa fa-plus"></i>
-            </div>
-
-            <h2 class="wf-card-title">Nouvel Organisme</h2>
-            <p class="wf-card-meta">
-              Lancez une nouvelle structure et invitez vos collaborateurs en quelques secondes.
-            </p>
-
-            <div class="wf-tag-group">
-              <span class="wf-tag" style="background: rgba(0, 208, 132, 0.1); color: var(--wf-success);">
-                <i class="fa fa-rocket me-1"></i> Essai gratuit (3 mois)
-              </span>
-            </div>
-
-            <a href="{{ path('app_onboarding') }}" class="wf-btn-premium w-100" style="background: var(--wf-success);">
-              Créer maintenant
-            </a>
-          </div>
-        </div>
+  </header>
+  <main id="main">
+    <p class="eyebrow">Votre espace de travail</p>
+    <div class="welcome">
+      <div>
+        <h1>Bonjour{% if user.prenom %}, {{ user.prenom }}{% endif %}.</h1>
+        <p class="lead">{% if memberships is not empty %}Choisissez votre entité pour retrouver vos équipes, vos chantiers et vos outils.{% else %}Votre connexion est établie. Il reste à activer votre accès à une entité.{% endif %}</p>
       </div>
-
+      {% if memberships is not empty %}<span class="count">{{ memberships|length }} espace{{ memberships|length > 1 ? 's' : '' }} disponible{{ memberships|length > 1 ? 's' : '' }}</span>{% endif %}
     </div>
-  </div>
-
-  <script>
-    // Petite animation d'entrée au scroll
-    document.addEventListener('DOMContentLoaded', () => {
-        const cards = document.querySelectorAll('.wf-card-wrapper');
-        cards.forEach((card, index) => {
-            card.style.opacity = '0';
-            card.style.transform = 'translateY(20px)';
-            setTimeout(() => {
-                card.style.transition = 'all 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
-                card.style.opacity = '1';
-                card.style.transform = 'translateY(0)';
-            }, index * 100);
-        });
-    });
-  </script>
-
-{% endblock %}
+    {% if memberships is empty %}
+      <section class="empty" aria-labelledby="pending-title">
+        <div class="empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M5 21V4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v17M3 21h18M9 21v-5h6v5M8 7h2m4 0h2M8 11h2m4 0h2"/></svg></div>
+        <div>
+          <h2 id="pending-title">Votre accès est en attente.</h2>
+          <p>Aucune entité active n’est associée à votre compte pour le moment. Contactez votre administrateur afin qu’il vous attribue les accès nécessaires.</p>
+          <p>Communiquez-lui l’adresse de votre compte :</p>
+          <span class="email">{{ user.email }}</span>
+        </div>
+      </section>
+    {% else %}
+      <div class="grid">
+        {% for membership in memberships %}
+          {% set entity = membership.entite %}
+          <section class="card" aria-labelledby="entity-{{ entity.id }}">
+            <div class="card-main">
+              <div class="card-heading">
+                <div class="monogram" aria-hidden="true">{% if entity.logo %}<img src="{{ asset('uploads/photos/entite/logo/' ~ entity.logo) }}" alt="" width="54" height="54">{% else %}{{ entity.nom|default('P', true)|slice(0,1)|upper }}{% endif %}</div>
+                <span class="active">Accès actif</span>
+              </div>
+              <h2 id="entity-{{ entity.id }}">{{ entity.nom|default('Votre entité', true) }}</h2>
+              <div class="roles">
+                {% if membership.isTenantAdmin %}<span class="role">Administrateur</span>{% endif %}
+                {% if membership.hasRole('TENANT_CHEF') %}<span class="role">Chef de chantier</span>{% endif %}
+                {% if membership.hasRole('TENANT_EMPLOYE') %}<span class="role">Employé</span>{% endif %}
+              </div>
+            </div>
+            <form method="post" action="{{ path('app_workspace_switch', {id: entity.id}) }}">
+              <input type="hidden" name="_token" value="{{ csrf_token('switch_entite_' ~ entity.id) }}">
+              <button type="submit" class="enter" aria-label="Ouvrir l’espace {{ entity.nom }}">Ouvrir cet espace<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 12h16m-6-6 6 6-6 6"/></svg></button>
+            </form>
+          </section>
+        {% endfor %}
+      </div>
+      <p class="note">Un espace manque ? Votre administrateur peut vérifier votre rattachement et vos droits d’accès.</p>
+    {% endif %}
+  </main>
+  <footer class="footer"><span>PHILIP FRÈRES · ESPACE PROFESSIONNEL</span><a href="{{ path('app_account_security') }}">Sécurité de mon compte</a><a href="{{ path('app_public') }}">Retour au site</a></footer>
+</div>
+</body>
+</html>

@@ -209,7 +209,7 @@ final class TransactionCarteTotalController extends AbstractController
     $token = (string)$request->request->get('_token', '');
     if (!$this->isCsrfTokenValid('delete_tct_' . $t->getId(), $token)) {
       $this->addFlash('danger', 'Jeton CSRF invalide.');
-      return $this->redirectToRoute('index', ['entite' => $entite->getId()]);
+      return $this->redirectToRoute('app_administrateur_tct_index', ['entite' => $entite->getId()]);
     }
 
     $id = $t->getId();
@@ -217,7 +217,7 @@ final class TransactionCarteTotalController extends AbstractController
     $em->flush();
 
     $this->addFlash('success', 'Transaction #' . $id . ' supprimée.');
-    return $this->redirectToRoute('index', ['entite' => $entite->getId()]);
+    return $this->redirectToRoute('app_administrateur_tct_index', ['entite' => $entite->getId()]);
   }
 
 

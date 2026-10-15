@@ -170,7 +170,7 @@ final class MailerManager
      * Envoie l'email de réinitialisation mot de passe
      * Prérequis : $user->getResetToken() et $user->getResetTokenExpiresAt() doivent être remplis.
      */
-    public function sendResetPassword(Utilisateur $user, Entite $entite): void
+    public function sendResetPassword(Utilisateur $user, Entite $entite, #[\SensitiveParameter] string $token): void
     {
         $to = (string) $user->getEmail();
         if ($to === '') {
@@ -178,7 +178,6 @@ final class MailerManager
             return;
         }
 
-        $token = (string) $user->getResetToken();
         if ($token === '') {
             return;
         }
@@ -215,10 +214,10 @@ final class MailerManager
         // Ex: route /reset-password/{token}
         // IMPORTANT : remplace 'app_reset_password' et le param 'token'
         // par le nom exact de ta route.
-        return $this->url->generate(
+        return \App\Security\PublicSecurityUrl::ORIGIN . $this->url->generate(
             'app_reset_password',
             ['token' => $token],
-            UrlGeneratorInterface::ABSOLUTE_URL
+            UrlGeneratorInterface::ABSOLUTE_PATH
         );
     }
 
@@ -299,12 +298,11 @@ final class MailerManager
      * Envoie l'email "Compte créé" + lien de validation (utilise resetToken).
      * Prérequis : $user->getResetToken() et $user->getResetTokenExpiresAt() remplis.
      */
-    public function sendAccountCreatedValidation(Utilisateur $user, Entite $entite): void
+    public function sendAccountCreatedValidation(Utilisateur $user, Entite $entite, #[\SensitiveParameter] string $token): void
     {
         $to = (string) $user->getEmail();
         if ($to === '') return;
 
-        $token = (string) $user->getResetToken();
         if ($token === '') return;
 
         $from = $this->resolveFromAddress($entite);

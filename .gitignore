@@ -17,8 +17,10 @@
 /node_modules/
 /vendor/
 /var/
+/.phpunit.cache/
 
 /public/dist/
 /public/vendor/
+/public/assets/
+/public/bundles/
 /public/uploads/
-

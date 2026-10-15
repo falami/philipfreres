@@ -4,75 +4,63 @@ namespace App\Controller;
 
 use App\Entity\Entite;
 use App\Entity\Utilisateur;
+use App\Entity\UtilisateurEntite;
 use App\Repository\UtilisateurEntiteRepository;
-use App\Service\Tenant\TenantContext;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Security\RedirectAfterLogin;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use App\Entity\UtilisateurEntite;
-use Symfony\Component\HttpFoundation\Request;
 
 final class WorkspaceController extends AbstractController
 {
-  #[Route('/workspace', name: 'app_workspace', methods: ['GET'])]
-  public function index(UtilisateurEntiteRepository $ueRepo): Response
-  {
-    $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
-    /** @var Utilisateur $user */
-    $user = $this->getUser();
+    #[Route('/workspace', name: 'app_workspace', methods: ['GET'])]
+    public function index(UtilisateurEntiteRepository $ueRepo): Response
+    {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_REMEMBERED');
+        $user = $this->getUser();
+        if (!$user instanceof Utilisateur) {
+            throw $this->createAccessDeniedException();
+        }
 
-    $ues = $ueRepo->findAllForUser($user);
+        $memberships = array_values(array_filter(
+            $ueRepo->findAllForUser($user),
+            static fn (UtilisateurEntite $membership): bool => $membership->isActive()
+                && $membership->getEntite()?->getId() !== null,
+        ));
 
-    $isTenantDirigeant = $ueRepo->isTenantDirigeant($user);
-
-    return $this->render('workspace/index.html.twig', [
-      'memberships' => $ues,
-      'user' => $user,
-      'platformEntiteId' => TenantContext::PLATFORM_ENTITE_ID,
-      'isTenantDirigeant' => $isTenantDirigeant,
-    ]);
-  }
-
-
-  #[Route('/workspace/switch/{id}', name: 'app_workspace_switch', methods: ['POST'])]
-  public function switchEntite(
-    Entite $entite,
-    TenantContext $tenant,
-    EntityManagerInterface $em,
-    UtilisateurEntiteRepository $ueRepo,
-    Request $request,
-  ): Response {
-    $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
-
-    /** @var Utilisateur $user */
-    $user = $this->getUser();
-
-    // (optionnel mais recommandé) CSRF
-    if (!$this->isCsrfTokenValid('switch_entite_' . $entite->getId(), (string) $request->request->get('_token'))) {
-      throw $this->createAccessDeniedException('CSRF invalide.');
+        $response = $this->render('workspace/index.html.twig', [
+            'memberships' => $memberships,
+            'user' => $user,
+        ]);
+        $response->headers->set('Cache-Control', 'private, no-store');
+        return $response;
     }
 
-    $tenant->setCurrentEntite($user, $entite);
-    $entite->touchActivity();
-    $em->flush();
+    #[Route('/workspace/switch/{id}', name: 'app_workspace_switch', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function switchEntite(
+        Entite $entite,
+        UtilisateurEntiteRepository $ueRepo,
+        Request $request,
+        RedirectAfterLogin $redirect,
+    ): Response {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_REMEMBERED');
+        $user = $this->getUser();
+        if (!$user instanceof Utilisateur) {
+            throw $this->createAccessDeniedException();
+        }
 
-    $membership = $ueRepo->findMembership($user, $entite);
-    if (!$membership) {
-      throw $this->createAccessDeniedException('Aucun accès à cette entité.');
+        if (!$this->isCsrfTokenValid('switch_entite_' . $entite->getId(), $request->request->getString('_token'))) {
+            throw $this->createAccessDeniedException('La demande a expiré. Veuillez réessayer.');
+        }
+
+        $membership = $ueRepo->findMembership($user, $entite);
+        if (!$membership || !$membership->isActive()) {
+            throw $this->createAccessDeniedException('Aucun accès actif à cette entité.');
+        }
+
+        // Selecting an entity changes this browser's session, never business data.
+        $request->getSession()->remove('_security.main.target_path');
+        return $redirect->redirectToMembership($request, $membership);
     }
-
-    $roles = $membership->getRoles();
-
-    if (in_array(UtilisateurEntite::TENANT_ADMIN, $roles, true)) {
-      return $this->redirectToRoute('app_administrateur_dashboard_index', ['entite' => $entite->getId()]);
-    }
-
-    if (in_array(UtilisateurEntite::TENANT_EMPLOYE, $roles, true)) {
-      return $this->redirectToRoute('app_of_dashboard', ['entite' => $entite->getId()]);
-    }
-
-    // Fallback TENANT_EMPLOYE (ou page “extranet”)
-    return $this->redirectToRoute('app_TENANT_EMPLOYE_dashboard', ['entite' => $entite->getId()]);
-  }
 }

@@ -33,10 +33,34 @@ parameters:
   chantier_photo_upload_dir: '%kernel.project_dir%/public/uploads/photos/chantiers'
 
 services:
+  app.deployment.migrations:
+    alias: doctrine.migrations.dependency_factory
+    public: true
+
   # default configuration for services in *this* file
   _defaults:
     autowire: true # Automatically injects dependencies in your services.
     autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+
+  # Les quotas sont des données de sécurité : aucun tag cache.pool ni clearer.
+  # Le répertoire et le namespace restent stables lors d'un cache:clear/déploiement.
+  app.security.rate_limiter.cache:
+    class: Symfony\Component\Cache\Adapter\FilesystemAdapter
+    autowire: false
+    autoconfigure: false
+    arguments:
+      - 'philipfreres_auth_%kernel.environment%'
+      - 0
+      - '%kernel.project_dir%/var/security/rate-limits'
+
+  # Le limiter Symfony par défaut signe ses clés avec container.build_hash.
+  # Un secret stable empêche un nouveau conteneur de remettre les essais à zéro.
+  app.security.login_rate_limiter:
+    class: Symfony\Component\Security\Http\RateLimiter\DefaultLoginRateLimiter
+    arguments:
+      - '@limiter.login_ip'
+      - '@limiter.login_account'
+      - '%kernel.secret%'
 
   # makes classes in src/ available to be used as services
   # this creates a service per class whose id is the fully-qualified class name
@@ -56,22 +80,12 @@ services:
     arguments:
       $pdfOutputDir: "%pdf_output_dir%"
 
-  App\Doctrine\EntiteActivitySubscriber:
-    tags:
-      - { name: doctrine.event_subscriber }
-
   App\Tenant\TenantResolver:
     arguments:
       $baseDomain: "%app.base_domain%"
 
   App\Tenant\TenantRequestSubscriber:
     tags: ["kernel.event_subscriber"]
-
-  App\EventSubscriber\CarburantAutoLinkSubscriber:
-    tags: ["doctrine.event_subscriber"]
-
-  App\EventSubscriber\FuelTransactionAutoLinkSubscriber:
-    tags: ["doctrine.event_subscriber"]
 
   # add more service definitions when explicit configuration is needed
   # please note that last definitions always *replace* previous ones

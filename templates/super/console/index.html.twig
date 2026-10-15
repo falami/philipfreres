@@ -117,17 +117,9 @@
           </div>
 
           <div class="d-flex gap-2">
-            <a class="btn btn-warning btn-sm fw-semibold"
-               href="{{ path('app_super_admin_entite_trial', { e: e.id, entite: entite.id }) }}">
-              <i class="bi bi-gift"></i> Offrir essai
-            </a>
-            <a class="btn btn-outline-primary btn-sm"
-               href="{{ path('app_super_billing_subscription_show', { e: e.id, entite: entite.id }) }}">
-              <i class="bi bi-credit-card"></i>
-            </a>
             <a class="btn btn-outline-secondary btn-sm"
                href="{{ path('app_super_entite_users_index', { e: e.id, entite: entite.id }) }}">
-              <i class="bi bi-people"></i>
+              <i class="bi bi-people"></i> Utilisateurs
             </a>
           </div>
         </div>

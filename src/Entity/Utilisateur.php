@@ -15,7 +15,7 @@ use App\Entity\UtilisateurExternalId;
 #[ORM\Entity(repositoryClass: UtilisateurRepository::class)]
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_EMAIL', fields: ['email'])]
 #[UniqueEntity(fields: ['email'], message: 'There is already an account with this email')]
-class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
+class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface, \Symfony\Component\Security\Core\User\EquatableInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -36,6 +36,9 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
      */
     #[ORM\Column]
     private ?string $password = null;
+
+    #[ORM\Column(options: ['default' => 1])]
+    private int $securityVersion = 1;
 
     #[ORM\Column]
     private bool $isVerified = false;
@@ -296,6 +299,60 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
     public function eraseCredentials(): void
     {
         // @deprecated, to be removed when upgrading to Symfony 8
+    }
+
+    public function getSecurityVersion(): int
+    {
+        return $this->securityVersion;
+    }
+
+    public function revokeSessions(): void
+    {
+        ++$this->securityVersion;
+    }
+
+    /** A session is no longer valid after a password, identity, role or access change. */
+    public function isEqualTo(UserInterface $user): bool
+    {
+        if (!$user instanceof self || $user->isBannir() || $user->isDesactiverTemporairement()) {
+            return false;
+        }
+        $roles = $this->getRoles();
+        $newRoles = $user->getRoles();
+        sort($roles);
+        sort($newRoles);
+
+        return $this->id === $user->getId()
+            && $this->email === $user->getEmail()
+            && hash_equals($this->sessionPasswordFingerprint(), $user->sessionPasswordFingerprint())
+            && $this->securityVersion === $user->getSecurityVersion()
+            && (bool) $this->bannir === (bool) $user->isBannir()
+            && (bool) $this->desactiverTemporairement === (bool) $user->isDesactiverTemporairement()
+            && $roles === $newRoles;
+    }
+
+    /** Avoid serializing the user's entire Doctrine relationship graph into the session. */
+    public function __serialize(): array
+    {
+        return [
+            'id' => $this->id, 'email' => $this->email, 'password' => $this->sessionPasswordFingerprint(),
+            'roles' => $this->roles, 'securityVersion' => $this->securityVersion,
+            'bannir' => $this->bannir, 'desactiverTemporairement' => $this->desactiverTemporairement,
+        ];
+    }
+
+    public function __unserialize(array $data): void
+    {
+        $this->__construct();
+        foreach (['id', 'email', 'password', 'roles', 'securityVersion', 'bannir', 'desactiverTemporairement'] as $field) {
+            if (array_key_exists($field, $data)) $this->{$field} = $data[$field];
+        }
+    }
+
+    private function sessionPasswordFingerprint(): string
+    {
+        $password = (string) $this->password;
+        return str_starts_with($password, 'session:') ? $password : 'session:' . hash('sha256', $password);
     }
 
     public function isVerified(): bool

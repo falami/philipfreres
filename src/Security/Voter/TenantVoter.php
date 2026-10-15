@@ -24,8 +24,10 @@ final class TenantVoter extends Voter
 
   protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token): bool
   {
+    if ($token instanceof \Scheb\TwoFactorBundle\Security\Authentication\Token\TwoFactorTokenInterface) return false;
     $user = $token->getUser();
     if (!$user instanceof Utilisateur) return false;
+    if ($user->isBannir() || $user->isDesactiverTemporairement()) return false;
 
     // ✅ SUPER ADMIN => accès total sur toutes les entités
     if (in_array('ROLE_SUPER_ADMIN', $user->getRoles(), true)) {

@@ -149,8 +149,8 @@
               <span class="ms-2 pill">
                 {% set roles = ue.roles ?? [] %}
                 {% set label =
-                  constant('App\\\\Entity\\\\UtilisateurEntite::TENANT_ADMIN') in roles ? 'Admin' :
-                  constant('App\\\\Entity\\\\UtilisateurEntite::TENANT_EMPLOYE') in roles ? 'TENANT_EMPLOYE' :
+                  constant('App\\Entity\\UtilisateurEntite::TENANT_ADMIN') in roles ? 'Admin' :
+                  constant('App\\Entity\\UtilisateurEntite::TENANT_EMPLOYE') in roles ? 'Employé' :
                   '—'
                 %}
                 <i class="bi bi-person-badge"></i> {{ label }}

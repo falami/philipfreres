@@ -14,9 +14,10 @@ use Symfony\Component\Routing\Attribute\Route;
 use App\Service\UtilisateurEntite\UtilisateurEntiteManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 
 
-#[Route('/premium/{entite}/entite', name: 'app_premium_entite_')]
+#[Route('/premium/{entite}/entite', name: 'app_premium_entite_', requirements: ['entite' => '\\d+'])]
 #[IsGranted(TenantPermission::UTILISATEUR_MANAGE, subject: 'entite')] // adapte ton permission si besoin
 final class EntitePremiumController extends AbstractController
 {
@@ -26,31 +27,23 @@ final class EntitePremiumController extends AbstractController
         private UtilisateurEntiteManager $utilisateurEntiteManager,
     ) {}
 
-    private function denyIfNoEntiteAccess(Entite $entite): UtilisateurEntite
+    private function denyIfNoEntiteAccess(Entite $entite): ?UtilisateurEntite
     {
-        if ($this->isGranted('ROLE_SUPER')) {
-            $role = $this->utilisateurEntiteManager->getRepository()
-                ->createQueryBuilder('ue')
-                ->andWhere('ue.entite = :entite')
-                ->andWhere('ue.role >= :role')
-                ->setParameter('entite', $entite)
-                ->setParameter('role', 4)
-                ->addOrderBy('ue.id', 'ASC')
-                ->setMaxResults(1)
-                ->getQuery()
-                ->getOneOrNullResult();
-        } else {
-            $role = $this->utilisateurEntiteManager->getRepository()->findOneBy([
-                'entite' => $entite,
-                'utilisateur' => $this->getUser()
-            ]);
+        $this->denyAccessUnlessGranted(TenantPermission::UTILISATEUR_MANAGE, $entite);
+        $user = $this->getUser();
+        if (!$user instanceof Utilisateur) {
+            throw $this->createAccessDeniedException();
         }
-        return $role;
+
+        $membership = $this->utilisateurEntiteManager->getRepository()->findMembership($user, $entite);
+        // A platform administrator need not impersonate a tenant membership.
+        return $membership?->isActive() ? $membership : null;
     }
 
-    #[Route('/{id}', name: 'index')]
-    public function index(Entite $entite): Response
+    #[Route('/{id}', name: 'index', requirements: ['id' => '\\d+'], methods: ['GET'])]
+    public function index(#[MapEntity(id: 'entite')] Entite $entite, int $id): Response
     {
+        $this->assertSameEntite($entite, $id);
         $role = $this->denyIfNoEntiteAccess($entite);
         return $this->render(
             'premium/entite/index.html.twig',
@@ -62,10 +55,13 @@ final class EntitePremiumController extends AbstractController
         );
     }
 
-    #[Route('/modifier/{id}', name: 'modifier')]
-    public function modifier(Entite $entite, Entite $id, FileUploader $fileUploader, Request $request): Response
+    #[Route('/modifier/{id}', name: 'modifier', requirements: ['id' => '\\d+'], methods: ['GET', 'POST'])]
+    public function modifier(#[MapEntity(id: 'entite')] Entite $entite, #[MapEntity(id: 'id')] Entite $id, FileUploader $fileUploader, Request $request): Response
     {
-        $role = $this->denyIfNoEntiteAccess($entite);
+        // Both route identifiers must designate the object that will be edited.
+        // Check it before binding data, uploading files or writing anything.
+        $this->assertSameEntite($entite, $id->getId());
+        $role = $this->denyIfNoEntiteAccess($id);
 
         $form = $this->createForm(EntitePremiumType::class, $id);
         $form->handleRequest($request);
@@ -126,9 +122,16 @@ final class EntitePremiumController extends AbstractController
         ]);
     }
 
+    private function assertSameEntite(Entite $entite, ?int $targetId): void
+    {
+        if ($targetId === null || $entite->getId() !== $targetId) {
+            throw $this->createAccessDeniedException('Cette entité ne correspond pas à votre espace.');
+        }
+    }
+
 
     #[Route('/adherent/ajouter', name: 'ajouter')]
-    public function creerEntite(Entite $entite, FileUploader $fileUploader, Request $request): Response
+    public function creerEntite(#[MapEntity(id: 'entite')] Entite $entite, FileUploader $fileUploader, Request $request): Response
     {
         /** @var Utilisateur $user */
         $user = $this->getUser();
@@ -213,7 +216,7 @@ final class EntitePremiumController extends AbstractController
 
 
     #[Route('/adherent/nouvelle', name: 'adherent_nouvelle')]
-    public function nouveauEntite(Entite $entite): Response
+    public function nouveauEntite(#[MapEntity(id: 'entite')] Entite $entite): Response
     {
         /** @var Utilisateur $user */
         $user = $this->getUser();

@@ -3,7 +3,6 @@
 namespace App\Controller;
 
 use App\Entity\Utilisateur;
-use App\Entity\UtilisateurEntite;
 use App\Service\EmailVerifier;
 use App\Form\RegistrationFormType;
 use App\Service\Email\MailerManager;
@@ -14,10 +13,19 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 final class RegistrationController extends AbstractController
 {
-    #[Route('/register', name: 'app_register')]
+    public function __construct(
+        private readonly RateLimiterFactoryInterface $registrationIpLimiter,
+        private readonly LoggerInterface $logger,
+        #[Autowire('%kernel.secret%')] private readonly string $secret,
+    ) {}
+
+    #[Route('/register', name: 'app_register', methods: ['GET', 'POST'])]
     public function register(
         Request $request,
         EmailVerifier $emailVerifier,
@@ -44,6 +52,11 @@ final class RegistrationController extends AbstractController
 
         $email = (string) $form->get('email')->getData();
 
+        if (!$this->registrationIpLimiter->create(hash_hmac('sha256', (string) $request->getClientIp(), $this->secret))->consume()->isAccepted()) {
+            $this->addFlash('warning', 'Trop de demandes. Veuillez patienter avant de réessayer.');
+            return $this->redirectToRoute('app_login');
+        }
+
         /** @var Utilisateur|null $existing */
         $existing = $utilisateurManager->getRepository()->findOneBy(['email' => $email]);
 
@@ -51,47 +64,8 @@ final class RegistrationController extends AbstractController
         // CAS A : email déjà en base
         // ===================================
         if ($existing) {
-            if ($existing->isVerified()) {
-                $this->addFlash('danger', 'Un compte existe déjà avec cette adresse email, veuillez faire une demande de réinitialisation.');
-                return $this->redirectToRoute('app_login');
-            }
-
-            $user = $existing;
-
-            $plainPassword = (string) $form->get('password')->getData();
-            $user->setPassword($passwordHasher->hashPassword($user, $plainPassword));
-            $user->setPrenom((string) $form->get('prenom')->getData());
-            $user->setNom((string) $form->get('nom')->getData());
-
-            $user->setDateConsentementRgpd(new \DateTimeImmutable());
-            $user->setConsentementRgpd(true);
-            $user->setNewsletter((bool) $form->get('newsletter')->getData());
-            $user->setMailBienvenue(true);
-
-            // Optionnel : sécuriser memberships legacy (roles JSON vides)
-            $ueRepo = $em->getRepository(UtilisateurEntite::class);
-            $ues = $ueRepo->findBy(['utilisateur' => $user]);
-
-            foreach ($ues as $ue) {
-                if (empty($ue->getRoles())) {
-                    $ue->setRoles([UtilisateurEntite::TENANT_EMPLOYE]);
-                }
-            }
-
-            $em->persist($user);
-            $em->flush();
-
-            $emailVerifier->sendEmailConfirmation($user);
-
-            $mailerManager->sendMailContext(
-                'no-reply@philipfreres.com',
-                'no-reply@philipfreres.com',
-                'Inscription d\'un nouveau compte : ' . $user->getEmail(),
-                'emails/inscriptionCompte.html.twig',
-                ['adherent' => $user]
-            );
-
-            $this->addFlash('success', 'Nous venons de vous envoyer un mail pour valider votre adresse mail !');
+            // A public registration must never overwrite an existing account, even unverified.
+            $this->addFlash('info', 'Si vous disposez déjà d’un compte, connectez-vous ou demandez un nouveau mot de passe.');
             return $this->redirectToRoute('app_login');
         }
 
@@ -121,17 +95,24 @@ final class RegistrationController extends AbstractController
         $em->persist($user);
         $em->flush();
 
-        $emailVerifier->sendEmailConfirmation($user);
-
-        $mailerManager->sendMailContext(
-            'no-reply@philipfreres.com',
-            'no-reply@philipfreres.com',
-            'Création d\'un nouveau compte : ' . $user->getEmail(),
-            'emails/creationCompte.html.twig',
-            ['adherent' => $user]
-        );
-
-        $this->addFlash('success', 'Nous venons de vous envoyer un mail pour valider votre adresse mail !');
+        try {
+            $emailVerifier->sendEmailConfirmation($user);
+            $this->addFlash('success', 'Un e-mail de confirmation vous a été envoyé. Vous pouvez maintenant vous connecter.');
+        } catch (\Throwable) {
+            $this->logger->error('Registration confirmation email delivery failed.', ['user_id' => $user->getId()]);
+            $this->addFlash('warning', 'Votre compte a été créé, mais l’e-mail n’a pas pu être envoyé. Réessayez de vous connecter dans quelques minutes.');
+        }
+        try {
+            $mailerManager->sendMailContext(
+                'no-reply@philipfreres.com',
+                'no-reply@philipfreres.com',
+                'Création d\'un nouveau compte : ' . $user->getEmail(),
+                'emails/creationCompte.html.twig',
+                ['adherent' => $user]
+            );
+        } catch (\Throwable) {
+            $this->logger->error('Registration notification delivery failed.', ['user_id' => $user->getId()]);
+        }
         return $this->redirectToRoute('app_login');
     }
 }

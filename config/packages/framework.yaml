@@ -8,14 +8,16 @@ framework:
     fallbacks: [fr]
 
   router:
-    default_uri: "https://jeroensnow.fr"
+    default_uri: "https://app.philipfreres.com"
 
   session:
-    name: WKFORMATIONSESSID # <-- important : nom de session dédié à ton app
-    handler_id: null # stockage natif fichier
+    name: PHILIPFRERESSESSIDV2
+    handler_id: session.handler.native_file
+    save_path: '%kernel.project_dir%/var/sessions/%kernel.environment%'
     cookie_secure: auto
+    cookie_httponly: true
     cookie_samesite: lax
-    cookie_lifetime: 604800 # 7 jours
+    cookie_lifetime: 0 # La persistance facultative est portée par remember_me, après le code.
     gc_maxlifetime: 86400 # 24h
 
 when@test:
@@ -23,3 +25,9 @@ when@test:
     test: true
     session:
       storage_factory_id: session.storage.factory.mock_file
+
+when@prod:
+  framework:
+    trusted_hosts: ['^app\.philipfreres\.com$']
+    session:
+      cookie_secure: true

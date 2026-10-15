@@ -1,4 +1,4 @@
-# Enable stateless CSRF protection for forms and logins/logouts
+# Business forms retain same-origin protection. Authentication uses session-bound tokens.
 framework:
     form:
         csrf_protection:
@@ -7,5 +7,3 @@ framework:
     csrf_protection:
         stateless_token_ids:
             - submit
-            - authenticate
-            - logout

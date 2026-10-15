@@ -20,7 +20,7 @@ final class ResetPasswordFormType extends AbstractType
             'invalid_message' => 'Les mots de passe ne correspondent pas.',
             'constraints' => [
                 new Assert\NotBlank(),
-                new Assert\Length(min: 8, minMessage: 'Minimum {{ limit }} caractères.'),
+                new Assert\Length(min: 12, max: 128, minMessage: 'Choisissez au moins {{ limit }} caractères.'),
             ],
         ]);
     }

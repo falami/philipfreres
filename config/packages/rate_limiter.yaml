@@ -1,0 +1,42 @@
+framework:
+    rate_limiter:
+        login_account:
+            cache_pool: app.security.rate_limiter.cache
+            policy: fixed_window
+            limit: 5
+            interval: '15 minutes'
+        login_ip:
+            cache_pool: app.security.rate_limiter.cache
+            policy: fixed_window
+            limit: 25
+            interval: '15 minutes'
+        two_factor_send:
+            cache_pool: app.security.rate_limiter.cache
+            policy: sliding_window
+            limit: 5
+            interval: '15 minutes'
+        two_factor_verify:
+            cache_pool: app.security.rate_limiter.cache
+            policy: sliding_window
+            limit: 10
+            interval: '15 minutes'
+        two_factor_ip:
+            cache_pool: app.security.rate_limiter.cache
+            policy: sliding_window
+            limit: 50
+            interval: '15 minutes'
+        password_reset:
+            cache_pool: app.security.rate_limiter.cache
+            policy: sliding_window
+            limit: 3
+            interval: '1 hour'
+        password_reset_ip:
+            cache_pool: app.security.rate_limiter.cache
+            policy: sliding_window
+            limit: 15
+            interval: '1 hour'
+        registration_ip:
+            cache_pool: app.security.rate_limiter.cache
+            policy: sliding_window
+            limit: 5
+            interval: '1 hour'

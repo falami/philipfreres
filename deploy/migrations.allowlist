@@ -1,0 +1,4 @@
+# Migrations revues et autorisées pour cette livraison.
+# Toute autre migration en attente provoque un arrêt AVANT exécution.
+DoctrineMigrations\Version20261016010000
+DoctrineMigrations\Version20261016011000

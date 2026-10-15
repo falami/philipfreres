@@ -25,6 +25,7 @@ final class TenantTwigSubscriber implements EventSubscriberInterface
 
   public function onController(ControllerEvent $event): void
   {
+    if (!$this->security->isGranted('IS_AUTHENTICATED_REMEMBERED')) return;
     $user = $this->security->getUser();
     if (!$user instanceof Utilisateur) {
       return;

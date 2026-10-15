@@ -7,6 +7,7 @@ use App\Entity\Utilisateur;
 use App\Repository\EntiteRepository;
 use App\Repository\UtilisateurEntiteRepository;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 final class TenantContext
 {
@@ -25,38 +26,45 @@ final class TenantContext
 
         if ($entiteId > 0) {
             $entite = $this->entiteRepo->find($entiteId);
-            if ($entite && $this->ueRepo->userHasEntite($user, $entite)) {
+            if ($entite && $this->hasActiveMembership($user, $entite)) {
                 return $entite;
             }
+            $session->remove('current_entite_id');
         }
 
         // fallback : entité stockée sur user si valide
         $entite = $user->getEntite();
-        if ($entite && $this->ueRepo->userHasEntite($user, $entite)) {
+        if ($entite && $this->hasActiveMembership($user, $entite)) {
             $session->set('current_entite_id', $entite->getId());
             return $entite;
         }
 
-        // fallback : première entité dispo via relation UtilisateurEntite
-        $first = $this->ueRepo->findFirstEntiteForUser($user);
-        if ($first) {
-            $session->set('current_entite_id', $first->getId());
-            return $first;
+        // A suspended or invited membership never becomes the current context.
+        foreach ($this->ueRepo->findAllForUser($user) as $membership) {
+            $entite = $membership->getEntite();
+            if ($membership->isActive() && $entite?->getId() !== null) {
+                $session->set('current_entite_id', $entite->getId());
+                return $entite;
+            }
         }
 
+        $session->remove('current_entite_id');
         return null;
     }
 
     public function setCurrentEntite(Utilisateur $user, Entite $entite): void
     {
-        if (!$this->ueRepo->userHasEntite($user, $entite)) {
-            throw new \RuntimeException('Accès interdit à cette entité.');
+        if (!$this->hasActiveMembership($user, $entite)) {
+            throw new AccessDeniedException('Aucun accès actif à cette entité.');
         }
 
         $this->requestStack->getSession()->set('current_entite_id', $entite->getId());
+    }
 
-        // optionnel : tu peux synchroniser user->entite comme "courante"
-        $user->setEntite($entite);
+    private function hasActiveMembership(Utilisateur $user, Entite $entite): bool
+    {
+        return $entite->getId() !== null
+            && ($this->ueRepo->findMembership($user, $entite)?->isActive() ?? false);
     }
 
     public function isPlatformEntite(?Entite $entite): bool

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="referrer" content="no-referrer">
+    <meta name="theme-color" content="#12372f">
+    <title>{% block title %}Accès sécurisé · Philip Frères{% endblock %}</title>
+    <link rel="icon" href="{{ asset('uploads/photos/entite/favicon/favicon-philip-freres.webp') }}">
+    <link rel="stylesheet" href="{{ asset('css/auth.css') }}?v=20261016">
+    <script src="{{ asset('js/auth.js') }}?v=20261016" defer></script>
+</head>
+<body class="auth-page">
+    <a class="auth-skip-link" href="#auth-main">Aller au contenu</a>
+    <div class="auth-shell">
+        <aside class="auth-brand" aria-label="Philip Frères">
+            <div class="auth-brand-lockup">
+                <img src="{{ asset('uploads/photos/entite/logo/logo-philip-freres.jpg') }}" width="64" height="64" alt="Philip Frères" class="auth-logo">
+                <div><span class="auth-brand-name">Philip Frères</span><span class="auth-brand-description">L’exigence, naturellement.</span></div>
+            </div>
+            <div class="auth-brand-story">
+                <p class="auth-eyebrow"><span></span> Ensemble, sur le terrain</p>
+                <h2>Votre terrain.<br>Votre équipe.<br><em>Un même espace.</em></h2>
+                <p>Le quotidien de vos équipes, réuni dans un espace de confiance.</p>
+            </div>
+            <div class="auth-landscape" aria-hidden="true">
+                <svg viewBox="0 0 650 360" fill="none" preserveAspectRatio="xMidYMax slice">
+                    <circle cx="454" cy="92" r="55" fill="#d9be87" fill-opacity=".13"/><circle cx="454" cy="92" r="43" stroke="#d9be87" stroke-opacity=".22"/>
+                    <path d="M-40 205C80 120 144 204 256 172c89-25 128-61 207-37 86 27 135 64 224 19v207H-40Z" fill="#285044"/>
+                    <path d="M-40 244c103 40 181-64 284-36 120 32 191-27 278-7 75 18 106 40 165 22v138H-40Z" fill="#1d4439"/>
+                    <path d="M-40 305c123-69 221-20 321-41 117-24 204-8 406 55v42H-40Z" fill="#153a31"/>
+                    <g stroke="#769783" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity=".62">
+                        <path d="M112 265V119m0-4-35 64h24l-39 56h100l-39-56h24l-35-64Zm0 64v56m-13-36 13 12 13-12m-28 23 15 13 16-13"/>
+                        <path d="M184 275V158m0-5-28 51h19l-31 45h80l-31-45h19l-28-51Zm0 51v45m-12-26 12 12 13-12"/>
+                        <path d="M511 276V123m0-6-38 68h26l-42 61h108l-42-61h26l-38-68Zm0 68v61m-14-38 14 14 15-14m-31 26 16 12 17-12"/>
+                        <path d="M573 291V185m0-4-25 45h17l-28 40h72l-28-40h17l-25-45Zm0 45v40"/>
+                    </g>
+                    <path d="M386 218c-42 23-68 44-46 64 27 24 4 52-95 78" stroke="#cfbc8b" stroke-opacity=".43" stroke-width="1.4"/>
+                    <path d="M404 222c-42 25-64 43-43 62 30 28 3 53-82 76" stroke="#cfbc8b" stroke-opacity=".19" stroke-width="1.4"/>
+                    <g stroke="#769783" stroke-opacity=".25"><path d="M27 304c52-16 100-20 148-11m269 11c58 1 97 11 140 26M21 318c61-19 110-20 154-12m268 13c43 1 83 8 113 19"/></g>
+                </svg>
+            </div>
+            <div class="auth-brand-footer"><span class="auth-status-dot"></span> Un accès personnel. Une équipe connectée.</div>
+        </aside>
+        <div class="auth-main-panel">
+            <header class="auth-topbar"><span class="auth-access-label"><svg class="auth-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="3" stroke="currentColor" stroke-width="1.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Accès sécurisé</span><span class="auth-private-label">Espace privé</span></header>
+            <main class="auth-main" id="auth-main">
+                <div class="auth-content">
+                    {% block auth_progress %}
+                        {% set currentStep = block('auth_step')|trim %}
+                        <ol class="auth-steps" aria-label="Étapes de connexion">
+                            <li class="{{ currentStep == '1' ? 'is-current' : 'is-complete' }}"{% if currentStep == '1' %} aria-current="step"{% endif %}><span class="auth-step-number">{% if currentStep == '1' %}1{% else %}<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m4 8 2.5 2.5L12 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>{% endif %}</span><span>Identification</span></li>
+                            <li class="{{ currentStep == '2' ? 'is-current' : '' }}"{% if currentStep == '2' %} aria-current="step"{% endif %}><span class="auth-step-number">2</span><span>Vérification</span></li>
+                        </ol>
+                    {% endblock %}
+                    {% for type, messages in app.flashes %}
+                        {% for message in messages %}
+                            <div class="auth-notice {{ type in ['error', 'danger'] ? 'auth-notice--error' : (type == 'success' ? 'auth-notice--success' : '') }}" role="{{ type in ['error', 'danger'] ? 'alert' : 'status' }}">{{ message }}</div>
+                        {% endfor %}
+                    {% endfor %}
+                    {% block auth_content %}{% endblock %}
+                </div>
+            </main>
+            <footer class="auth-footer"><span>© {{ 'now'|date('Y') }} Philip Frères</span><span>Pensé pour vos équipes.</span></footer>
+        </div>
+    </div>
+</body>
+</html>

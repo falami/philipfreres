@@ -1,0 +1,14 @@
+{% extends 'security/_auth_layout.html.twig' %}
+{% block title %}Sécurité de mon compte · Philip Frères{% endblock %}
+{% block auth_progress %}<a class="auth-back-link" href="{{ path('app_workspace') }}"><span aria-hidden="true">←</span> Retour à mon espace</a>{% endblock %}
+{% block auth_content %}
+    <div class="auth-heading"><p class="auth-eyebrow">Votre compte, vos accès</p><h1>La confiance<br>se protège.</h1><p>Gardez le contrôle des connexions à votre espace Philip Frères.</p></div>
+    <div class="auth-security-facts">
+        <div><span class="auth-fact-number">01</span><div><h2>Une connexion vérifiée</h2><p>Votre mot de passe et un code reçu par e-mail protègent chaque nouvelle connexion.</p></div></div>
+        <div><span class="auth-fact-number">02</span><div><h2>Vos appareils reconnus</h2><p>Avec l’option « Rester connecté », votre navigateur conserve votre accès pendant 90 jours maximum. Sur un appareil partagé, décochez cette option et déconnectez-vous après utilisation.</p></div></div>
+        <div><span class="auth-fact-number">03</span><div><h2>Le contrôle à tout moment</h2><p>Un changement de mot de passe invalide vos connexions existantes. Vous pouvez aussi déconnecter tous vos appareils ci-dessous.</p></div></div>
+    </div>
+    <div class="auth-revoke-panel"><h2>Déconnecter tous mes appareils</h2><p>Tous vos navigateurs, y compris celui-ci, devront se reconnecter avec votre mot de passe et un nouveau code e-mail.</p><form action="{{ path('app_account_sessions_revoke') }}" method="post" data-auth-form data-turbo="false"><input type="hidden" name="_token" value="{{ csrf_token('revoke_sessions') }}"><button class="auth-button auth-button--outline" type="submit" data-submit-button><span data-submit-label>Déconnecter tous mes appareils</span><span class="auth-spinner" aria-hidden="true" hidden></span></button></form></div>
+    <p class="auth-security-reset"><a href="{{ path('app_forgot_password_request') }}">Réinitialiser mon mot de passe</a></p>
+    <form action="{{ path('app_logout') }}" method="post" class="auth-cancel-form" data-turbo="false"><input type="hidden" name="_csrf_token" value="{{ csrf_token('logout') }}"><button class="auth-text-button auth-text-button--muted" type="submit">Déconnecter cet appareil</button></form>
+{% endblock %}

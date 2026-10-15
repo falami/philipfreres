@@ -397,11 +397,11 @@ final class UtilisateurController extends AbstractController
       return $this->redirectToRoute('app_administrateur_utilisateur_index', ['entite' => $entite->getId()]);
     }
 
-    $this->initResetToken($utilisateur);
+    $resetToken = $this->initResetToken($utilisateur);
     $this->em->flush();
 
     // adapte si besoin: nom exact de ta méthode
-    $this->mailerManager->sendResetPassword($utilisateur, $entite);
+    $this->mailerManager->sendResetPassword($utilisateur, $entite, $resetToken);
 
     $this->addFlash('success', 'Email de réinitialisation envoyé.');
     return $this->redirectToRoute('app_administrateur_utilisateur_index', ['entite' => $entite->getId()]);
@@ -422,20 +422,19 @@ final class UtilisateurController extends AbstractController
     }
 
     // ✅ On (re)génère un token + expiration plus longue (activation)
-    $this->initActivationToken($utilisateur);
+    $resetToken = $this->initActivationToken($utilisateur);
     $this->em->flush();
 
-    $this->mailerManager->sendAccountCreatedValidation($utilisateur, $entite);
+    $this->mailerManager->sendAccountCreatedValidation($utilisateur, $entite, $resetToken);
 
     $this->addFlash('success', 'Email d’activation envoyé.');
     return $this->redirectToRoute('app_administrateur_utilisateur_index', ['entite' => $entite->getId()]);
   }
 
   /** Token d’activation : plus long que reset */
-  private function initActivationToken(Utilisateur $u): void
+  private function initActivationToken(Utilisateur $u): string
   {
-    $u->setResetToken(ByteString::fromRandom(32)->toString());
-    $u->setResetTokenExpiresAt(new \DateTimeImmutable('+48 hours')); // ✅ tu ajustes
+    return \App\Security\PasswordResetTokens::issue($u, '+48 hours');
   }
 
 
@@ -477,10 +476,9 @@ final class UtilisateurController extends AbstractController
   }
 
 
-  private function initResetToken(Utilisateur $u): void
+  private function initResetToken(Utilisateur $u): string
   {
-    $u->setResetToken(ByteString::fromRandom(32)->toString());
-    $u->setResetTokenExpiresAt(new \DateTimeImmutable('+2 hours'));
+    return \App\Security\PasswordResetTokens::issue($u, '+2 hours');
   }
 
   private function isHighRole(string $r): bool

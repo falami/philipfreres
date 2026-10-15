@@ -1,4 +1,6 @@
 security:
+  role_hierarchy:
+    ROLE_SUPER_ADMIN: [ROLE_SUPER]
   # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords
   password_hashers:
     Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: "auto"
@@ -16,6 +18,7 @@ security:
     main:
       lazy: true
       provider: app_user_provider
+      user_checker: App\Security\AccountChecker
       form_login:
         login_path: app_login
         check_path: app_login
@@ -23,18 +26,32 @@ security:
         success_handler: App\Security\LoginSuccessHandler
       logout:
         path: app_logout
+        enable_csrf: true
         # where to redirect after logout
         target: app_login
-        delete_cookies: ["REMEMBERME"] # on nettoie bien le cookie au logout
+        delete_cookies: ["PHILIPFRERES_REMEMBER_V2"]
+      login_throttling:
+        cache_pool: app.security.rate_limiter.cache
+        limiter: app.security.login_rate_limiter
+      two_factor:
+        auth_form_path: 2fa_login
+        check_path: 2fa_login_check
+        enable_csrf: true
+        prepare_on_login: true
+        success_handler: App\Security\LoginSuccessHandler
       remember_me:
         secret: "%kernel.secret%"
-        lifetime: 1209600
+        lifetime: 7776000 # 90 jours, uniquement après mot de passe ET code e-mail
         path: "/"
-        name: REMEMBERME
+        name: PHILIPFRERES_REMEMBER_V2
         secure: auto
+        httponly: true
         samesite: lax
+        token_provider:
+          service: App\Security\RememberMe\RememberedDeviceProvider
+        token_verifier: App\Security\RememberMe\RememberedDeviceProvider
         always_remember_me: false
-        remember_me_parameter: _remember_me # <-- ajoute ça
+        remember_me_parameter: _remember_me
 
       # activate different ways to authenticate
       # https://symfony.com/doc/current/security.html#the-firewall
@@ -45,10 +62,11 @@ security:
   # Easy way to control access for large sections of your site
   # Note: Only the *first* access control that matches will be used
   access_control:
-    - { path: ^/(fr|en)/super, roles: ROLE_SUPER_ADMIN }
+    - { path: ^/(fr/|en/)?logout$, roles: PUBLIC_ACCESS }
+    - { path: ^/(fr/|en/)?2fa, roles: IS_AUTHENTICATED_2FA_IN_PROGRESS }
+    - { path: ^/(fr/|en/)?super, roles: ROLE_SUPER_ADMIN }
+    - { path: ^/(fr/|en/)?(administrateur|employe|premium|workspace|onboarding|compte)(/|$), roles: ROLE_USER }
     - { path: ^/(fr|en)/public, roles: ROLE_USER }
-    # le reste : ROLE_USER suffit, ensuite c’est TenantVoter + denyAccessUnlessGranted(...)
-    - { path: ^/(fr|en)/(administrateur|employe), roles: ROLE_USER }
 
 when@test:
   security:
@@ -62,3 +80,10 @@ when@test:
         cost: 4 # Lowest possible value for bcrypt
         time_cost: 3 # Lowest possible value for argon
         memory_cost: 10 # Lowest possible value for argon
+
+when@prod:
+  security:
+    firewalls:
+      main:
+        remember_me:
+          secure: true

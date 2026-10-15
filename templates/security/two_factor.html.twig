@@ -1,0 +1,37 @@
+{% extends 'security/_auth_layout.html.twig' %}
+{% block title %}Vérifiez votre connexion · Philip Frères{% endblock %}
+{% block auth_step %}2{% endblock %}
+{% block auth_content %}
+    <div class="auth-heading">
+        <div class="auth-mail-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><rect x="4" y="7" width="24" height="18" rx="4" stroke="currentColor" stroke-width="1.5"/><path d="m5 9 11 8L27 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <p class="auth-eyebrow">Une dernière étape</p>
+        <h1>C’est bien vous ?</h1>
+        <p>Saisissez le code à 6 chiffres envoyé à<br><strong class="auth-email-address">{{ maskedEmail }}</strong></p>
+    </div>
+    {% if authenticationError %}
+        <div class="auth-notice auth-notice--error" role="alert">{{ authenticationError|trans(authenticationErrorData, 'SchebTwoFactorBundle') }}</div>
+    {% endif %}
+    <form action="{{ checkPathUrl ?: path(checkPathRoute) }}" method="post" class="auth-form" data-auth-form data-code-form data-turbo="false">
+        <div class="auth-field">
+            <label for="authentication-code">Code de vérification</label>
+            <input class="auth-code-input" type="text" name="{{ authCodeParameterName }}" id="authentication-code" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required autofocus spellcheck="false" placeholder="000000" aria-describedby="code-help code-validity"{% if authenticationError %} aria-invalid="true"{% endif %} data-auth-code{% if challengeExpired %} disabled{% endif %}>
+            <p class="auth-field-help" id="code-help">Copiez ou saisissez les 6 chiffres du dernier e-mail reçu.</p>
+        </div>
+        {% if isCsrfProtectionEnabled %}<input type="hidden" name="{{ csrfParameterName }}" value="{{ csrf_token(csrfTokenId) }}">{% endif %}
+        <div class="auth-code-validity {{ challengeExpired or codeExpiresIn <= 0 ? 'is-expired' : '' }}" id="code-validity" data-code-expiry="{{ codeExpiresIn }}" data-challenge-expired="{{ challengeExpired ? 'true' : 'false' }}"{% if challengeExpired or codeExpiresIn <= 0 %} role="status"{% endif %}>
+            <svg class="auth-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.6"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span data-expiry-label>{% if challengeExpired %}Cette demande de connexion a expiré. Revenez à la connexion pour recommencer.{% elseif codeExpiresIn <= 0 %}Ce code a expiré. Demandez un nouveau code ci-dessous.{% else %}Ce code est valable 10 minutes après son envoi.{% endif %}</span>
+        </div>
+        <button class="auth-button" type="submit" data-submit-button{% if challengeExpired or codeExpiresIn <= 0 %} disabled{% endif %}><span data-submit-label>Vérifier et me connecter</span><span class="auth-button-arrow" aria-hidden="true">→</span><span class="auth-spinner" aria-hidden="true" hidden></span></button>
+    </form>
+    <div class="auth-resend">
+        <p>Vous n’avez pas reçu l’e-mail ? <span>Pensez à vérifier vos courriers indésirables.</span></p>
+        <form action="{{ path('app_2fa_resend') }}" method="post" data-auth-form data-turbo="false">
+            <input type="hidden" name="_token" value="{{ csrf_token('two_factor_resend') }}">
+            <button type="submit" class="auth-text-button" data-resend-button data-resend-cooldown="{{ resendAvailableIn }}" data-submit-button{% if challengeExpired %} disabled{% endif %}><span data-submit-label>Renvoyer un code</span><span class="auth-spinner" aria-hidden="true" hidden></span></button>
+            <span class="auth-resend-status" data-resend-status aria-live="polite"></span>
+        </form>
+    </div>
+    <form action="{{ logoutPath }}" method="post" class="auth-cancel-form" data-turbo="false"><input type="hidden" name="_csrf_token" value="{{ csrf_token('logout') }}"><button class="auth-text-button auth-text-button--muted" type="submit"><span aria-hidden="true">←</span> {{ challengeExpired ? 'Revenir à la connexion' : 'Utiliser un autre compte' }}</button></form>
+    <p class="auth-form-caption auth-form-caption--bottom">Ce code est personnel. Ne le communiquez à personne.</p>
+{% endblock %}

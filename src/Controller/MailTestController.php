@@ -10,9 +10,13 @@ use Symfony\Component\HttpFoundation\Response;
 
 class MailTestController extends AbstractController
 {
-    #[Route('/_mail-test', name: 'app_mail_test')]
-    public function __invoke(MailerInterface $mailer): Response
+    // Kept callable for compatibility, but never expose a public mail relay/debug exception.
+    #[Route('/_mail-test', name: 'app_mail_test', methods: ['POST'])]
+    #[\Symfony\Component\Security\Http\Attribute\IsGranted('ROLE_SUPER_ADMIN')]
+    public function __invoke(MailerInterface $mailer, \Symfony\Component\HttpFoundation\Request $request): Response
     {
+        if ($this->getParameter('kernel.environment') === 'prod') throw $this->createNotFoundException();
+        if (!$this->isCsrfTokenValid('mail_test', $request->request->getString('_token'))) throw $this->createAccessDeniedException();
         try {
             $email = (new Email())
                 ->from('no-reply@wkformation.fr')   // même adresse que le compte SMTP
@@ -24,8 +28,8 @@ class MailTestController extends AbstractController
             $mailer->send($email);
 
             return new Response('OK: email envoyé (sync)');
-        } catch (\Throwable $e) {
-            return new Response('ERREUR: ' . $e->getMessage(), 500);
+        } catch (\Throwable) {
+            return new Response('Échec de l’envoi. Vérifiez la configuration du transport.', 502);
         }
     }
 }
