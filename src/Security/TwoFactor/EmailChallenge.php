@@ -33,6 +33,8 @@ final class EmailChallenge
         private readonly RateLimiterFactoryInterface $twoFactorSendLimiter,
         private readonly RateLimiterFactoryInterface $twoFactorVerifyLimiter,
         private readonly RateLimiterFactoryInterface $twoFactorIpLimiter,
+        #[Autowire('%env(default:app.auth_mail_from_default:AUTH_MAIL_FROM)%')]
+        private readonly string $senderAddress = 'no-reply@philipfreres.com',
     ) {}
 
     public function begin(Utilisateur $user): void
@@ -67,7 +69,7 @@ final class EmailChallenge
         $session->set(self::KEY, $state); // Resending invalidates the previous code immediately.
         try {
             $this->mailer->send((new TemplatedEmail())
-                ->from(new Address('no-reply@philipfreres.com', 'Philip Frères'))
+                ->from(new Address($this->senderAddress, 'Philip Frères'))
                 ->to((string) $user->getEmail())
                 ->subject('Votre code de connexion — Philip Frères')
                 ->htmlTemplate('security/email/login_code.html.twig')
