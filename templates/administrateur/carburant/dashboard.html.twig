@@ -889,6 +889,7 @@ body{
 }
 
   </style>
+  <link rel="stylesheet" href="{{ asset('css/fuel-dashboard.css') }}">
 {% endblock %}
 
 {% block javascripts %}
@@ -902,42 +903,27 @@ body{
 {% endblock %}
 
 {% block body %}
-  <div class="hero p-3 mb-4 d-flex gap-3">
-    <div class="accent"></div>
-    <div class="flex-grow-1">
-      <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
-        <div>
-          <h2 class="m-0 fw-bold">
-            <i class="bi bi-fuel-pump-fill me-2" style="color:var(--theme-color-secondaire)"></i>
-            Dashboard carburant
-          </h2>
-          <div class="opacity-75 mt-1">
-            ALX + TOTAL + EDENRED + NOTE - employé, engin, période, KPI, tendances, top.
-          </div>
-
-          <div class="d-flex flex-wrap gap-2 mt-3 hero-meta-chips">
-            <span class="chip"><i class="bi bi-truck"></i> Carburant</span>
-            <span class="chip"><i class="bi bi-building"></i> {{ entite.nom }}</span>
-            <span class="chip"><i class="bi bi-stars"></i> Premium</span>
-          </div>
-        </div>
-
-        <div class="d-flex gap-2 flex-wrap  hero-meta-btn">
-          <button class="btn btn-light btn-sm fw-semibold" id="btnRefreshTop">
-            <i class="bi bi-arrow-repeat me-1"></i> Actualiser
-          </button>
-        </div>
-      </div>
+<main class="fuel-dashboard">
+  <header class="dashboard-intro">
+    <div>
+      <div class="dashboard-eyebrow"><span></span>{{ entite.nom }} · Tableau de bord</div>
+      <h1>Vos dépenses.<br><em>Une vision d’ensemble.</em></h1>
+      <p>Suivez vos consommations, vos équipes et votre parc au même endroit.</p>
     </div>
-  </div>
+    <div class="dashboard-intro-actions">
+      <span class="dashboard-live"><span></span> Filtres automatiques</span>
+      <button type="button" id="btnRefreshTop" class="dashboard-refresh"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Actualiser</button>
+    </div>
+  </header>
+  <div class="dashboard-section-heading"><div><h2>Votre activité en chiffres</h2><p>Affinez la période et les ressources pour explorer vos dépenses.</p></div><span class="dashboard-section-number" aria-hidden="true">01 / SYNTHÈSE</span></div>
 
   {# ===== TOOLBAR FILTRES (like produit/index) ===== #}
 <div class="toolbar mb-3 filters-sticky" id="fuelToolbar">
   
   {# Bouton mobile (n'apparait que via CSS @media) #}
-  <div class="filters-mobile-toggle d-none d-sm-none" id="btnFiltersMobile" role="button" tabindex="0">
+  <div class="filters-mobile-toggle d-none d-sm-none" id="btnFiltersMobile" role="button" tabindex="0" aria-expanded="false" aria-controls="fuelFiltersBody">
     <div class="left">
-      <i class="bi bi-sliders"></i>
+      <i class="bi bi-sliders"></i> Filtres
     </div>
     <div class="right">
       <span class="badge-soft" id="filtersMobileCount">-</span>
@@ -946,7 +932,7 @@ body{
   </div>
 
   {# Corps "collapsible" (sur desktop: aucun effet) #}
-  <div class="filters-mobile-body">
+  <div class="filters-mobile-body" id="fuelFiltersBody">
     <div class="d-flex flex-wrap gap-2 align-items-center">
 
       <div class="me-auto d-flex flex-wrap gap-2 align-items-center">
@@ -981,7 +967,7 @@ body{
         {# Fournisseurs (multi) #}
         <span class="chip">
           <i class="bi bi-truck"></i>
-          Four.
+          Fournisseurs
           <button class="btn btn-sm btn-light ms-2 dropdown-toggle"
                   type="button"
                   data-bs-toggle="dropdown"
@@ -1012,7 +998,7 @@ body{
         {# Engins (multi) #}
         <span class="chip">
           <i class="bi bi-truck-front"></i>
-          Eng.
+          Engins
           <button class="btn btn-sm btn-light ms-2 dropdown-toggle"
                   type="button"
                   data-bs-toggle="dropdown"
@@ -1049,7 +1035,7 @@ body{
         {# Employés (multi) #}
         <span class="chip">
           <i class="bi bi-people"></i>
-          Emp.
+          Employés
 
           <button class="btn btn-sm btn-light ms-2 dropdown-toggle"
                   type="button"
@@ -1087,7 +1073,7 @@ body{
         {# Catégories produit (multi) - style Engin/Emp #}
         <span class="chip">
           <i class="bi bi-grid-3x3-gap"></i>
-          Cat.
+          Catégories
           <button class="btn btn-sm btn-light ms-2 dropdown-toggle"
                   type="button"
                   data-bs-toggle="dropdown"
@@ -1125,7 +1111,7 @@ body{
         {# Sous-catégories produit (multi) - style Engin/Emp #}
         <span class="chip">
           <i class="bi bi-diagram-3"></i>
-          Ss-cat.
+          Produits
           <button class="btn btn-sm btn-light ms-2 dropdown-toggle"
                   type="button"
                   data-bs-toggle="dropdown"
@@ -1164,7 +1150,7 @@ body{
       {# Actions à droite (like dépense) #}
       <div class="d-flex gap-2 align-items-center">
         <button id="btnReset" class="btn btn-outline-secondary btn-sm fw-semibold" type="button">
-          <i class="bi bi-arrow-counterclockwise"></i> Reset
+          <i class="bi bi-arrow-counterclockwise"></i> Réinitialiser
         </button>
       </div>
 
@@ -1181,160 +1167,39 @@ body{
     Chargement des indicateurs…
   </div>
 
-  {# KPI #}
-  <div class="cardx mb-4">
-    <div class="cardx-h">
-      <h5 class="cardx-title"><i class="bi bi-speedometer2 text-warning"></i> Indicateurs</h5>
-      <span class="chip">Auto</span>
-    </div>
-    <div class="p-3 p-md-4">
-      <div class="kpi-grid">
-        <div class="kpi">
-          <div class="kpi-top">
-            <div class="d-flex align-items-center gap-2">
-              <span class="ico"><i class="bi bi-cash-stack"></i></span>
-              <div class="label">Montant TTC</div>
-            </div>
-          </div>
-          <div class="value" id="kpiAmount">-</div>
-          <div class="sub" id="kpiCount">-</div>
-        </div>
-
-        <div class="kpi">
-          <div class="kpi-top">
-            <div class="d-flex align-items-center gap-2">
-              <span class="ico"><i class="bi bi-droplet"></i></span>
-              <div class="label">Quantité totale</div>
-            </div>
-          </div>
-          <div class="value" id="kpiQty">-</div>
-          <div class="sub">Litres / unités</div>
-        </div>
-
-        <div class="kpi">
-          <div class="kpi-top">
-            <div class="d-flex align-items-center gap-2">
-              <span class="ico"><i class="bi bi-link-45deg"></i></span>
-              <div class="label">Transactions non rattachées</div>
-            </div>
-          </div>
-          <div class="value" id="kpiUnmatchedEngin">-</div>
-          <div class="sub" id="kpiUnmatchedEmploye">-</div>
-        </div>
-
-        <div class="kpi">
-          <div class="kpi-top">
-            <div class="d-flex align-items-center gap-2">
-              <span class="ico"><i class="bi bi-receipt"></i></span>
-              <div class="label">Ticket moyen</div>
-            </div>
-          </div>
-          <div class="value" id="kpiAvg">-</div>
-          <div class="sub">Montant / transaction</div>
-        </div>
-      </div>
-
-
-      <div class="kpi-grid mt-3">
-        <div class="kpi">
-          <div class="kpi-top">
-            <div>
-              <div class="label">Total Gasoil</div>
-              <div class="value">
-                <span id="kpiGasoil">0</span> <small>L</small>
-              </div>
-            </div>
-            <div class="ico"><i class="bi bi-fuel-pump"></i></div>
-          </div>
-        </div>
-
-        <div class="kpi">
-          <div class="kpi-top">
-            <div>
-              <div class="label">Total GNR</div>
-              <div class="value">
-                <span id="kpiGnr">0</span> <small>L</small>
-              </div>
-            </div>
-            <div class="ico"><i class="bi bi-droplet-half"></i></div>
-          </div>
-        </div>
-
-        <div class="kpi">
-          <div class="kpi-top">
-            <div>
-              <div class="label">Total AdBlue</div>
-              <div class="value">
-                <span id="kpiAdblue">0</span> <small>L</small>
-              </div>
-            </div>
-            <div class="ico"><i class="bi bi-droplet"></i></div>
-          </div>
-        </div>
-
-        <div class="kpi">
-          <div class="kpi-top">
-            <div>
-              <div class="label">Total Péages</div>
-              <div class="value" id="kpiPeage">0 €</div>
-            </div>
-            <div class="ico"><i class="bi bi-signpost-split"></i></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-
+  <section class="dashboard-metrics" aria-label="Indicateurs de la période">
+    <article class="dashboard-metric dashboard-metric-main">
+      <div class="metric-label"><i class="bi bi-wallet2" aria-hidden="true"></i> Dépenses TTC</div>
+      <strong class="metric-value" id="kpiAmount">—</strong><span class="metric-sub" id="kpiCount">Chargement…</span>
+    </article>
+    <article class="dashboard-metric">
+      <div class="metric-label"><i class="bi bi-droplet" aria-hidden="true"></i> Quantité totale</div>
+      <strong class="metric-value" id="kpiQty">—</strong><span class="metric-sub">Litres / unités selon les produits</span>
+    </article>
+    <article class="dashboard-metric">
+      <div class="metric-label"><i class="bi bi-receipt" aria-hidden="true"></i> Ticket moyen</div>
+      <strong class="metric-value" id="kpiAvg">—</strong><span class="metric-sub">Montant par transaction</span>
+    </article>
+    <article class="dashboard-metric dashboard-metric-matching">
+      <div class="metric-label"><i class="bi bi-link-45deg" aria-hidden="true"></i> Rattachements à compléter</div>
+      <strong class="metric-value" id="kpiUnmatchedEngin">—</strong><span class="metric-sub">transactions sans engin</span>
+      <span class="metric-note" id="kpiUnmatchedEmploye">—</span>
+    </article>
+  </section>
+  <section class="dashboard-products" aria-label="Consommation par produit">
+    <article class="dashboard-product product-gasoil"><span class="product-icon"><i class="bi bi-fuel-pump" aria-hidden="true"></i></span><div><span>Gasoil</span><strong><span id="kpiGasoil">—</span> <small>L</small></strong></div></article>
+    <article class="dashboard-product product-gnr"><span class="product-icon"><i class="bi bi-droplet-half" aria-hidden="true"></i></span><div><span>GNR</span><strong><span id="kpiGnr">—</span> <small>L</small></strong></div></article>
+    <article class="dashboard-product product-adblue"><span class="product-icon"><i class="bi bi-droplet" aria-hidden="true"></i></span><div><span>AdBlue</span><strong><span id="kpiAdblue">—</span> <small>L</small></strong></div></article>
+    <article class="dashboard-product product-peage"><span class="product-icon"><i class="bi bi-signpost-split" aria-hidden="true"></i></span><div><span>Péages</span><strong id="kpiPeage">—</strong></div></article>
+  </section>
+  <div class="dashboard-section-heading"><div><h2>Comprendre vos consommations</h2><p>Sélectionnez une barre ou un point pour affiner les résultats.</p></div><span class="dashboard-section-number" aria-hidden="true">02 / ANALYSE</span></div>
 
     {# Charts employés #}
   <div class="row g-4 mb-4">
-    <div class="col-lg-6">
-      <div class="cardx">
-        <div class="cardx-h">
-          <h5 class="cardx-title"><i class="bi bi-people-fill text-warning"></i> Top employés (Quantité)</h5>
-          <span class="chip">Top</span>
-        </div>
-        <div class="p-3 p-md-4">
-          <div class="chart-box sm"><canvas id="chEmp"></canvas></div>
-          <div class="small text-muted mt-2">Quantité cumulé sur la période (filtrable).</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-lg-6">
-      <div class="cardx">
-        <div class="cardx-h">
-          <h5 class="cardx-title"><i class="bi bi-stack text-warning"></i> Dépenses par employé</h5>
-          <span class="chip">Empilé</span>
-        </div>
-        <div class="p-3 p-md-4">
-          <div class="chart-box sm"><canvas id="chEmpProvAmount"></canvas></div>
-          <div class="small text-muted mt-2">Barres empilées quantité par fournisseur.</div>
-        </div>
-      </div>
-    </div>
-
     <div class="col-lg-12">
       <div class="cardx">
         <div class="cardx-h">
-          <h5 class="cardx-title"><i class="bi bi-droplet-fill text-warning"></i> Quantités par employé</h5>
-          <span class="chip">Empilé</span>
-        </div>
-        <div class="p-3 p-md-4">
-          <div class="chart-box"><canvas id="chEmpProvQty"></canvas></div>
-          <div class="small text-muted mt-2">Litres / unités (selon la source) - utile pour repérer les gros consommateurs.</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  {# Charts #}
-  <div class="row g-4 mb-4">
-    <div class="col-lg-12">
-      <div class="cardx">
-        <div class="cardx-h">
-          <h5 class="cardx-title"><i class="bi bi-activity text-warning"></i> Tendance mensuelle (Quantité)</h5>
+          <h5 class="cardx-title"><i class="bi bi-activity text-warning"></i> Évolution des consommations</h5>
           <span class="chip">Analyse mensuelle</span>
         </div>
         <div class="p-3 p-md-4">
@@ -1343,7 +1208,48 @@ body{
       </div>
     </div>
 
+
     <div class="col-lg-6">
+      <div class="cardx">
+        <div class="cardx-h">
+          <h5 class="cardx-title"><i class="bi bi-people-fill text-warning"></i> Consommation par employé</h5>
+          <span class="chip">Top</span>
+        </div>
+        <div class="p-3 p-md-4">
+          <div class="chart-box sm"><canvas id="chEmp"></canvas></div>
+          <div class="small text-muted mt-2">Quantités cumulées par mode de paiement : ALX, TOTAL, EDENRED et NOTE (litres / unités selon le produit).</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="cardx">
+        <div class="cardx-h">
+          <h5 class="cardx-title"><i class="bi bi-truck-front-fill text-warning"></i> Consommation par engin</h5>
+          <span class="chip">Top 10</span>
+        </div>
+        <div class="p-3 p-md-4">
+          <div class="chart-box sm"><canvas id="chEng"></canvas></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-12">
+      <div class="cardx">
+        <div class="cardx-h">
+          <h5 class="cardx-title"><i class="bi bi-droplet-fill text-warning"></i> Quantités par employé</h5>
+          <span class="chip">Par type de carburant</span>
+        </div>
+        <div class="p-3 p-md-4">
+          <div class="chart-box"><canvas id="chEmpProvQty"></canvas></div>
+          <div class="small text-muted mt-2">Carburants et AdBlue en litres. Cliquez sur un segment pour filtrer par employé et par type.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# Charts #}
+  <div class="row g-4 mb-4">
+    <div class="col-lg-12">
       <div class="cardx">
         <div class="cardx-h">
           <h5 class="cardx-title"><i class="bi bi-pie-chart-fill text-warning"></i> Tronçonneuse et petit matériel</h5>
@@ -1355,19 +1261,10 @@ body{
       </div>
     </div>
 
-    <div class="col-lg-6">
-      <div class="cardx">
-        <div class="cardx-h">
-          <h5 class="cardx-title"><i class="bi bi-truck-front-fill text-warning"></i> Top engins</h5>
-          <span class="chip">Top 10</span>
-        </div>
-        <div class="p-3 p-md-4">
-          <div class="chart-box sm"><canvas id="chEng"></canvas></div>
-        </div>
-      </div>
-    </div>
+
   </div>
 
+  <div class="dashboard-section-heading"><div><h2>Le détail de vos transactions</h2><p>Retrouvez chaque opération sur la période sélectionnée.</p></div><span class="dashboard-section-number" aria-hidden="true">03 / TRANSACTIONS</span></div>
   {# DataTable #}
   <div class="cardx mb-5">
     <div class="cardx-h">
@@ -1400,6 +1297,7 @@ body{
     </div>
   </div>
 
+</main>
 <script>
 (function(){
 
@@ -1621,9 +1519,37 @@ body{
     }
   };
 
-  let chTrend=null, chProv=null, chEng=null, chEmp=null, chEmpProvAmount=null, chEmpProvQty=null;
+  let chTrend=null, chProv=null, chEng=null, chEmp=null, chEmpProvQty=null;
 
-  function ensureChart(ref, ctx, cfg){ if(ref) ref.destroy(); return new Chart(ctx, cfg); }
+  function ensureChart(ref, ctx, cfg){
+    const palette = ['#245744', '#b19a65', '#7f99a4', '#a17a69', '#8d96ad'];
+    const colors = { Total: '#183f35', Gasoil: '#4e8364', GNR: '#b19a65', Essence: '#8d78a2', 'HVO 100': '#7a9a8a', AdBlue: '#7093a6', 'Éthanol (E85)': '#a17a69', ALX: '#245744', TOTAL: '#b19a65', EDENRED: '#7f99a4', NOTE: '#a17a69' };
+    cfg.data.datasets.forEach((dataset, index) => {
+      const color = colors[dataset.label] || palette[index % palette.length];
+      dataset.borderColor = color;
+      dataset.backgroundColor = cfg.type === 'doughnut' ? palette : color;
+      if (cfg.type === 'bar') { dataset.borderRadius = 4; dataset.maxBarThickness = 36; }
+    });
+    cfg.options.animation = false;
+    cfg.options.color = '#718172';
+    cfg.options.plugins = { ...cfg.options.plugins,
+      tooltip: { backgroundColor: '#183f35', padding: 12, cornerRadius: 8, ...cfg.options.plugins?.tooltip },
+      legend: { labels: { usePointStyle: true, boxWidth: 7, boxHeight: 7, padding: 18, font: { size: 11 } }, ...cfg.options.plugins?.legend }
+    };
+    Object.values(cfg.options.scales || {}).forEach(scale => {
+      scale.grid = { color: '#edf0e8', ...scale.grid };
+      scale.border = { display: false, ...scale.border };
+      scale.ticks = { color: '#7a8779', font: { size: 10 }, ...scale.ticks };
+    });
+    if (ref && ref.config.type === cfg.type) {
+      ref.data = cfg.data;
+      ref.options = cfg.options;
+      ref.update('none');
+      return ref;
+    }
+    if (ref) ref.destroy();
+    return new Chart(ctx, cfg);
+  }
 
 
 
@@ -2028,6 +1954,11 @@ body{
   const trendRows = c.trendMonthly || [];
 
   const trendLabels = [...new Set(trendRows.map(r => r.ym))];
+  const monthFormatter = new Intl.DateTimeFormat('fr-FR', { month: 'long' });
+  const trendDisplayLabels = trendLabels.map(ym => {
+    const [year, month] = ym.split('-').map(Number);
+    return monthFormatter.format(new Date(year, month - 1, 1));
+  });
 
   const wantedSous = {
     essence: 'Essence',
@@ -2072,7 +2003,7 @@ body{
   chTrend = ensureChart(chTrend, document.getElementById('chTrend'), {
     type: 'line',
     data: {
-      labels: trendLabels,
+      labels: trendDisplayLabels,
       datasets: trendDatasets
     },
     options: {
@@ -2084,7 +2015,7 @@ body{
       },
       onClick: (evt, elements, chart) => {
         chartClickOrReset(chart, elements, (index) => {
-          const ym = chart.data.labels[index];
+          const ym = trendLabels[index];
           const datasetIndex = elements[0].datasetIndex;
           const dataset = chart.data.datasets[datasetIndex];
 
@@ -2274,198 +2205,83 @@ body{
     }
   });
 
-  /* =========================================================
-   * TOP EMPLOYÉS
-   * =======================================================*/
-  const empRows = c.byEmployee || [];
-
+  // Detailed employee view: breakdown by fuel type.
+  const fuelRows = c.byEmployeeFuelQty || [];
+  const employeeKeys = [...new Set(fuelRows.map(row => String(row.filter_id)))];
+  const fuelKeys = [...new Set(fuelRows.map(row => row.sous))];
+  function employeeFuelConfig(){
+    return {
+      type: 'bar',
+      data: {
+        labels: employeeKeys.map(id => fuelRows.find(row => String(row.filter_id) === id).label),
+        datasets: fuelKeys.map(type => ({
+          label: fuelRows.find(row => row.sous === type).sous_label,
+          fuelType: type,
+          data: employeeKeys.map(id => fuelRows.filter(row => String(row.filter_id) === id && row.sous === type)
+            .reduce((total, row) => total + Number(row.v || 0), 0)),
+          stack: 'fuel', borderSkipped: false
+        }))
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        onClick: (evt, elements, chart) => {
+          chartClickOrReset(chart, elements, index => {
+            const id = employeeKeys[index];
+            const type = chart.data.datasets[elements[0].datasetIndex]?.fuelType;
+            if (id === undefined || !type) return;
+            applyMultipleChartFilters(() => {
+              setOnlyCheckboxFilter('.fuel-filter-emp', Number(id) > 0 ? id : '__NULL__');
+              setOnlyCheckboxFilter('.fuel-filter-sous', type);
+            });
+          });
+        },
+        plugins: {
+          legend: {position: 'bottom'},
+          tooltip: {callbacks: {label: ctx => `${ctx.dataset.label} : ${qty(ctx.parsed.y || 0)} L`}}
+        },
+        scales: {
+          x: {stacked: true},
+          y: {stacked: true, beginAtZero: true, title: {display: true, text: 'Litres'}, ticks: {callback: v => qty(v)}}
+        }
+      }
+    };
+  }
+  const employeeProviderRows = c.byEmployeeProviderQty || [];
   chEmp = ensureChart(chEmp, document.getElementById('chEmp'), {
     type: 'bar',
     data: {
-      labels: empRows.map(x => x.label),
-      datasets: [{
-        label: 'Quantité',
-        data: empRows.map(x => Number(x.v || 0)),
-        borderRadius: 12,
-        borderSkipped: false
-      }]
+      labels: employeeProviderRows.map(row => row.label),
+      datasets: ['ALX', 'TOTAL', 'EDENRED', 'NOTE'].map(provider => ({
+        label: provider,
+        data: employeeProviderRows.map(row => Number(row[provider.toLowerCase()] || 0)),
+        stack: 'provider', borderSkipped: false
+      }))
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      responsive: true, maintainAspectRatio: false,
       onClick: (evt, elements, chart) => {
-        chartClickOrReset(chart, elements, (index) => {
-          const row = empRows[index];
-          if (!row) return;
-
-          applyEmployeFilter(row.filter_id);
+        chartClickOrReset(chart, elements, index => {
+          const row = employeeProviderRows[index];
+          const provider = chart.data.datasets[elements[0].datasetIndex]?.label;
+          if (!row || !provider) return;
+          applyMultipleChartFilters(() => {
+            setOnlyCheckboxFilter('.fuel-filter-emp', Number(row.filter_id) > 0 ? row.filter_id : '__NULL__');
+            setOnlyCheckboxFilter('.fuel-filter-prov', provider);
+          });
         });
       },
       plugins: {
-        legend: {
-          display: false
-        },
-        tooltip: {
-          callbacks: {
-            label: (ctx) => qty(ctx.parsed.y || 0)
-          }
-        }
+        legend: {position: 'bottom'},
+        tooltip: {callbacks: {label: ctx => `${ctx.dataset.label} : ${qty(ctx.parsed.y || 0)}`}}
       },
       scales: {
-        y: {
-          beginAtZero: true,
-          ticks: {
-            callback: (v) => qty(v)
-          }
-        }
+        x: {stacked: true},
+        y: {stacked: true, beginAtZero: true, title: {display: true, text: 'Litres / unités'}, ticks: {callback: v => qty(v)}}
       }
     }
   });
+  chEmpProvQty = ensureChart(chEmpProvQty, document.getElementById('chEmpProvQty'), employeeFuelConfig());
 
-  /* =========================================================
-   * EMPLOYÉS / FOURNISSEURS (MONTANT)
-   * =======================================================*/
-  const empProvAmountRows = c.byEmployeeProviderAmount || [];
-
-  chEmpProvAmount = ensureChart(
-    chEmpProvAmount,
-    document.getElementById('chEmpProvAmount'),
-    {
-      type: 'bar',
-      data: {
-        labels: empProvAmountRows.map(x => x.label),
-        datasets: [
-          {
-            label: 'ALX',
-            data: empProvAmountRows.map(x => Number(x.alx || 0)),
-            stack: 'total'
-          },
-          {
-            label: 'TOTAL',
-            data: empProvAmountRows.map(x => Number(x.total || 0)),
-            stack: 'total'
-          },
-          {
-            label: 'EDENRED',
-            data: empProvAmountRows.map(x => Number(x.edenred || 0)),
-            stack: 'total'
-          },
-          {
-            label: 'NOTE',
-            data: empProvAmountRows.map(x => Number(x.note || 0)),
-            stack: 'total'
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        onClick: (evt, elements, chart) => {
-          chartClickOrReset(chart, elements, (index) => {
-            const row = empProvAmountRows[index];
-            if (!row) return;
-
-            const datasetIndex = elements[0].datasetIndex;
-            const provider = chart.data.datasets[datasetIndex]?.label;
-
-            applyMultipleChartFilters(() => {
-              setOnlyCheckboxFilter('.fuel-filter-emp', Number(row.filter_id || 0) > 0 ? row.filter_id : '__NULL__');
-
-              if (provider) {
-                setOnlyCheckboxFilter('.fuel-filter-prov', provider.toUpperCase());
-              }
-            });
-          });
-        },
-        scales: {
-          x: {
-            stacked: true
-          },
-          y: {
-            stacked: true,
-            beginAtZero: true,
-            ticks: {
-              callback: (v) => qty(v)
-            }
-          }
-        }
-      }
-    }
-  );
-
-  /* =========================================================
-   * EMPLOYÉS / FOURNISSEURS (QUANTITÉ)
-   * =======================================================*/
-  const empProvQtyRows = c.byEmployeeProviderQty || [];
-
-  chEmpProvQty = ensureChart(
-    chEmpProvQty,
-    document.getElementById('chEmpProvQty'),
-    {
-      type: 'bar',
-      data: {
-        labels: empProvQtyRows.map(x => x.label),
-        datasets: [
-          {
-            label: 'ALX',
-            data: empProvQtyRows.map(x => Number(x.alx || 0)),
-            stack: 'qty'
-          },
-          {
-            label: 'TOTAL',
-            data: empProvQtyRows.map(x => Number(x.total || 0)),
-            stack: 'qty'
-          },
-          {
-            label: 'EDENRED',
-            data: empProvQtyRows.map(x => Number(x.edenred || 0)),
-            stack: 'qty'
-          },
-          {
-            label: 'NOTE',
-            data: empProvQtyRows.map(x => Number(x.note || 0)),
-            stack: 'qty'
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        onClick: (evt, elements, chart) => {
-          chartClickOrReset(chart, elements, (index) => {
-            const row = empProvQtyRows[index];
-            if (!row) return;
-
-            const datasetIndex = elements[0].datasetIndex;
-            const provider = chart.data.datasets[datasetIndex]?.label;
-
-            applyMultipleChartFilters(() => {
-              setOnlyCheckboxFilter(
-                '.fuel-filter-emp',
-                Number(row.filter_id || 0) > 0 ? row.filter_id : '__NULL__'
-              );
-
-              if (provider) {
-                setOnlyCheckboxFilter('.fuel-filter-prov', provider.toUpperCase());
-              }
-            });
-          });
-        },
-        scales: {
-          x: {
-            stacked: true
-          },
-          y: {
-            stacked: true,
-            beginAtZero: true,
-            ticks: {
-              callback: (v) => qty(v)
-            }
-          }
-        }
-      }
-    }
-  );
 }
 
   // DataTables
@@ -2551,7 +2367,16 @@ body{
       serverSide:true,
       pageLength:25,
       lengthMenu:[[10,25,50,100],[10,25,50,100]],
-      language:{ url:"https://cdn.datatables.net/plug-ins/1.13.8/i18n/fr-FR.json" },
+      language: {
+        emptyTable: 'Aucune transaction sur cette période',
+        info: '_START_ à _END_ sur _TOTAL_ transactions', infoEmpty: 'Aucune transaction',
+        infoFiltered: '(sur _MAX_ au total)', lengthMenu: 'Afficher _MENU_ lignes',
+        loadingRecords: 'Chargement…', processing: 'Chargement…',
+        search: 'Rechercher :', zeroRecords: 'Aucune transaction correspondante',
+        paginate: { first: 'Première', last: 'Dernière', next: 'Suivante', previous: 'Précédente' },
+        aria: { sortAscending: ': trier par ordre croissant', sortDescending: ': trier par ordre décroissant' },
+        thousands: ' ', decimal: ','
+      },
       ajax:{
         url: "{{ path('app_administrateur_fuel_dt_transactions', {entite: entite.id}) }}",
         type:"GET",
@@ -2713,9 +2538,11 @@ body{
     }
 
     // si un champ prend le focus en mobile => on force l'ouverture
-    toolbar.addEventListener('focusin', () => {
-      if (!isMobile()) return;
+    toolbar.addEventListener('focusin', (event) => {
+      // Focusing the toggle itself must not open the panel before its click.
+      if (!isMobile() || !event.target.closest('input, textarea, select')) return;
       toolbar.classList.add('is-open');
+      btn.setAttribute('aria-expanded', 'true');
     });
 
     // si on sort du focus => on ne ferme pas automatiquement (on laisse l’utilisateur décider)
@@ -2730,12 +2557,14 @@ body{
         btn.classList.add('d-none');
         toolbar.classList.add('is-open'); // sur desktop, toujours "ouvert"
       }
+      btn.setAttribute('aria-expanded', String(toolbar.classList.contains('is-open')));
     }
 
     function toggle(){
       if (!isMobile()) return;
       if (hasFocusInside()) return; // ✅ ne replie pas pendant la saisie
       toolbar.classList.toggle('is-open');
+      btn.setAttribute('aria-expanded', String(toolbar.classList.contains('is-open')));
     }
 
     // état par défaut en mobile: fermé
@@ -2765,6 +2594,7 @@ body{
       } else {
         toolbar.classList.add('is-open');    // desktop: ouvert
       }
+      btn.setAttribute('aria-expanded', String(toolbar.classList.contains('is-open')));
     });
 
     // met à jour le badge quand les filtres changent

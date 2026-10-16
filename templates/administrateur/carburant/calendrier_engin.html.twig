@@ -13,6 +13,7 @@
     #calendar{ padding: 0 !important; }
     .fc .fc-view-harness{ min-height: 72vh; }
   </style>
+  <link rel="stylesheet" href="{{ asset('css/fuel-calendar.css') }}">
 {% endblock %}
 
 {% block javascripts %}
@@ -30,6 +31,8 @@
   {% set pageSubtitle = 'Choisis un engin (scope) pour limiter l’affichage. Les filtres multi restent actifs.' %}
   {% set activeTab = 'engin' %}
 
+  <main class="fuel-calendar-premium">
   {% include 'administrateur/carburant/_calendar_common.html.twig' %}
+  </main>
   {% include 'administrateur/carburant/_calendar_js.html.twig' with { mode: 'engin' } %}
 {% endblock %}

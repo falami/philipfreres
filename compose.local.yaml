@@ -1,0 +1,94 @@
+name: philipfreres
+
+services:
+  gateway:
+    image: nginx:1.29-alpine
+    ports:
+      - '127.0.0.1:8083:80'
+      - '127.0.0.1:8027:8025'
+      - '127.0.0.1:8084:8080'
+    volumes:
+      - ./docker/local/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks: [default, frontend]
+    depends_on: [app, mailpit, phpmyadmin]
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/local/Dockerfile
+    environment:
+      APP_ENV: dev
+      APP_DEBUG: '1'
+      KERNEL_CLASS: 'App\Kernel'
+      APP_SECRET: philipfreres-docker-local-only-not-for-production
+      DATABASE_URL: 'mysql://philipfreres:local-only@database:3306/philipfreres_dev?serverVersion=8.0.44&charset=utf8mb4'
+      MAILER_DSN: 'smtp://mailpit:1025'
+      AUTH_MAIL_FROM: 'no-reply@philipfreres.test'
+      APP_URL: 'http://localhost:8083'
+      APP_BASE_DOMAIN: localhost
+    volumes:
+      # Mount code explicitly: host .env files, credentials and vendor stay out.
+      - ./src:/var/www/app/src:ro
+      - ./templates:/var/www/app/templates:ro
+      - ./translations:/var/www/app/translations:ro
+      - ./assets:/var/www/app/assets:ro
+      - ./public:/var/www/app/public:ro
+      - ./bin:/var/www/app/bin:ro
+      - ./scripts:/var/www/app/scripts:ro
+      - ./migrations:/var/www/app/migrations:ro
+      - ./tests:/var/www/app/tests:ro
+      - ./phpunit.dist.xml:/var/www/app/phpunit.dist.xml:ro
+      - ./importmap.php:/var/www/app/importmap.php:ro
+      - ./config/bundles.php:/var/www/app/config/bundles.php:ro
+      - ./config/services.yaml:/var/www/app/config/services.yaml:ro
+      - ./config/routes.yaml:/var/www/app/config/routes.yaml:ro
+      - ./config/packages:/opt/project-packages:ro
+      - ./config/routes:/var/www/app/config/routes:ro
+      - ./docker/local/dev.yaml:/opt/docker-dev.yaml:ro
+      - runtime:/var/www/app/var
+      - uploads:/var/www/app/public/uploads
+    depends_on:
+      database:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+
+  database:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: philipfreres_dev
+      MYSQL_USER: philipfreres
+      MYSQL_PASSWORD: local-only
+      MYSQL_ROOT_PASSWORD: local-root-only
+    command: ['--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci']
+    volumes:
+      - mysql:/var/lib/mysql
+    healthcheck:
+      test: ['CMD-SHELL', 'MYSQL_PWD="$$MYSQL_PASSWORD" mysql -h 127.0.0.1 -u "$$MYSQL_USER" -D "$$MYSQL_DATABASE" -e "SELECT 1" >/dev/null 2>&1']
+      interval: 3s
+      timeout: 3s
+      retries: 40
+
+  mailpit:
+    image: axllent/mailpit:v1.27
+
+  phpmyadmin:
+    image: phpmyadmin:5.2
+    environment:
+      PMA_HOST: database
+      PMA_USER: philipfreres
+      PMA_PASSWORD: local-only
+      UPLOAD_LIMIT: 512M
+    depends_on:
+      database:
+        condition: service_healthy
+
+volumes:
+  mysql:
+  runtime:
+  uploads:
+
+networks:
+  default:
+    internal: true
+  frontend:

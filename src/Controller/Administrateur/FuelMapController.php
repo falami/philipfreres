@@ -416,11 +416,11 @@ final class FuelMapController extends AbstractController
       COALESCE(t.engin_id, ee.engin_id) AS engin_id,
       COALESCE(t.utilisateur_id, ue.utilisateur_id) AS utilisateur_id,
 
-      COALESCE(e2.nom, e.nom) AS engin_label,
+      COALESCE(e.nom, e2.nom) AS engin_label,
 
       COALESCE(
-        NULLIF(TRIM(CONCAT_WS(' ', NULLIF(u2.prenom,''), NULLIF(u2.nom,''))), ''),
         NULLIF(TRIM(CONCAT_WS(' ', NULLIF(u.prenom,''), NULLIF(u.nom,''))), ''),
+        NULLIF(TRIM(CONCAT_WS(' ', NULLIF(u2.prenom,''), NULLIF(u2.nom,''))), ''),
         NULLIF(TRIM(CONCAT_WS(' ', NULLIF(t.prenom_collaborateur,''), NULLIF(t.nom_collaborateur,''))), '')
       ) AS employe_label,
 
@@ -465,12 +465,14 @@ final class FuelMapController extends AbstractController
     LEFT JOIN engin_external_id ee
       ON LOWER(ee.provider) = 'total'
     AND ee.active = 1
+    AND EXISTS (SELECT 1 FROM engin scoped_engine WHERE scoped_engine.id = ee.engin_id AND scoped_engine.entite_id = t.entite_id)
     AND ee.value = UPPER(REPLACE(REPLACE(REPLACE(REPLACE(
         TRIM(NULLIF(t.immatriculation_vehicule,'')), ' ',''),'-',''),'.',''),'/',''))
 
     LEFT JOIN utilisateur_external_id ue
       ON LOWER(ue.provider) = 'total'
     AND ue.active = 1
+    AND EXISTS (SELECT 1 FROM utilisateur_entite scoped_user WHERE scoped_user.utilisateur_id = ue.utilisateur_id AND scoped_user.entite_id = t.entite_id)
     AND ue.value = UPPER(REPLACE(REPLACE(REPLACE(REPLACE(
         TRIM(NULLIF(t.code_conducteur,'')), ' ',''),'-',''),'.',''),'/',''))
 
@@ -497,14 +499,6 @@ final class FuelMapController extends AbstractController
 
       NULLIF(TRIM(
         COALESCE(
-          CONCAT(COALESCE(u3.prenom,''),' ',COALESCE(u3.nom,'')),
-          CONCAT(COALESCE(u_ext_code.prenom,''),' ',COALESCE(u_ext_code.nom,'')),
-          ed.code_chauffeur
-        )
-      ), '') AS employe,
-
-      NULLIF(TRIM(
-        COALESCE(
           e2.nom,
           e_ext2.nom,
           e_ext_code.nom,
@@ -512,6 +506,13 @@ final class FuelMapController extends AbstractController
           ed.code_vehicule
         )
       ), '') AS engin,
+
+      NULLIF(TRIM(
+        COALESCE(
+          NULLIF(TRIM(CONCAT(COALESCE(u3.prenom,''),' ',COALESCE(u3.nom,''))), ''),
+          NULLIF(TRIM(CONCAT(COALESCE(u_ext_code.prenom,''),' ',COALESCE(u_ext_code.nom,''))), '')
+        )
+      ), '') AS employe,
 
       COALESCE(ed.produit, ed.type_transaction) AS label,
 
@@ -560,6 +561,7 @@ final class FuelMapController extends AbstractController
     LEFT JOIN engin_external_id ee2
       ON ee2.provider = 'edenred'
     AND ee2.active = 1
+    AND EXISTS (SELECT 1 FROM engin scoped_engine WHERE scoped_engine.id = ee2.engin_id AND scoped_engine.entite_id = ed.entite_id)
     AND ee2.value = REPLACE(REPLACE(UPPER(TRIM(COALESCE(ed.immatriculation,''))), ' ', ''), '-', '')
     LEFT JOIN engin e_ext2
       ON e_ext2.id = ee2.engin_id
@@ -569,6 +571,7 @@ final class FuelMapController extends AbstractController
     LEFT JOIN engin_external_id ee_code
       ON ee_code.provider = 'edenred'
     AND ee_code.active = 1
+    AND EXISTS (SELECT 1 FROM engin scoped_engine WHERE scoped_engine.id = ee_code.engin_id AND scoped_engine.entite_id = ed.entite_id)
     AND ee_code.value = REPLACE(REPLACE(UPPER(TRIM(COALESCE(ed.code_vehicule,''))), ' ', ''), '-', '')
     LEFT JOIN engin e_ext_code
       ON e_ext_code.id = ee_code.engin_id
@@ -578,6 +581,7 @@ final class FuelMapController extends AbstractController
     LEFT JOIN utilisateur_external_id ue_code
       ON ue_code.provider = 'edenred'
     AND ue_code.active = 1
+    AND EXISTS (SELECT 1 FROM utilisateur_entite scoped_user WHERE scoped_user.utilisateur_id = ue_code.utilisateur_id AND scoped_user.entite_id = ed.entite_id)
     AND ue_code.value = REPLACE(REPLACE(UPPER(TRIM(COALESCE(ed.code_chauffeur,''))), ' ', ''), '-', '')
     LEFT JOIN utilisateur u_ext_code
       ON u_ext_code.id = ue_code.utilisateur_id
@@ -603,15 +607,6 @@ final class FuelMapController extends AbstractController
 
       NULLIF(TRIM(
         COALESCE(
-          a.agent,
-          CONCAT(COALESCE(u2.prenom,''),' ',COALESCE(u2.nom,'')),
-          CONCAT(COALESCE(u_ext_alx.prenom,''),' ',COALESCE(u_ext_alx.nom,'')),
-          a.code_agent
-        )
-      ), '') AS employe,
-
-      NULLIF(TRIM(
-        COALESCE(
           e3.nom,
           e_ext_alx.nom,
           a.vehicule,
@@ -619,11 +614,19 @@ final class FuelMapController extends AbstractController
         )
       ), '') AS engin,
 
+      NULLIF(TRIM(
+        COALESCE(
+          NULLIF(TRIM(CONCAT(COALESCE(u2.prenom,''),' ',COALESCE(u2.nom,''))), ''),
+          NULLIF(TRIM(CONCAT(COALESCE(u_ext_alx.prenom,''),' ',COALESCE(u_ext_alx.nom,''))), ''),
+          NULLIF(TRIM(a.agent), '')
+        )
+      ), '') AS employe,
+
       'Carburant' AS label,
       'carburant' AS categorie,
       NULL AS sous_categorie,
       CAST(a.quantite AS DECIMAL(12,3)) AS qty,
-      0 AS amount_cents,
+      ROUND(COALESCE(a.quantite,0) * COALESCE(a.prix_unitaire,0) * 100) AS amount_cents,
       :alxAddress AS address
 
     FROM transaction_carte_alx a
@@ -634,6 +637,7 @@ final class FuelMapController extends AbstractController
     LEFT JOIN engin_external_id ee_alx
       ON ee_alx.provider = 'alx'
     AND ee_alx.active = 1
+    AND EXISTS (SELECT 1 FROM engin scoped_engine WHERE scoped_engine.id = ee_alx.engin_id AND scoped_engine.entite_id = a.entite_id)
     AND ee_alx.value = REPLACE(REPLACE(UPPER(TRIM(COALESCE(a.code_veh,''))), ' ', ''), '-', '')
     LEFT JOIN engin e_ext_alx
       ON e_ext_alx.id = ee_alx.engin_id
@@ -643,6 +647,7 @@ final class FuelMapController extends AbstractController
     LEFT JOIN utilisateur_external_id ue_alx
       ON ue_alx.provider = 'alx'
     AND ue_alx.active = 1
+    AND EXISTS (SELECT 1 FROM utilisateur_entite scoped_user WHERE scoped_user.utilisateur_id = ue_alx.utilisateur_id AND scoped_user.entite_id = a.entite_id)
     AND ue_alx.value = REPLACE(REPLACE(UPPER(TRIM(COALESCE(a.code_agent,''))), ' ', ''), '-', '')
     LEFT JOIN utilisateur u_ext_alx
       ON u_ext_alx.id = ue_alx.utilisateur_id

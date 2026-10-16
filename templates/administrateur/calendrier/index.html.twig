@@ -723,43 +723,26 @@ table.planner{
   }
 }
   </style>
+  <link rel="stylesheet" href="{{ asset('css/resource-planner.css') }}">
 {% endblock %}
 
 {% block body %}
-<div class="container-fluid py-4">
-  <div class="hero p-3 p-md-4 mb-4 d-flex gap-3 align-items-start">
-    <div class="accent"></div>
-    <div class="flex-grow-1 position-relative" style="z-index:1;">
-      <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
-        <div>
-          <h2 class="m-0 fw-bold">
-            <i class="bi bi-calendar3 me-2" style="color:var(--theme-color-secondaire)"></i>
-            Planning ressources premium
-          </h2>
-          <div class="opacity-75 mt-2">
-            Vue condensée par <strong>employé</strong> et par <strong>engin utilisé</strong>, avec détail complet au clic.
-          </div>
-
-          <div class="d-flex flex-wrap gap-2 mt-3">
-            <span class="hero-chip"><i class="bi bi-building"></i> {{ entite.nom }}</span>
-            <span class="hero-chip"><i class="bi bi-people"></i> Employés</span>
-            <span class="hero-chip"><i class="bi bi-truck-front"></i> Engins</span>
-            <span class="hero-chip"><i class="bi bi-cash-stack"></i> Dépenses</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+<div class="container-fluid py-4 resource-planner">
+  <header class="planning-intro">
+    <div class="planning-eyebrow">{{ entite.nom }} · Ressources & dépenses</div>
+    <h1>Les équipes et les engins.<br><em>Une vision partagée.</em></h1>
+    <p>Explorez les dépenses de vos collaborateurs et de leurs engins, jour après jour.</p>
+  </header>
 
   <div class="toolbar mb-4">
     <div class="toolbar-grid">
       <div class="f-item">
-        <label class="form-label">Plage de dates</label>
+        <label class="form-label" for="fRange">Plage de dates</label>
         <input type="text" id="fRange" class="form-control" placeholder="Choisir une période">
       </div>
 
       <div class="f-item">
-        <label class="form-label">Fournisseurs</label>
+        <label class="form-label" for="fProviders">Fournisseurs</label>
         <select id="fProviders" multiple>
           <option value="ALX">ALX</option>
           <option value="TOTAL">TOTAL</option>
@@ -769,7 +752,7 @@ table.planner{
       </div>
 
       <div class="f-item">
-        <label class="form-label">Employés</label>
+        <label class="form-label" for="fEmployes">Employés</label>
         <select id="fEmployes" multiple>
           {% for u in employes %}
             <option value="{{ u.id }}">{{ u.prenom }} {{ u.nom }}</option>
@@ -778,7 +761,7 @@ table.planner{
       </div>
 
       <div class="f-item">
-        <label class="form-label">Engins</label>
+        <label class="form-label" for="fEngins">Engins</label>
         <select id="fEngins" multiple>
           {% for e in engins %}
             <option value="{{ e.id }}">{{ e.nom }}</option>
@@ -789,14 +772,11 @@ table.planner{
       <div class="f-item-lg">
         <label class="form-label">Actions</label>
         <div class="toolbar-actions">
-          <button type="button" class="btn btn-premium" id="btnApply">
-            <i class="bi bi-arrow-repeat me-1"></i>Actualiser
-          </button>
           <button type="button" class="btn btn-outline-soft" id="btnToday">
             <i class="bi bi-calendar-day me-1"></i>Aujourd’hui
           </button>
           <button type="button" class="btn btn-outline-soft" id="btnReset">
-            <i class="bi bi-x-circle me-1"></i>Reset
+            <i class="bi bi-x-circle me-1"></i>Réinitialiser
           </button>
         </div>
       </div>
@@ -826,12 +806,13 @@ table.planner{
     <div class="cardx-h">
       <h5 class="cardx-title">
         <i class="bi bi-diagram-3-fill"></i>
-        Planning utilisateur / engins
+        Planning des ressources
       </h5>
+      <span class="planning-grid-help"><i class="bi bi-arrows" aria-hidden="true"></i> Faites défiler pour parcourir les jours</span>
     </div>
-
+    <div class="planning-legend" aria-label="Types de produits"><span class="type-gnr">GNR</span><span class="type-fioul">Fioul</span><span class="type-gasoil">Gasoil</span><span class="type-essence">Essence</span><span class="type-adblue">AdBlue</span><span class="type-other">Autres / non renseigné</span><span class="type-mixed">Mixte</span><small id="planningStatus" role="status" aria-live="polite"></small></div>
     <div class="p-3">
-      <div class="planner-wrap">
+      <div class="planner-wrap" tabindex="0" role="region" aria-label="Planning des dépenses par ressource">
         <table class="planner" id="plannerTable">
           <thead id="plannerHead"></thead>
           <tbody id="plannerBody"></tbody>
@@ -933,7 +914,9 @@ document.addEventListener('DOMContentLoaded', function () {
     altFormat: "j F Y",
     allowInput: true,
     disableMobile: true,
-    defaultDate: [firstDay, lastDay]
+    defaultDate: [firstDay, lastDay],
+    onChange: dates => { if (dates.length === 2 || dates.length === 0) schedulePlanning(); },
+    onClose: () => schedulePlanning()
   });
 
   new TomSelect($providers, {
@@ -993,6 +976,19 @@ document.addEventListener('DOMContentLoaded', function () {
     return 'note';
   }
 
+  function productClass(items) {
+    const types = new Set((items || []).map(item => {
+      const type = String(item.product_type || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      if (/\bgnr\b|non routier/.test(type)) return 'type-gnr';
+      if (/fioul|fuel domestique|fodom/.test(type)) return 'type-fioul';
+      if (/adblue|ad blue/.test(type)) return 'type-adblue';
+      if (/gasoil|gazole|diesel/.test(type)) return 'type-gasoil';
+      if (/essence|sans plomb|\bsp ?9[58]\b/.test(type)) return 'type-essence';
+      return 'type-other';
+    }));
+    return types.size > 1 ? 'type-mixed' : ([...types][0] || 'type-other');
+  }
+
   function buildMonthGroups(days) {
     const groups = [];
     for (const d of days) {
@@ -1040,7 +1036,7 @@ document.addEventListener('DOMContentLoaded', function () {
         <div class="cell-inner">
           <button
             type="button"
-            class="planner-pill ${providerClass(cell.provider)}"
+            class="planner-pill ${productClass(cell.items)}"
             data-cell='${JSON.stringify({
               userName,
               enginName,
@@ -1167,31 +1163,45 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  async function refreshPlanning() {
-    const response = await fetch(`{{ path('app_administrateur_calendrier_planning_data', {entite: entite.id}) }}?${buildQuery()}`, {
-      headers: { 'Accept': 'application/json' }
-    });
-
-    if (!response.ok) {
-      throw new Error('Erreur lors du chargement du planning');
-    }
-
-    const data = await response.json();
-    renderHead(data.days || []);
-    renderBody(data);
-    refreshKpis(data);
+  let planningTimer;
+  let planningRequest = 0;
+  let planningAbort;
+  function schedulePlanning() {
+    clearTimeout(planningTimer);
+    ++planningRequest;
+    planningAbort?.abort();
+    planningTimer = setTimeout(refreshPlanning, 250);
   }
-
-  document.getElementById('btnApply')?.addEventListener('click', () => {
-    refreshPlanning().catch(console.error);
-  });
+  async function refreshPlanning() {
+    const request = ++planningRequest;
+    planningAbort?.abort();
+    planningAbort = new AbortController();
+    const status = document.getElementById('planningStatus');
+    status.textContent = 'Mise à jour…';
+    try {
+      const response = await fetch(`{{ path('app_administrateur_calendrier_planning_data', {entite: entite.id}) }}?${buildQuery()}`, {
+        headers: { 'Accept': 'application/json' }, signal: planningAbort.signal
+      });
+      if (!response.ok) throw new Error('Chargement impossible');
+      const data = await response.json();
+      if (request !== planningRequest) return;
+      renderHead(data.days || []);
+      renderBody(data);
+      refreshKpis(data);
+      status.textContent = 'À jour · Cliquez sur un montant pour le détail.';
+    } catch (error) {
+      if (request !== planningRequest || error.name === 'AbortError') return;
+      status.textContent = 'Échec du chargement. Modifiez un filtre pour réessayer.';
+    }
+  }
+  [$providers, $employes, $engins].forEach(el => el.addEventListener('change', schedulePlanning));
 
   document.getElementById('btnToday')?.addEventListener('click', function() {
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
     const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     fp.setDate([start, end], true);
-    refreshPlanning().catch(console.error);
+    schedulePlanning();
   });
 
   document.getElementById('btnReset')?.addEventListener('click', function() {
@@ -1199,7 +1209,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if ($providers.tomselect) $providers.tomselect.clear(true);
     if ($employes.tomselect) $employes.tomselect.clear(true);
     if ($engins.tomselect) $engins.tomselect.clear(true);
-    refreshPlanning().catch(console.error);
+    schedulePlanning();
   });
 
   $body.addEventListener('click', function(e) {
@@ -1224,7 +1234,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  refreshPlanning().catch(console.error);
+  schedulePlanning();
 });
 </script>
 {% endblock %}

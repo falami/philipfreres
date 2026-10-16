@@ -1,0 +1,10 @@
+**
+!composer.json
+!composer.lock
+!docker/
+!docker/local/
+!docker/local/Dockerfile
+!docker/local/environment.env
+!docker/local/apache.conf
+!docker/local/php.ini
+!docker/local/start.sh

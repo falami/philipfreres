@@ -21,3 +21,6 @@
 /public/assets/
 /public/bundles/
 /public/uploads/
+
+# Private database exports for local Docker testing.
+/docker/local/imports/

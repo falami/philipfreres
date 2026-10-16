@@ -1,0 +1,9 @@
+framework:
+  router:
+    default_uri: 'http://localhost:8083'
+  session:
+    name: PHILIPFRERESLOCAL
+    cookie_secure: false
+
+karser_recaptcha3:
+  enabled: false

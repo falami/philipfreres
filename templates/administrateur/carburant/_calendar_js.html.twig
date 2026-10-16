@@ -553,12 +553,20 @@
     eventContent: renderEventContent,
 
     events: async function(fetchInfo, success, failure){
+      const calendarStatus = document.getElementById('calendarStatus');
+      if (calendarStatus) calendarStatus.textContent = 'Chargement des dépenses…';
       try{
         // ✅ En mode engin/employe : tant que rien n'est choisi, on vide + badges à 0
         const f = getFilters();
+        const selectionHint = document.getElementById('calendarSelectionHint');
+        if (selectionHint) selectionHint.hidden = f.hasScopeSelected;
         if ((MODE === 'engin' || MODE === 'employe') && !f.hasScopeSelected){
           applySumBadges({ amount_cents: 0, cnt: 0, qty: 0 });
           success([]);
+          [$sumAmount, $sumCnt, $sumQty].forEach(el => { if (el) el.textContent = '—'; });
+          if (calendarStatus) calendarStatus.textContent = MODE === 'engin'
+            ? 'Sélectionnez un engin pour afficher ses dépenses.'
+            : 'Sélectionnez un employé pour afficher ses dépenses.';
           return;
         }
 
@@ -571,8 +579,12 @@
         success(events);
 
         applySumBadges(payload.totals || {});
+        const status = document.getElementById('calendarStatus');
+        if (status) status.textContent = events.length ? 'Sélectionnez une dépense pour consulter le détail.' : 'Aucune dépense sur cette période.';
       } catch(e){
         console.error(e);
+        const status = document.getElementById('calendarStatus');
+        if (status) status.textContent = 'Chargement impossible. Actualisez la page pour réessayer.';
         failure(e);
       }
     },

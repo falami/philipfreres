@@ -327,6 +327,7 @@
 .leaflet-top, .leaflet-bottom{ z-index: 500 !important; }
 .leaflet-pane{ z-index: 200 !important; }
   </style>
+  <link rel="stylesheet" href="{{ asset('css/fuel-map.css') }}">
 {% endblock %}
 
 {% block javascripts %}
@@ -341,6 +342,7 @@
 {% endblock %}
 
 {% block body %}
+<div class="fuel-map-premium">
 
   {# ===== HERO ===== #}
   <div class="hero p-3 mb-4 d-flex gap-3">
@@ -350,16 +352,16 @@
         <div>
           <h2 class="m-0 fw-bold">
             <i class="bi bi-geo-alt-fill me-2" style="color:var(--theme-color-secondaire)"></i>
-            Carte des dépenses carburant
+            Vos dépenses, sur le terrain.
           </h2>
           <div class="opacity-75 mt-1">
-            Visualise les lieux de dépense (ALX + TOTAL + EDENRED) avec employé, engin, date/heure.
+            Retrouvez chaque lieu, ses transactions et les ressources associées.
           </div>
 
           <div class="d-flex flex-wrap gap-2 mt-3">
             <span class="chip"><i class="bi bi-truck"></i> Carburant</span>
             <span class="chip"><i class="bi bi-building"></i> {{ entite.nom }}</span>
-            <span class="chip"><i class="bi bi-stars"></i> Premium</span>
+
           </div>
         </div>
 
@@ -369,10 +371,10 @@
           </button>
           <a class="btn btn-primary btn-sm fw-semibold"
             href="{{ path('app_administrateur_geo_reconcile', { entite: entite.id }) }}">
-            <i class="bi bi-eye me-2"></i> Matchmaking
+            <i class="bi bi-eye me-2"></i> Correspondances des lieux
           </a>
 
-          
+
         </div>
       </div>
     </div>
@@ -600,7 +602,7 @@
   <div class="cardx mb-5">
     <div class="cardx-h">
       <h5 class="cardx-title"><i class="bi bi-pin-map-fill text-warning"></i> Lieux de dépense</h5>
-      <span class="chip"><i class="bi bi-layers"></i> Cluster</span>
+      <span class="chip"><i class="bi bi-layers"></i> Lieux regroupés</span>
     </div>
 
     <div class="p-3 p-md-4">
@@ -612,12 +614,13 @@
       <div id="fuelMap"></div>
 
       <div class="small text-muted mt-2">
-        Astuce : clique un point pour voir <b>employé</b>, <b>engin</b>, <b>date/heure</b>, <b>montant</b> (sample).
+        Astuce : clique un point pour voir <b>employé</b>, <b>engin</b>, <b>date/heure</b>, <b>montant</b> (dernières transactions).
       </div>
     </div>
   </div>
 
 
+</div>
 <script>
 (function(){
   if (window.flatpickr && window.flatpickr.l10ns?.fr) flatpickr.localize(flatpickr.l10ns.fr);
@@ -997,7 +1000,8 @@
 
   function fmtDt(iso){
     if(!iso) return '-';
-    return String(iso).replace('T',' ').slice(0,19);
+    const match = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}))?/);
+    return match ? `${match[3]}/${match[2]}/${match[1]}${match[4] ? ` · ${match[4]}:${match[5]}` : ''}` : String(iso);
   }
 
   function providerBadge(p){
@@ -1007,68 +1011,26 @@
   }
 
   function buildPopup(place){
-    const addr = escapeHtml(place.address || '');
-    const cnt = Number(place.cnt||0);
-    const amount = money(place.amount_cents||0);
-
     const sample = Array.isArray(place.sample) ? place.sample : [];
+    const count = Number(place.cnt || 0);
     const rows = sample.map(tx => {
-      const emp = tx.employe ? escapeHtml(tx.employe) : '<span class="text-muted">Non catégorisé</span>';
-      const eng = tx.engin ? escapeHtml(tx.engin) : '<span class="text-muted">Non catégorisé</span>';
-      const lbl = tx.label ? escapeHtml(tx.label) : '<span class="text-muted">-</span>';
-      const cat = tx.categorie ? escapeHtml(tx.categorie) : '<span class="text-muted">-</span>';
-      const sous = tx.sousCategorie ? escapeHtml(tx.sousCategorie) : '<span class="text-muted">-</span>';
-
-      const qty = (tx.qty != null && !Number.isNaN(Number(tx.qty)))
-        ? (Number(tx.qty).toFixed(2).replace('.', ',') + ' u')
-        : '';
-
-      return `
-        <div class="d-flex justify-content-between gap-2 py-1" style="border-bottom:1px solid rgba(15,23,42,.08)">
-          <div style="min-width:0">
-            <div class="small" style="font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-              ${providerBadge(tx.provider)}
-              ${fmtDt(tx.dt)}
-            </div>
-            <div class="small text-muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-              <i class="bi bi-person me-1"></i>${emp}
-              <span class="mx-2">·</span>
-              <i class="bi bi-truck-front me-1"></i>${eng}
-            </div>
-            <div class="small" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-              <i class="bi bi-tag me-1"></i>${lbl}
-              <span class="mx-2">·</span>
-              <i class="bi bi-grid-3x3-gap me-1"></i>${cat}
-              <span class="mx-2">·</span>
-              <i class="bi bi-diagram-3 me-1"></i>${sous}
-            </div>
-          </div>
-          <div class="text-end" style="white-space:nowrap">
-            <div class="money">${money(tx.amount_cents||0)}</div>
-            <div class="small text-muted">${qty}</div>
-          </div>
-        </div>
-      `;
+      const quantity = tx.qty == null ? '—' : Number(tx.qty).toLocaleString('fr-FR', {maximumFractionDigits: 2}) + (tx.categorie === 'carburant' ? ' L' : ' unité(s)');
+      return `<article class="map-transaction">
+        <div class="map-transaction-top">${providerBadge(tx.provider)}<time>${escapeHtml(fmtDt(tx.dt))}</time><strong>${money(tx.amount_cents || 0)}</strong></div>
+        <dl class="map-transaction-people">
+          <div><dt><i class="bi bi-person" aria-hidden="true"></i> Conducteur</dt><dd>${escapeHtml(tx.employe || 'Non renseigné')}</dd></div>
+          <div><dt><i class="bi bi-truck-front" aria-hidden="true"></i> Engin</dt><dd>${escapeHtml(tx.engin || 'Non rattaché')}</dd></div>
+        </dl>
+        <div class="map-transaction-product"><span><i class="bi bi-droplet" aria-hidden="true"></i> ${escapeHtml(tx.label || tx.sousCategorie || 'Produit non renseigné')}</span><span>${escapeHtml(quantity)}</span></div>
+      </article>`;
     }).join('');
-
-    return `
-      <div style="min-width:340px;max-width:420px">
-        <div class="mb-2">
-          <div style="font-weight:950;letter-spacing:-.01em">
-            <i class="bi bi-geo-alt-fill me-1" style="color:var(--theme-color-secondaire)"></i>
-            ${addr}
-          </div>
-          <div class="small text-muted mt-1">
-            <span class="badge-soft"><i class="bi bi-receipt me-1"></i>${cnt} transaction(s)</span>
-            <span class="badge-soft ms-1"><i class="bi bi-cash-stack me-1"></i>${amount}</span>
-          </div>
-        </div>
-
-        <div style="border:1px solid rgba(15,23,42,.10);border-radius:14px;overflow:hidden;background:rgba(255,255,255,.9)">
-          ${rows || `<div class="p-2 small text-muted">Aucune transaction à afficher.</div>`}
-        </div>
-      </div>
-    `;
+    return `<section class="map-place-popup" aria-label="Détails du lieu">
+      <header class="map-place-header"><div class="map-place-eyebrow">LIEU DE DÉPENSE</div><h3>${escapeHtml(place.address || 'Adresse non renseignée')}</h3>
+        <div class="map-place-totals"><span>${count.toLocaleString('fr-FR')} transaction${count > 1 ? 's' : ''}</span><strong>${money(place.amount_cents || 0)}</strong></div>
+      </header>
+      <div class="map-place-list" tabindex="0" role="region" aria-label="Dernières transactions">${rows || '<p class="map-empty">Aucune transaction à afficher.</p>'}</div>
+      <footer class="map-place-footer">${sample.length < count ? `${sample.length} dernières transactions sur ${count.toLocaleString('fr-FR')}` : 'Toutes les transactions de ce lieu sur la période'}</footer>
+    </section>`;
   }
 
   function clearMap(){
@@ -1095,7 +1057,19 @@
       if (p.lat == null || p.lng == null) continue;
 
       const m = L.marker([p.lat, p.lng], { title: p.address || '' });
-      m.bindPopup(buildPopup(p), { maxWidth: 460, closeButton: true, autoPanPadding: [30,30] });
+      m.bindPopup(buildPopup(p), {
+        className: 'map-detail-popup', maxWidth: 420,
+        closeButton: true, autoPanPadding: [16,16], keepInView: true
+      });
+      m.on('popupopen', () => {
+        const popup = m.getPopup();
+        const element = popup.getElement();
+        const height = Math.min(map.getSize().y - 60, window.innerHeight - 100);
+        element.style.setProperty('--popup-height', `${Math.max(180, height)}px`);
+        popup.update();
+        const list = element.querySelector('.map-place-list');
+        if (list) L.DomEvent.disableScrollPropagation(list);
+      });
 
       cluster.addLayer(m);
     }

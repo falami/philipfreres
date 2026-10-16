@@ -347,22 +347,25 @@ final class FuelDashboardRepository
   ", $topParams);
     }
 
-    $byEmp = $this->db->fetchAllAssociative("
-      SELECT
-        COALESCE(x.employe_id, 0) AS filter_id,
-        COALESCE(x.employe_label,'(Non rattaché)') AS label,
-        SUM(x.qty) AS v
-      FROM ($sqlBase) x
-      WHERE $where
-      GROUP BY COALESCE(x.employe_id, 0), COALESCE(x.employe_label,'(Non rattaché)')
-      ORDER BY v DESC
-      LIMIT 10
-    ", $params);
-
-    $byEmpProvAmount = $this->db->fetchAllAssociative("
+    // Aggregate once per employee, then rank the fuel views by fuel volume only.
+    // Keep the legacy provider breakdown for existing API consumers, without
+    // repeating the transaction joins.
+    $fuelTypes = ['gasoil' => 'Gasoil', 'gnr' => 'GNR', 'essence' => 'Essence',
+      'ethanol' => 'Éthanol (E85)', 'HVO100' => 'HVO 100', 'adblue' => 'AdBlue'];
+    $fuelColumns = [];
+    foreach (array_keys($fuelTypes) as $index => $type) {
+      // These SQL literals come only from the fixed product taxonomy above.
+      $fuelColumns[] = "SUM(CASE WHEN x.produit_sous = '$type' THEN x.qty ELSE 0 END) AS fuel_$index";
+    }
+    $fuelProjection = implode(', ', $fuelColumns);
+    $fuelValues = "'" . implode("','", array_keys($fuelTypes)) . "'";
+    $employees = $this->db->fetchAllAssociative("
   SELECT
     COALESCE(x.employe_id, 0) AS filter_id,
     COALESCE(x.employe_label,'(Non rattaché)') AS label,
+    SUM(x.qty) AS v,
+    $fuelProjection,
+    SUM(CASE WHEN x.produit_sous IN ($fuelValues) THEN x.qty ELSE 0 END) AS fuel_qty,
     SUM(CASE WHEN x.provider = 'alx' THEN x.qty ELSE 0 END) AS alx,
     SUM(CASE WHEN x.provider = 'total' THEN x.qty ELSE 0 END) AS total,
     SUM(CASE WHEN x.provider = 'edenred' THEN x.qty ELSE 0 END) AS edenred,
@@ -370,15 +373,33 @@ final class FuelDashboardRepository
   FROM ($sqlBase) x
   WHERE $where
   GROUP BY COALESCE(x.employe_id, 0), COALESCE(x.employe_label,'(Non rattaché)')
-  ORDER BY
-    (
-      SUM(CASE WHEN x.provider = 'alx' THEN x.qty ELSE 0 END)
-      + SUM(CASE WHEN x.provider = 'total' THEN x.qty ELSE 0 END)
-      + SUM(CASE WHEN x.provider = 'edenred' THEN x.qty ELSE 0 END)
-      + SUM(CASE WHEN x.provider = 'note' THEN x.qty ELSE 0 END)
-    ) DESC
-  LIMIT 10
+  ORDER BY v DESC, filter_id ASC
 ", $params);
+
+    $byEmp = [];
+    $byEmpProvAmount = [];
+    $byEmpFuel = [];
+    foreach (array_slice($employees, 0, 10) as $employee) {
+      $byEmp[] = array_intersect_key($employee, array_flip(['filter_id', 'label', 'v']));
+      $byEmpProvAmount[] = array_intersect_key($employee, array_flip(['filter_id', 'label', 'alx', 'total', 'edenred', 'note']));
+    }
+    $fuelEmployees = array_values(array_filter($employees, static function (array $employee) use ($fuelTypes): bool {
+      foreach (array_keys($fuelTypes) as $index => $type) {
+        if ((float) $employee['fuel_' . $index] !== 0.0) return true;
+      }
+      return false;
+    }));
+    usort($fuelEmployees, static fn(array $a, array $b): int =>
+      ((float) $b['fuel_qty'] <=> (float) $a['fuel_qty']) ?: ((int) $a['filter_id'] <=> (int) $b['filter_id']));
+    foreach (array_slice($fuelEmployees, 0, 10) as $employee) {
+      foreach (array_keys($fuelTypes) as $index => $type) {
+        $value = $employee['fuel_' . $index];
+        if ((float) $value !== 0.0) {
+          $byEmpFuel[] = ['filter_id' => $employee['filter_id'], 'label' => $employee['label'],
+            'sous' => $type, 'sous_label' => $fuelTypes[$type], 'v' => $value];
+        }
+      }
+    }
 
     // Both response keys expose the same quantity breakdown; query it only once.
     $byEmpProvQty = $byEmpProvAmount;
@@ -405,6 +426,7 @@ final class FuelDashboardRepository
 
         // ✅ nouveaux noms (pour tes nouveaux charts JS)
         'byEmployee' => $byEmp,
+        'byEmployeeFuelQty' => $byEmpFuel,
         'byEmployeeProviderAmount' => $byEmpProvAmount,
         'byEmployeeProviderQty' => $byEmpProvQty,
       ],

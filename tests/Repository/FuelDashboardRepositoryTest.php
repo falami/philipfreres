@@ -20,13 +20,14 @@ final class FuelDashboardRepositoryTest extends TestCase
     {
         // Optional real MySQL validation: no database selected and no schema writes.
         $socket = getenv('DASHBOARD_TEST_MYSQL_SOCKET');
-        if ($socket) {
+        $host = getenv('DASHBOARD_TEST_MYSQL_HOST');
+        if ($socket || $host) {
             $this->engine = DriverManager::getConnection([
-                'driver' => 'pdo_mysql', 'unix_socket' => $socket,
+                'driver' => 'pdo_mysql',
                 'user' => getenv('DASHBOARD_TEST_MYSQL_USER') ?: '',
                 'password' => getenv('DASHBOARD_TEST_MYSQL_PASSWORD') ?: '',
                 'charset' => 'utf8mb4',
-            ]);
+            ] + ($socket ? ['unix_socket' => $socket] : ['host' => $host]));
         } else {
             $this->engine = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
             $this->engine->getNativeConnection()->sqliteCreateFunction(
@@ -42,7 +43,7 @@ final class FuelDashboardRepositoryTest extends TestCase
     }
 
     #[DataProvider('filterCases')]
-    public function testSummaryPreservesMetricsAndFiltersWithAtMostSevenQueries(array $filters, int $tenantId, array $selected): void
+    public function testSummaryPreservesMetricsAndFiltersWithAtMostSixQueries(array $filters, int $tenantId, array $selected): void
     {
         $rows = self::rows();
         $fixtureSql = implode(' UNION ALL ', array_map(function (array $row): string {
@@ -83,6 +84,7 @@ final class FuelDashboardRepositoryTest extends TestCase
             'total_gasoil' => 0.0, 'total_gnr' => 0.0, 'total_adblue' => 0.0, 'total_peage_cents' => 0,
         ];
         $employees = [];
+        $fuelTotals = [];
         foreach ($selected as $id) {
             $row = $rows[$id - 1];
             $expected['qty'] += $row['qty'];
@@ -98,20 +100,37 @@ final class FuelDashboardRepositoryTest extends TestCase
             $employee = $row['employe_id'] ?? 0;
             $employees[$employee] ??= ['alx' => 0.0, 'total' => 0.0, 'edenred' => 0.0, 'note' => 0.0];
             $employees[$employee][$row['provider']] += $row['qty'];
+            if (in_array($row['produit_sous'], ['gasoil','gnr','essence','ethanol','HVO100','adblue'], true)) {
+                $key = $employee . ':' . $row['produit_sous'];
+                $fuelTotals[$key] = ($fuelTotals[$key] ?? 0.0) + $row['qty'];
+            }
         }
         self::assertSame($expected, $result['kpis']);
-        self::assertSame($selected === [] ? 6 : 7, $queries);
+        self::assertSame($selected === [] ? 5 : 6, $queries);
         $charts = $result['charts'];
         // The existing compatibility names both expose quantities; preserve this contract.
         self::assertSame($charts['byEmployeeProviderAmount'], $charts['byEmployeeProviderQty']);
         self::assertSame($charts['topEmployes'], $charts['byEmployee']);
         self::assertCount(count($employees), $charts['byEmployeeProviderQty']);
+        foreach ($charts['byEmployee'] as $employee) {
+            self::assertSame(['filter_id', 'label', 'v'], array_keys($employee));
+            self::assertSame(array_sum($employees[(int) $employee['filter_id']]), (float) $employee['v']);
+        }
         foreach ($charts['byEmployeeProviderQty'] as $employee) {
+            self::assertSame(['filter_id', 'label', 'alx', 'total', 'edenred', 'note'], array_keys($employee));
             self::assertArrayHasKey((int) $employee['filter_id'], $employees);
             foreach ($employees[(int) $employee['filter_id']] as $provider => $quantity) {
                 self::assertSame($quantity, (float) $employee[$provider]);
             }
         }
+        $actualFuel = [];
+        foreach ($charts['byEmployeeFuelQty'] as $row) {
+            $actualFuel[$row['filter_id'] . ':' . $row['sous']] = (float) $row['v'];
+        }
+        $fuelTotals = array_filter($fuelTotals, static fn(float $v): bool => $v !== 0.0);
+        ksort($actualFuel);
+        ksort($fuelTotals);
+        self::assertSame($fuelTotals, $actualFuel, 'Fuel stacks preserve signed quantities, employee IDs and active filters, excluding non-fuel purchases.');
         if ($selected === []) {
             foreach ($charts as $chart) {
                 self::assertSame([], $chart);
