@@ -249,25 +249,15 @@ final class FuelDashboardRepository
         COALESCE(SUM(x.amount_cents),0) amount_cents,
         COUNT(*) cnt,
         COALESCE(SUM(CASE WHEN x.engin_id IS NULL THEN 1 ELSE 0 END),0) cnt_unmatched_engin,
-        COALESCE(SUM(CASE WHEN x.employe_id IS NULL THEN 1 ELSE 0 END),0) cnt_unmatched_employe
-      FROM ($sqlBase) x
-      WHERE $where
-    ";
-    $k = $this->db->fetchAssociative($kpiSql, $params) ?: [];
-
-
-
-
-    $kpiSousCategories = $this->db->fetchAssociative("
-      SELECT
+        COALESCE(SUM(CASE WHEN x.employe_id IS NULL THEN 1 ELSE 0 END),0) cnt_unmatched_employe,
         COALESCE(SUM(CASE WHEN x.produit_sous = 'gasoil' THEN x.qty ELSE 0 END), 0) AS total_gasoil,
         COALESCE(SUM(CASE WHEN x.produit_sous = 'gnr' THEN x.qty ELSE 0 END), 0) AS total_gnr,
         COALESCE(SUM(CASE WHEN x.produit_sous = 'adblue' THEN x.qty ELSE 0 END), 0) AS total_adblue,
         COALESCE(SUM(CASE WHEN x.produit_sous = 'peage' THEN x.amount_cents ELSE 0 END), 0) AS total_peage_cents
       FROM ($sqlBase) x
       WHERE $where
-    ", $params) ?: [];
-
+    ";
+    $k = $this->db->fetchAssociative($kpiSql, $params) ?: [];
     // ===== Par fournisseur
     // provider = alx/total/edenred → label en UPPER pour l'affichage
     // ===== Essence uniquement par fournisseur
@@ -390,27 +380,8 @@ final class FuelDashboardRepository
   LIMIT 10
 ", $params);
 
-    // ===== (Nouveau) Empilé QTY par employé/fournisseur
-    $byEmpProvQty = $this->db->fetchAllAssociative("
-      SELECT
-        COALESCE(x.employe_id, 0) AS filter_id,
-        COALESCE(x.employe_label,'(Non rattaché)') AS label,
-        SUM(CASE WHEN x.provider = 'alx' THEN x.qty ELSE 0 END) AS alx,
-        SUM(CASE WHEN x.provider = 'total' THEN x.qty ELSE 0 END) AS total,
-        SUM(CASE WHEN x.provider = 'edenred' THEN x.qty ELSE 0 END) AS edenred,
-        SUM(CASE WHEN x.provider = 'note' THEN x.qty ELSE 0 END) AS note
-      FROM ($sqlBase) x
-      WHERE $where
-      GROUP BY COALESCE(x.employe_id, 0), COALESCE(x.employe_label,'(Non rattaché)')
-      ORDER BY
-        (
-          SUM(CASE WHEN x.provider = 'alx' THEN x.qty ELSE 0 END)
-          + SUM(CASE WHEN x.provider = 'total' THEN x.qty ELSE 0 END)
-          + SUM(CASE WHEN x.provider = 'edenred' THEN x.qty ELSE 0 END)
-          + SUM(CASE WHEN x.provider = 'note' THEN x.qty ELSE 0 END)
-        ) DESC
-      LIMIT 10
-    ", $params);
+    // Both response keys expose the same quantity breakdown; query it only once.
+    $byEmpProvQty = $byEmpProvAmount;
 
     return [
       'kpis' => [
@@ -419,10 +390,10 @@ final class FuelDashboardRepository
         'cnt' => (int) ($k['cnt'] ?? 0),
         'cnt_unmatched_engin' => (int) ($k['cnt_unmatched_engin'] ?? 0),
         'cnt_unmatched_employe' => (int) ($k['cnt_unmatched_employe'] ?? 0),
-        'total_gasoil' => (float) ($kpiSousCategories['total_gasoil'] ?? 0),
-        'total_gnr' => (float) ($kpiSousCategories['total_gnr'] ?? 0),
-        'total_adblue' => (float) ($kpiSousCategories['total_adblue'] ?? 0),
-        'total_peage_cents' => (int) ($kpiSousCategories['total_peage_cents'] ?? 0),
+        'total_gasoil' => (float) ($k['total_gasoil'] ?? 0),
+        'total_gnr' => (float) ($k['total_gnr'] ?? 0),
+        'total_adblue' => (float) ($k['total_adblue'] ?? 0),
+        'total_peage_cents' => (int) ($k['total_peage_cents'] ?? 0),
       ],
       'charts' => [
         'gasolineByEngin' => $byEssenceEngin,

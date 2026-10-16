@@ -6,7 +6,6 @@
   {{ parent() }}
   <link rel="stylesheet" href="{{ asset('dist/css/style.css') }}">
   <link rel="stylesheet" href="{{ asset('dist/css/formulaire.css') }}">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
   <style>
@@ -895,7 +894,6 @@ body{
 {% block javascripts %}
   {{ parent() }}
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://npmcdn.com/flatpickr/dist/l10n/fr.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
@@ -1179,6 +1177,10 @@ body{
   </div>
 </div>
 
+  <div id="fuelLoadStatus" class="alert alert-light py-2 mb-3" role="status" aria-live="polite">
+    Chargement des indicateurs…
+  </div>
+
   {# KPI #}
   <div class="cardx mb-4">
     <div class="cardx-h">
@@ -1418,11 +1420,14 @@ body{
     }
 
     async function runRefresh(){
+      // Consume any debounce already scheduled by the same UI action.
+      clearTimeout(autoTimer);
+      autoTimer = null;
       if (isRefreshing) { pendingRefresh = true; return; }
       isRefreshing = true;
 
       try{
-        await refresh();
+        await refresh(qs(getFilters()));
       } finally {
         isRefreshing = false;
         if (pendingRefresh){
@@ -1597,16 +1602,6 @@ body{
   });
 
 
-  // TomSelect
-  // TomSelect (safe)
-  function initTomSelect(selector, options){
-    const el = document.querySelector(selector);
-    if (!el) return;
-    if (el.tomselect) return; // déjà initialisé
-    new TomSelect(el, options);
-  }
-
-
   const money = (cents) => {
     const n = Number(cents||0)/100;
     try { return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(n); }
@@ -1678,6 +1673,7 @@ body{
 
   function filterDropdown(listSelector, query){
     const q = (query || '').trim().toLowerCase();
+    let selectionChanged = false;
 
     document.querySelectorAll(listSelector + ' label').forEach((item) => {
       const txt = (item.textContent || '').toLowerCase();
@@ -1689,12 +1685,16 @@ body{
       // ✅ Excel-like : si ça ne matche pas -> on décoche
       if (!match) {
         const cb = item.querySelector('input[type="checkbox"]');
-        if (cb && cb.checked) cb.checked = false;
+        if (cb && cb.checked) {
+          cb.checked = false;
+          selectionChanged = true;
+        }
       }
     });
 
-    // ✅ met à jour les compteurs après filtrage/décochage
+    // A text search only needs fresh data when it changed checked filters.
     updateCounts();
+    if (selectionChanged) scheduleRefresh(350);
   }
 
   $(document).on('input', 'input[data-filter="prov"]', function(){
@@ -1712,12 +1712,10 @@ body{
 
   $(document).on('input', 'input[data-filter="cat"]', function(){
     filterDropdown('#catList', this.value);
-    scheduleRefresh(350);
   });
 
   $(document).on('input', 'input[data-filter="sous"]', function(){
     filterDropdown('#sousList', this.value);
-    scheduleRefresh(350);
   });
 
   // Tout/Aucun
@@ -1895,8 +1893,8 @@ body{
     return p.toString();
   }
 
-  async function loadSummary(){
-    const url = "{{ path('app_administrateur_fuel_api_summary', {entite: entite.id}) }}?" + qs(getFilters());
+  async function loadSummary(filtersQuery){
+    const url = "{{ path('app_administrateur_fuel_api_summary', {entite: entite.id}) }}?" + filtersQuery;
     const r = await fetch(url, { headers: {'Accept':'application/json'} });
     if(!r.ok) throw new Error('Erreur dashboard carburant');
     return r.json();
@@ -1936,7 +1934,7 @@ body{
     $('input[data-filter]').val('').trigger('input');
 
     updateCounts();
-    refresh();
+    runRefresh();
   }
 
   function applyOnlyCheckboxFilter(selector, value){
@@ -1949,7 +1947,7 @@ body{
     }
 
     updateCounts();
-    refresh();
+    runRefresh();
   }
 
 
@@ -1965,7 +1963,7 @@ body{
   function applyMultipleChartFilters(callback){
     callback();
     updateCounts();
-    refresh();
+    runRefresh();
   }
 
   function chartClickOrReset(chart, elements, callback){
@@ -2019,7 +2017,7 @@ body{
 
     setRangeIso(`${y}-${pad2(m)}-01`, `${y}-${pad2(m)}-${endDay}`);
     updateCounts();
-    refresh();
+    runRefresh();
   }
 
   function applyCharts(c){
@@ -2605,47 +2603,43 @@ body{
   }
 
 
-  // ✅ Flatpickr : quand l'utilisateur change à la souris/clavier
-  // (ajoute juste scheduleRefresh dans ton onChange existant)
-  // -> tu modifies ton onChange flatpickr comme ci-dessous (voir section B)
-
-  // ✅ Période (year/quarter/month)
-  $periodType?.addEventListener('change', () => scheduleRefresh(200));
-  $periodYear?.addEventListener('change', () => scheduleRefresh(200));
-  $periodQuarter?.addEventListener('change', () => scheduleRefresh(200));
-  $periodMonth?.addEventListener('change', () => scheduleRefresh(200));
-  $btnPeriodClear?.addEventListener('click', () => scheduleRefresh(200));
-
-  // ✅ Checkboxes
-  $(document).on('change', '.fuel-filter-prov, .fuel-filter-engin, .fuel-filter-emp', function(){
-    scheduleRefresh(250);
-  });
-
-  // ✅ Recherche dropdown (debounced)
-  $(document).on('input', 'input[data-filter="prov"], input[data-filter="engin"], input[data-filter="emp"]', function(){
-    scheduleRefresh(450);
-  });
-
   // ✅ Boutons => forcent un refresh immédiat
   document.getElementById('btnRefreshTop')?.addEventListener('click', (e)=>{ e.preventDefault(); runRefresh(); });
 
   // ✅ Optionnel: tu peux carrément cacher Appliquer (si tu veux)
   // document.getElementById('btnApply')?.classList.add('d-none');
 
-  async function refresh(){
+  async function refresh(filtersQuery){
     const btnRefresh = document.getElementById('btnRefreshTop');
     const btnReset   = document.getElementById('btnReset');
+    const status    = document.getElementById('fuelLoadStatus');
 
     try{
       btnRefresh && (btnRefresh.disabled = true);
       btnReset   && (btnReset.disabled = true);
+      status.hidden = false;
+      status.className = 'alert alert-light py-2 mb-3';
+      status.textContent = 'Chargement des indicateurs…';
 
-      const data = await loadSummary();
+      const data = await loadSummary(filtersQuery);
+      if (filtersQuery !== qs(getFilters())) {
+        // Filters changed during the request: only render the latest selection.
+        pendingRefresh = true;
+        return;
+      }
       applyKpis(data.kpis);
       applyCharts(data.charts);
 
-      initDt();
-      dt?.ajax.reload(null,false);
+      if (dt) dt.ajax.reload(null, false);
+      else initDt(); // Initialization already makes the first table request.
+      status.hidden = true;
+    } catch (error) {
+      if (filtersQuery !== qs(getFilters())) {
+        pendingRefresh = true;
+        return;
+      }
+      status.className = 'alert alert-warning py-2 mb-3';
+      status.textContent = 'Le tableau de bord n’a pas pu être chargé. Cliquez sur « Actualiser » pour réessayer.';
     } finally {
       btnRefresh && (btnRefresh.disabled = false);
       btnReset   && (btnReset.disabled = false);
@@ -2672,7 +2666,7 @@ body{
       $('input[data-filter]').val('').trigger('input');
 
       updateCounts();
-      refresh();
+      runRefresh();
     });
 
 
@@ -2785,7 +2779,7 @@ body{
 
 
 
-  refresh();
+  runRefresh();
 })();
 
 </script>
