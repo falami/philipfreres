@@ -1054,6 +1054,24 @@ document.addEventListener('DOMContentLoaded', function () {
     `;
   }
 
+  function renderDailyTotal(user, cells, date) {
+    let amountCents = 0;
+    let quantity = 0;
+    let count = 0;
+    for (const child of (user.children || [])) {
+      const cell = (cells[child.id] || {})[date];
+      if (!cell) continue;
+      amountCents += Number(cell.amount_cents || 0);
+      quantity += Number(cell.qty || 0);
+      count += Number(cell.count || 0);
+    }
+    if (!count) return '<td class="day-cell"></td>';
+    const quantityLabel = quantity.toLocaleString('fr-FR', {minimumFractionDigits: 3, maximumFractionDigits: 3});
+    return `<td class="day-cell"><div class="daily-user-total" title="Total de la journée · ${count} transaction(s)">
+      <strong>${moneyFromCents(amountCents)}</strong><small>${quantityLabel} L</small>
+    </div></td>`;
+  }
+
   function renderBody(data) {
     const rows = [];
     const cells = data.cells || {};
@@ -1071,7 +1089,7 @@ document.addEventListener('DOMContentLoaded', function () {
             ${user.name}
           </td>
           <td class="sticky-left-2 meta-cell">${user.meta}</td>
-          ${days.map(() => `<td class="day-cell"></td>`).join('')}
+          ${days.map(day => renderDailyTotal(user, cells, day.date)).join('')}
         </tr>
       `);
 

@@ -41,6 +41,9 @@
 .resource-planner .planner .meta-cell{font-size:11px;font-weight:400;line-height:1.8;color:#788573;padding:12px 14px}
 .resource-planner .planner .row-user td{background:#f0f4eb}
 .resource-planner .planner .row-user .resource-cell{font-weight:650}
+.resource-planner .daily-user-total{padding:10px 5px;text-align:center;line-height:1.45;color:#183f35;font-variant-numeric:tabular-nums;white-space:nowrap}
+.resource-planner .daily-user-total strong{display:block;font-size:11px;font-weight:700}
+.resource-planner .daily-user-total small{display:block;font-size:10px;color:#63775d}
 .resource-planner .planner .row-engin .resource-cell{padding-left:30px}
 .resource-planner .planner .day-cell{height:58px;background:#fdfefb}
 .resource-planner .planner .row-engin:hover td{background:#f7f9f3}
