@@ -35,7 +35,8 @@ final class InsightController extends AbstractController
         $config = $this->store->config($tenant);
         $stats = $this->store->db->fetchAssociative('SELECT COUNT(*) AS total, SUM(CASE WHEN active = 1 THEN 1 ELSE 0 END) AS active, SUM(CASE WHEN active = 1 AND deadline IS NULL THEN 1 ELSE 0 END) AS undated FROM insight_market WHERE tenant_id = ?', [$tenant]);
         $deliveries = $this->store->db->fetchAllAssociative('SELECT d.status, d.updated_at, m.title, d.user_id FROM insight_delivery d JOIN insight_market m ON m.id = d.market_id AND m.tenant_id = d.tenant_id WHERE d.tenant_id = ? ORDER BY d.created_at DESC LIMIT 50', [$tenant]);
-        return $this->render('administrateur/marches/index.html.twig', ['entite' => $entite, 'config' => $config, 'stats' => $stats, 'ready' => $this->vault->ready(), 'users' => $this->recipients->available($tenant), 'callback' => $this->callbackUrl($entite), 'deliveries' => $deliveries]);
+        $digests = $this->store->db->fetchAllAssociative('SELECT status, updated_at, scheduled_date, user_id FROM insight_digest_delivery WHERE tenant_id = ? ORDER BY created_at DESC LIMIT 50', [$tenant]);
+        return $this->render('administrateur/marches/index.html.twig', ['entite' => $entite, 'config' => $config, 'stats' => $stats, 'ready' => $this->vault->ready(), 'users' => $this->recipients->available($tenant), 'callback' => $this->callbackUrl($entite), 'deliveries' => $deliveries, 'digests' => $digests]);
     }
 
     #[Route('/parametres', name: 'settings', methods: ['POST'])]
@@ -56,12 +57,18 @@ final class InsightController extends AbstractController
                 if (array_diff($statuses, array_column($config['status_catalog'], 'id'))) { throw new InsightException('Un statut DoubleTrade est invalide. Actualisez la liste.'); }
                 $fields = trim((string) $request->request->get('custom_fields', ''));
                 if ($fields !== '' && !preg_match('/^\d+(?:\s*,\s*\d+)*$/D', $fields)) { throw new InsightException('Les identifiants de champs personnalisés doivent être des nombres séparés par des virgules.'); }
+                $digest = $request->request->has('digest_enabled');
+                $interval = (int) $request->request->get('digest_interval', 1);
+                $digestTime = (string) $request->request->get('digest_time', '08:00');
+                $digestStart = (string) $request->request->get('digest_start', $config['digest_start'] ?? (new \DateTimeImmutable('now', new \DateTimeZone('Europe/Paris')))->format('Y-m-d'));
+                $parsedDate = \DateTimeImmutable::createFromFormat('!Y-m-d', $digestStart);
+                if (!in_array($interval, [1, 2, 7], true) || !preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/D', $digestTime) || !$parsedDate || $parsedDate->format('Y-m-d') !== $digestStart) { throw new InsightException('Vérifiez la fréquence, la date de début et l’heure du récapitulatif.'); }
                 $alerts = $request->request->has('alerts');
                 $auto = $request->request->has('auto_sync');
-                if (($alerts || $auto) && (!$statuses || !$config['account'] || !$config['authorized'])) { throw new InsightException('Connectez DoubleTrade et choisissez les statuts avant d’activer les automatismes.'); }
-                if ($alerts && !$selected) { throw new InsightException('Choisissez au moins un destinataire.'); }
+                if (($alerts || $auto || $digest) && (!$statuses || !$config['account'] || !$config['authorized'])) { throw new InsightException('Connectez DoubleTrade et choisissez les statuts avant d’activer les automatismes.'); }
+                if (($alerts || $digest) && !$selected) { throw new InsightException('Choisissez au moins un destinataire.'); }
                 if ($config['statuses'] !== $statuses) { $config['sync_ok'] = false; }
-                $config = array_replace($config, ['lead_hours' => $hours, 'max_calls' => $calls, 'recipients' => array_values(array_unique($selected)), 'statuses' => array_values($statuses), 'alerts' => $alerts, 'auto_sync' => $auto, 'include_details' => $request->request->has('include_details'), 'include_lots' => $request->request->has('include_lots'), 'custom_fields' => $fields === '' ? [] : array_map('intval', explode(',', $fields))]);
+                $config = array_replace($config, ['digest_enabled' => $digest, 'digest_interval' => $interval, 'digest_time' => $digestTime, 'digest_start' => $digestStart, 'lead_hours' => $hours, 'max_calls' => $calls, 'recipients' => array_values(array_unique($selected)), 'statuses' => array_values($statuses), 'alerts' => $alerts, 'auto_sync' => $auto, 'include_details' => $request->request->has('include_details'), 'include_lots' => $request->request->has('include_lots'), 'custom_fields' => $fields === '' ? [] : array_map('intval', explode(',', $fields))]);
                 $this->store->saveConfig($tenant, $config);
             });
             $this->addFlash('success', 'Paramètres enregistrés.');
@@ -84,7 +91,7 @@ final class InsightController extends AbstractController
                     if ($clientId === '' || $secret === '' || strlen($clientId) > 250 || strlen($secret) > 4000) { throw new InsightException('Renseignez ensemble le Client ID et le Client Secret.'); }
                     $credentials = ['client_id' => $clientId, 'client_secret' => $secret];
                     $this->store->saveCredentials($tenant, $this->vault->seal($credentials));
-                    $this->store->saveConfig($tenant, array_replace($this->store->config($tenant), ['authorized' => false, 'auto_sync' => false, 'alerts' => false, 'queued' => false, 'sync_ok' => false, 'message' => 'Nouveaux identifiants enregistrés. Terminez la connexion OAuth pour reprendre.']));
+                    $this->store->saveConfig($tenant, array_replace($this->store->config($tenant), ['authorized' => false, 'digest_enabled' => false, 'auto_sync' => false, 'alerts' => false, 'queued' => false, 'sync_ok' => false, 'message' => 'Nouveaux identifiants enregistrés. Terminez la connexion OAuth pour reprendre.']));
                 }
                 if (empty($credentials['client_id'])) { throw new InsightException('Renseignez les identifiants OAuth fournis par Intescia.'); }
                 $state = bin2hex(random_bytes(32));
@@ -145,7 +152,7 @@ final class InsightController extends AbstractController
                     $credentials = $this->vault->open($this->store->credentials($id));
                     unset($credentials['access_token'], $credentials['refresh_token'], $credentials['expires_at']);
                     $this->store->saveCredentials($id, $this->vault->seal($credentials));
-                    $config = array_replace($config, ['account' => null, 'authorized' => false, 'statuses' => [], 'status_catalog' => [], 'auto_sync' => false, 'alerts' => false, 'queued' => false, 'sync_ok' => false, 'message' => 'Connexion déconnectée. Données conservées.']);
+                    $config = array_replace($config, ['account' => null, 'digest_enabled' => false, 'authorized' => false, 'statuses' => [], 'status_catalog' => [], 'auto_sync' => false, 'alerts' => false, 'queued' => false, 'sync_ok' => false, 'message' => 'Connexion déconnectée. Données conservées.']);
                 } elseif ($action === 'statuses') {
                     $this->client->budget(10);
                     $config['status_catalog'] = $this->catalog($this->client->request($id, 'POST', '/me/organization/collaborative-statuses'));

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 namespace App\Command;
 
-use App\Service\Intescia\{InsightStore, InsightImporter, InsightAlerts, InsightException};
+use App\Service\Intescia\{InsightStore, InsightImporter, InsightAlerts, InsightDigest, InsightException};
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\{InputInterface, InputOption};
@@ -12,7 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'app:intescia:run', description: 'Imports demandés / horaires et alertes des marchés suivis.')]
 final class InsightRunCommand extends Command
 {
-    public function __construct(private readonly InsightStore $store, private readonly InsightImporter $importer, private readonly InsightAlerts $alerts) { parent::__construct(); }
+    public function __construct(private readonly InsightStore $store, private readonly InsightImporter $importer, private readonly InsightAlerts $alerts, private readonly InsightDigest $digest) { parent::__construct(); }
     protected function configure(): void
     {
         $this->addOption('tenant', null, InputOption::VALUE_REQUIRED, 'Limiter à une entité')
@@ -50,6 +50,9 @@ final class InsightRunCommand extends Command
                     $result = $this->alerts->run($id, $dry);
                     $output->writeln(sprintf('Entité %d : %d alertes éligibles, %d envoyées, %d à vérifier%s.', $id, $result['eligible'], $result['sent'], $result['uncertain'], $dry ? ' (simulation)' : ''));
                     if ($result['uncertain']) { $failed = true; }
+                    $digest = $this->digest->run($id, $dry);
+                    $output->writeln(sprintf('Entité %d : %d récapitulatifs éligibles, %d envoyés, %d à vérifier%s.', $id, $digest['eligible'], $digest['sent'], $digest['uncertain'], $dry ? ' (simulation)' : ''));
+                    if ($digest['uncertain']) { $failed = true; }
                 });
             } catch (\Throwable $e) {
                 $output->writeln('Entité '.$id.' : '.($e instanceof InsightException ? $e->getMessage() : 'Opération interrompue ; configuration à vérifier.'));

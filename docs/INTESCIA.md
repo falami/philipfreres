@@ -117,3 +117,13 @@ node --check public/js/insight.js
 ```
 
 Les tests utilisent SQLite en mémoire, un serveur HTTP simulé et un transport mail simulé. La recette réelle exige les identifiants et l’option API Intescia : connecter un compte, choisir une petite sélection, comparer titre/acheteur/date/lot au portail, confirmer le coût observé avec Intescia, contrôler un rappel avec des destinataires de test autorisés, puis activer la planification. Aucun appel réel ni envoi réel n’est nécessaire aux tests automatisés.
+
+## Récapitulatif périodique des marchés à venir
+
+Déployer aussi la migration additive `DoctrineMigrations\Version20261021170000` (registre distinct `insight_digest_delivery`, aucune suppression). Dans Paramètres, activer le récapitulatif, choisir 1, 2 ou 7 jours, une date de premier envoi et une heure Europe/Paris. Le jour de la date initiale détermine le jour hebdomadaire. Les destinataires sont communs aux rappels ; les deux options sont indépendantes et désactivées par défaut pour le récapitulatif.
+
+Le même cron `app:intescia:run` exécute les récapitulatifs, sans nouvelle tâche ni appel API propre au récapitulatif. Précision : prochain passage après l’heure (environ 5 minutes plus traitement). Les changements d’heure sont pris en compte. Une exécution manquée peut être rattrapée le jour prévu, jamais en rafale pour les jours antérieurs. Changer l’heure ne renvoie pas un second message le même jour au même destinataire.
+
+Seuls les marchés actifs de l’entité avec une date future sont inclus, par échéance croissante. Pas d’e-mail vide. Un import complet de moins de 24 heures et une connexion autorisée sont requis ; activer la synchronisation horaire pour une utilisation autonome. Les jours restants sont arrondis au supérieur sur les heures restantes ; moins de 24 h est signalé. Les couleurs et le logo proviennent de l’entité ; le logo local est embarqué dans le message. Chaque destinataire reçoit un message individuel HTML et texte. L’historique distingue les envois acceptés par SMTP et ceux à vérifier ; pas de relance automatique après un envoi incertain.
+
+`--dry-run` compte également les récapitulatifs éligibles sans les envoyer ni écrire le registre. Les tests n’appellent ni Intescia ni un serveur SMTP réel.

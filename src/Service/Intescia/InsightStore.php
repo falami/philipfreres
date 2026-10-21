@@ -27,6 +27,7 @@ final class InsightStore
         $json = $this->db->fetchOne('SELECT settings FROM insight_connection WHERE tenant_id = ?', [$tenant]);
         return array_replace([
             'statuses' => [], 'status_catalog' => [], 'recipients' => [], 'lead_hours' => 48,
+            'digest_enabled' => false, 'digest_interval' => 1, 'digest_time' => '08:00', 'digest_start' => null,
             'alerts' => false, 'auto_sync' => false, 'include_details' => true, 'include_lots' => true,
             'max_calls' => 100, 'custom_fields' => [], 'queued' => false, 'last_success' => null,
             'last_attempt' => null, 'message' => 'Connexion à configurer.', 'account' => null, 'authorized' => false,
