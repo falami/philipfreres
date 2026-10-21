@@ -22,7 +22,6 @@
 
 		{% if canAdmin %}
 
-
 		<li class="nav-item">
 			<a href="{{ path('app_administrateur_fuel_dashboard', {'entite' : entite.id}) }}">
 				<span class="{% if app.request.attributes.get('_route') == 'app_administrateur_fuel_dashboard' %}text-theme-secondaire{% else %}text-white{% endif %}">

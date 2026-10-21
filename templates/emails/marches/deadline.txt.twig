@@ -1,0 +1,13 @@
+PHILIP FRÈRES — Échéance de marché
+
+Bonjour {{ recipient.name }},
+
+{{ market.title }}
+Date limite de réception des offres : {{ deadline|date('d/m/Y à H:i', 'Europe/Paris') }} (heure de Paris).
+Acheteur : {{ market.buyer ?: 'Non renseigné' }}
+Référence : {{ contract.reference|default('Non renseignée') }}
+{{ contract.completeObject|default('')|striptags|slice(0, 1800) }}
+
+Fiche complète (administrateurs habilités) : {{ url }}
+Vérifiez les éventuels reports auprès de l’acheteur avant de déposer votre offre.
+Rappel configuré par votre dirigeant dans les paramètres des marchés suivis.
