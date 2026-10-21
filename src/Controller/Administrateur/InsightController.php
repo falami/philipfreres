@@ -267,6 +267,6 @@ final class InsightController extends AbstractController
         if ($request->query->get('format') === 'json') {
             return new Response(json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR), 200, ['Content-Type' => 'application/json', 'Content-Disposition' => 'attachment; filename="marche-'.$market['remote_id'].'.json"', 'X-Content-Type-Options' => 'nosniff']);
         }
-        return $this->render('administrateur/marches/detail.html.twig', ['entite' => $entite, 'market' => $market, 'fields' => InsightNormalizer::flatten($payload), 'payload' => $payload]);
+        return $this->render('administrateur/marches/detail.html.twig', ['entite' => $entite, 'market' => $market, 'fields' => array_map(static fn ($field) => [$field[0], $field[1], \App\Service\Intescia\InsightPresentation::safeUrl($field[1])], InsightNormalizer::flatten($payload)), 'presentation' => \App\Service\Intescia\InsightPresentation::build($payload), 'payload' => $payload]);
     }
 }

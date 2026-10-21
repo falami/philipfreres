@@ -2,6 +2,20 @@
 (() => {
 const boundSearches = new WeakSet();
 const initializeInsight = () => {
+    document.querySelectorAll('[data-load-market-map]').forEach(button => {
+        if (button.dataset.bound) return;
+        button.dataset.bound = '1';
+        button.addEventListener('click', () => {
+            const container = button.closest('[data-map-src]');
+            const frame = document.createElement('iframe');
+            frame.src = container.dataset.mapSrc;
+            frame.title = container.dataset.mapTitle;
+            frame.loading = 'lazy';
+            frame.referrerPolicy = 'no-referrer';
+            frame.className = 'market-location-map';
+            container.replaceChildren(frame);
+        });
+    });
     if (window.flatpickr) {
         const modal = document.querySelector('#insight-settings .modal-body');
         const options = {locale: window.flatpickr.l10ns.fr || 'default', disableMobile: true, appendTo: modal || document.body, onReady: (_, __, instance) => instance.calendarContainer.classList.add('market-datepicker')};
@@ -64,7 +78,7 @@ const initializeInsight = () => {
             }}
         ]});
     }
-    if (fields && !DataTable.isDataTable(fields)) new DataTable(fields, {language, pageLength: 50, order: [[0, 'asc']]});
+    if (fields && !DataTable.isDataTable(fields)) new DataTable(fields, {language: {...language, searchPlaceholder: 'Champ ou valeur'}, pageLength: 50, order: [[0, 'asc']]});
 };
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initializeInsight, {once: true});
