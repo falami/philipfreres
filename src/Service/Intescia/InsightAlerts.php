@@ -33,20 +33,13 @@ final class InsightAlerts
         $markets = $this->store->db->fetchAllAssociative('SELECT id, deadline FROM insight_market WHERE tenant_id = ? AND active = 1 AND deadline > ? AND deadline <= ? ORDER BY deadline ASC', [$tenant, $now->format('Y-m-d H:i:s'), $limit->format('Y-m-d H:i:s')]);
         foreach ($markets as $marketRef) {
             $market = $this->store->market($tenant, $marketRef['id']);
-            $cache = $this->store->cache($tenant, $market['payload']['contract_id']);
             foreach (array_unique(array_map('intval', $config['recipients'])) as $userId) {
                 if (!isset($users[$userId])) { continue; }
                 $id = hash('sha256', $tenant.':'.$market['id'].':'.$userId.':'.$market['deadline']);
                 if ($this->store->db->fetchOne('SELECT id FROM insight_delivery WHERE id = ?', [$id])) { continue; }
                 ++$result['eligible'];
                 if ($dryRun) { continue; }
-                $url = rtrim($this->appUrl ?? '', '/').$this->router->generate('app_administrateur_marches_detail', ['entite' => $tenant, 'id' => $market['id'], '_locale' => 'fr']);
-                $deadline = new \DateTimeImmutable($market['deadline'], new \DateTimeZone('UTC'));
-                $context = ['market' => $market, 'contract' => $cache['detail']['contract'] ?? [], 'deadline' => $deadline, 'url' => $url, 'recipient' => $users[$userId]];
-                $email = (new Email())->from(new Address($this->sender, 'Philip Frères · Marchés'))
-                    ->to($users[$userId]['email'])->subject('Échéance à venir · '.mb_substr(preg_replace('/[\r\n]+/', ' ', $market['title']), 0, 140))
-                    ->html($this->twig->render('emails/marches/deadline.html.twig', $context))
-                    ->text($this->twig->render('emails/marches/deadline.txt.twig', $context));
+                $email = $this->createEmail($tenant, $market, $users[$userId]);
                 // Reserve before SMTP, preventing duplicates across cron retries or process crashes.
                 $this->store->db->insert('insight_delivery', ['id' => $id, 'tenant_id' => $tenant, 'market_id' => $market['id'], 'user_id' => $userId, 'deadline' => $market['deadline'], 'status' => 'sending', 'created_at' => InsightStore::now(), 'updated_at' => InsightStore::now()]);
                 try {
@@ -62,4 +55,17 @@ final class InsightAlerts
         }
         return $result;
     }
+    public function createEmail(int $tenant, array $market, array $recipient): Email
+    {
+        $cache = $this->store->cache($tenant, $market['payload']['contract_id']);
+                $url = rtrim($this->appUrl ?? '', '/').($market['id'] === 'demonstration' ? $this->router->generate('app_administrateur_marches_index', ['entite' => $tenant, '_locale' => 'fr']) : $this->router->generate('app_administrateur_marches_detail', ['entite' => $tenant, 'id' => $market['id'], '_locale' => 'fr']));
+                $deadline = new \DateTimeImmutable($market['deadline'], new \DateTimeZone('UTC'));
+                $context = ['market' => $market, 'contract' => $cache['detail']['contract'] ?? [], 'deadline' => $deadline, 'url' => $url, 'recipient' => $recipient];
+                $email = (new Email())->from(new Address($this->sender, 'Philip Frères · Marchés'))
+                    ->to($recipient['email'])->subject('Échéance à venir · '.mb_substr(preg_replace('/[\r\n]+/', ' ', $market['title']), 0, 140))
+                    ->html($this->twig->render('emails/marches/deadline.html.twig', $context))
+                    ->text($this->twig->render('emails/marches/deadline.txt.twig', $context));
+        return $email;
+    }
+
 }

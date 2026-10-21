@@ -2,6 +2,14 @@
 (() => {
 const boundSearches = new WeakSet();
 const initializeInsight = () => {
+    if (window.flatpickr) {
+        const modal = document.querySelector('#insight-settings .modal-body');
+        const options = {locale: window.flatpickr.l10ns.fr || 'default', disableMobile: true, appendTo: modal || document.body, onReady: (_, __, instance) => instance.calendarContainer.classList.add('market-datepicker')};
+        const dateInput = document.getElementById('digest-start');
+        const timeInput = document.getElementById('digest-time');
+        if (dateInput && !dateInput._flatpickr) window.flatpickr(dateInput, {...options, dateFormat: 'Y-m-d', altInput: true, altFormat: 'j F Y', ariaDateFormat: 'j F Y'});
+        if (timeInput && !timeInput._flatpickr) window.flatpickr(timeInput, {...options, enableTime: true, noCalendar: true, dateFormat: 'H:i', time_24hr: true, minuteIncrement: 5});
+    }
     const recipientSearch = document.getElementById('insight-recipient-search');
     if (recipientSearch && !boundSearches.has(recipientSearch)) {
         boundSearches.add(recipientSearch);

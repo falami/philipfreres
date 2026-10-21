@@ -46,6 +46,37 @@ final class InsightAccessTest extends KernelTestCase
         }
     }
 
+    public function testMailButtonsRequireCsrfAndDoNotConsumeScheduledDeliveries(): void
+    {
+        $base = '/fr/administrateur/'.$this->tenant.'/marches';
+        $this->client->request('POST', $base.'/mail-test/digest');
+        self::assertSame(403, $this->client->getResponse()->getStatusCode());
+        $this->client->request('POST', '/fr/administrateur/'.$this->other.'/marches/mail-test/digest');
+        self::assertSame(403, $this->client->getResponse()->getStatusCode());
+        $page = $this->client->request('GET', $base);
+        $csrf = $page->filter('input[name="_token"]')->first()->attr('value');
+        $this->client->request('POST', $base.'/mail-test/digest', ['_token'=>$csrf, 'email'=>'unwanted@example.test']);
+        self::assertSame(302, $this->client->getResponse()->getStatusCode());
+        $this->client->followRedirect();
+        self::assertStringContainsString('Mail de test transmis au serveur SMTP pour insight-admin@example.test', $this->client->getResponse()->getContent());
+        $db = self::getContainer()->get(InsightStore::class)->db;
+        self::assertSame(0, (int) $db->fetchOne('SELECT COUNT(*) FROM insight_digest_delivery'));
+        self::assertSame(0, (int) $db->fetchOne('SELECT COUNT(*) FROM insight_delivery'));
+        $this->client->request('POST', $base.'/mail-test/deadline', ['_token'=>$csrf]);
+        $this->client->followRedirect();
+        self::assertStringContainsString('Patientez une minute', $this->client->getResponse()->getContent());
+    }
+
+    public function testDeadlineTestMailCanRenderWithoutImportedMarket(): void
+    {
+        $base = '/fr/administrateur/'.$this->tenant.'/marches';
+        $page = $this->client->request('GET', $base);
+        $csrf = $page->filter('input[name="_token"]')->first()->attr('value');
+        $this->client->request('POST', $base.'/mail-test/deadline', ['_token'=>$csrf]);
+        $this->client->followRedirect();
+        self::assertStringContainsString('Mail de test transmis au serveur SMTP', $this->client->getResponse()->getContent());
+    }
+
     public function testAdminPageAndTableRenderWithoutCredentialsOrApi(): void
     {
         $this->client->request('GET', '/fr/administrateur/'.$this->tenant.'/marches');

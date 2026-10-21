@@ -55,13 +55,6 @@ final class InsightDigest
         }
         unset($market);
         $users = $this->recipients->available($tenant);
-        $company = $this->entities->find(Entite::class, $tenant);
-        if (!$company || !filter_var($this->appUrl, FILTER_VALIDATE_URL)) { throw new InsightException('Société ou APP_URL indisponible pour le récapitulatif.'); }
-        $color = static fn (?string $value, string $fallback): string => preg_match('/^#[0-9a-f]{6}$/iD', $value ?? '') ? $value : $fallback;
-        $context = ['company' => $company->getNom(), 'primary' => $color($company->getCouleurPrincipal(), '#183f33'), 'accent' => $color($company->getCouleurSecondaire(), '#d2c08a'), 'markets' => $markets, 'date' => $now, 'url' => rtrim($this->appUrl, '/').'/fr/administrateur/'.$tenant.'/marches', 'logo' => null];
-        $logoRoot = realpath($this->projectDir.'/public/uploads/photos/entite/logo');
-        $logo = $company->getLogo() && $logoRoot ? realpath($logoRoot.'/'.$company->getLogo()) : false;
-        if (!$logo || !str_starts_with($logo, $logoRoot.DIRECTORY_SEPARATOR) || !is_file($logo)) { $logo = null; }
         foreach (array_unique(array_map('intval', $config['recipients'])) as $userId) {
             if (!isset($users[$userId])) { continue; }
             // One digest per local day/person, even if the schedule is edited that day.
@@ -69,10 +62,7 @@ final class InsightDigest
             if ($this->store->db->fetchOne('SELECT id FROM insight_digest_delivery WHERE id = ?', [$id])) { continue; }
             ++$result['eligible'];
             if ($dryRun) { continue; }
-            $email = (new Email())->from(new Address($this->sender, $company->getNom().' · Marchés'))->to($users[$userId]['email'])
-                ->subject('Vos marchés à venir · '.count($markets).' échéance'.(count($markets) > 1 ? 's' : ''));
-            if ($logo) { $email->embedFromPath($logo, 'company-logo'); $context['logo'] = 'cid:company-logo'; }
-            $email->html($this->twig->render('emails/marches/digest.html.twig', $context))->text($this->twig->render('emails/marches/digest.txt.twig', $context));
+            $email = $this->createEmail($tenant, $markets, $now, $users[$userId]['email']);
             $this->store->db->insert('insight_digest_delivery', ['id' => $id, 'tenant_id' => $tenant, 'user_id' => $userId, 'scheduled_date' => $slot->format('Y-m-d'), 'status' => 'sending', 'created_at' => InsightStore::now(), 'updated_at' => InsightStore::now()]);
             try {
                 $this->transport->send($email);
@@ -85,4 +75,20 @@ final class InsightDigest
         }
         return $result;
     }
+    public function createEmail(int $tenant, array $markets, \DateTimeImmutable $now, string $address): Email
+    {
+        $company = $this->entities->find(Entite::class, $tenant);
+        if (!$company || !filter_var($this->appUrl, FILTER_VALIDATE_URL)) { throw new InsightException('Société ou APP_URL indisponible pour le récapitulatif.'); }
+        $color = static fn (?string $value, string $fallback): string => preg_match('/^#[0-9a-f]{6}$/iD', $value ?? '') ? $value : $fallback;
+        $context = ['company' => $company->getNom(), 'primary' => $color($company->getCouleurPrincipal(), '#183f33'), 'accent' => $color($company->getCouleurSecondaire(), '#d2c08a'), 'markets' => $markets, 'date' => $now, 'url' => rtrim($this->appUrl, '/').'/fr/administrateur/'.$tenant.'/marches', 'logo' => null];
+        $logoRoot = realpath($this->projectDir.'/public/uploads/photos/entite/logo');
+        $logo = $company->getLogo() && $logoRoot ? realpath($logoRoot.'/'.$company->getLogo()) : false;
+        if (!$logo || !str_starts_with($logo, $logoRoot.DIRECTORY_SEPARATOR) || !is_file($logo)) { $logo = null; }
+            $email = (new Email())->from(new Address($this->sender, $company->getNom().' · Marchés'))->to($address)
+                ->subject('Vos marchés à venir · '.count($markets).' échéance'.(count($markets) > 1 ? 's' : ''));
+            if ($logo) { $email->embedFromPath($logo, 'company-logo'); $context['logo'] = 'cid:company-logo'; }
+            $email->html($this->twig->render('emails/marches/digest.html.twig', $context))->text($this->twig->render('emails/marches/digest.txt.twig', $context));
+        return $email;
+    }
+
 }

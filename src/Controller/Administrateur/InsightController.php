@@ -39,6 +39,42 @@ final class InsightController extends AbstractController
         return $this->render('administrateur/marches/index.html.twig', ['entite' => $entite, 'config' => $config, 'stats' => $stats, 'ready' => $this->vault->ready(), 'users' => $this->recipients->available($tenant), 'callback' => $this->callbackUrl($entite), 'deliveries' => $deliveries, 'digests' => $digests]);
     }
 
+    #[Route('/mail-test/{kind}', name: 'mail_test', methods: ['POST'], requirements: ['kind' => 'digest|deadline'])]
+    public function testMail(Request $request, #[MapEntity(id: 'entite')] Entite $entite, string $kind, \App\Service\Intescia\InsightDigest $digest, \App\Service\Intescia\InsightAlerts $alerts, \Symfony\Component\Mailer\Transport\TransportInterface $transport): Response
+    {
+        $this->csrf($request, $entite);
+        $user = $this->getUser();
+        if (!$user instanceof \App\Entity\Utilisateur || !filter_var($user->getEmail(), FILTER_VALIDATE_EMAIL)) { throw $this->createAccessDeniedException('Adresse du compte invalide.'); }
+        try {
+            $this->store->locked($entite->getId(), function () use ($request, $entite, $kind, $digest, $alerts, $transport, $user): void {
+                $session = $request->getSession();
+                $key = 'insight_mail_test_'.$entite->getId();
+                if ((int) $session->get($key, 0) > time() - 60) { throw new InsightException('Patientez une minute avant un nouvel envoi de test.'); }
+                $session->set($key, time());
+                $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+                $markets = $this->store->db->fetchAllAssociative('SELECT id, title, deadline FROM insight_market WHERE tenant_id = ? AND active = 1 AND deadline > ? ORDER BY deadline ASC LIMIT 20', [$entite->getId(), $now->format('Y-m-d H:i:s')]);
+                $demo = !$markets;
+                if ($demo) { $markets = [['id' => 'demonstration', 'title' => 'Exemple · Entretien des espaces verts', 'deadline' => $now->modify('+7 days')->format('Y-m-d H:i:s')]]; }
+                if ($kind === 'digest') {
+                    foreach ($markets as &$market) {
+                        $market['deadline'] = new \DateTimeImmutable($market['deadline'], new \DateTimeZone('UTC'));
+                        $market['days'] = (int) ceil(($market['deadline']->getTimestamp() - $now->getTimestamp()) / 86400);
+                    }
+                    unset($market);
+                    $email = $digest->createEmail($entite->getId(), $markets, $now, $user->getEmail());
+                } else {
+                    $market = $demo ? $markets[0] + ['buyer' => 'Acheteur de démonstration', 'payload' => ['contract_id' => 'demonstration']] : $this->store->market($entite->getId(), $markets[0]['id']);
+                    $email = $alerts->createEmail($entite->getId(), $market, ['name' => trim($user->getPrenom().' '.$user->getNom()), 'email' => $user->getEmail()]);
+                }
+                $email->subject('[TEST'.($demo ? ' · DÉMONSTRATION' : '').'] '.$email->getSubject());
+                $transport->send($email);
+            });
+            $this->addFlash('success', 'Mail de test transmis au serveur SMTP pour '.$user->getEmail().'. Aucun destinataire des alertes n’a été sollicité.');
+        } catch (InsightException $e) { $this->addFlash('warning', $e->getMessage()); }
+        catch (\Throwable) { $this->addFlash('warning', 'Envoi du test non confirmé. Vérifiez votre boîte et la configuration SMTP avant de réessayer.'); }
+        return $this->redirectToRoute('app_administrateur_marches_index', ['entite' => $entite->getId()]);
+    }
+
     #[Route('/parametres', name: 'settings', methods: ['POST'])]
     public function settings(Request $request, #[MapEntity(id: 'entite')] Entite $entite): Response
     {

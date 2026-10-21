@@ -2,3 +2,33 @@
 
 .market-tracker .market-recipient-search{margin-bottom:14px}
 .market-tracker #insight-recipients [hidden]{display:none!important}
+/* Market workspace: readable tables, clear settings and a compact schedule. */
+.market-tracker .market-panel-heading p{font-size:13px;color:var(--sage);margin:8px 0 0}
+.market-tracker .market-table-wrap table{width:100%!important;border-collapse:separate;border-spacing:0}
+.market-tracker .market-table-wrap th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--line)!important}
+.market-tracker .market-table-wrap td{line-height:1.65;border-bottom:1px solid #edf0e9!important;box-shadow:none!important;background:#fff!important}
+.market-tracker #insight-markets{min-width:1080px}
+.market-tracker #insight-markets td:first-child{min-width:250px;max-width:360px;font-weight:600;color:var(--forest)}
+.market-tracker #insight-markets td:nth-child(2){min-width:190px;max-width:260px;color:#617467;font-size:13px}
+.market-tracker #insight-markets td:nth-child(3),.market-tracker #insight-markets td:nth-child(8){min-width:125px;font-variant-numeric:tabular-nums}
+.market-tracker #insight-markets tbody tr:hover td{background:#f8faf5!important}
+.market-tracker .dt-container .dt-input{border:1px solid var(--line)!important;border-radius:10px;padding:10px 12px!important;background:#fafbf8!important;color:var(--forest)}
+.market-tracker .dt-search input{min-width:250px}
+.market-tracker .dt-info,.market-tracker .dt-length,.market-tracker .dt-search{font-size:13px;color:#617467}
+.market-tracker .dt-container .dt-paging .dt-paging-button{border-radius:8px!important;font-size:13px}
+.market-tracker .dt-container .dt-paging .dt-paging-button.current{background:var(--forest)!important;color:white!important;border-color:var(--forest)!important}
+.market-tracker .modal-body h3{padding-top:22px;border-top:1px solid var(--line);margin-top:26px;font-size:19px}
+.market-tracker .modal-body h3:first-child{border:0;margin-top:0;padding-top:0}
+.market-tracker .modal-body input[type=checkbox]{accent-color:var(--forest);width:17px;height:17px;flex-shrink:0}
+.market-tracker .form-control{border:1px solid var(--line);border-radius:10px;min-height:46px;color:var(--forest);background:#fafbf8}
+.market-schedule-grid{display:grid;grid-template-columns:1.1fr 1.3fr 1fr;gap:16px}
+.market-test-body{padding:26px 28px;display:flex;justify-content:space-between;align-items:center;gap:24px}
+.market-test-body p{font-size:13px;color:var(--sage);line-height:1.7;max-width:560px;margin:8px 0 0}
+.market-test-body .market-actions{flex-shrink:0;flex-direction:column;align-items:stretch}
+.market-test-body button{width:100%}
+.market-datepicker{border:1px solid #e0e6da!important;border-radius:14px!important;box-shadow:0 12px 38px #183f3326!important;font-family:inherit}
+.market-datepicker .flatpickr-day.selected,.market-datepicker .flatpickr-day.selected:hover{background:#183f33;border-color:#183f33}
+.market-datepicker .flatpickr-day.today{border-color:#b39b5d}
+.market-datepicker .flatpickr-months{padding:8px 0;background:#f3f5ef;border-radius:14px 14px 0 0}
+.market-datepicker .flatpickr-months .flatpickr-prev-month,.market-datepicker .flatpickr-months .flatpickr-next-month{top:8px}
+@media(max-width:700px){.market-schedule-grid{grid-template-columns:1fr}.market-test-body{flex-direction:column;align-items:stretch}.market-tracker .dt-search input{min-width:0;max-width:100%}}
