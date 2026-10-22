@@ -1,0 +1,18 @@
+{% macro active(node, route, exact = false) %}{% if node.route is defined and (route == node.route or (not exact and route starts with node.prefix)) and not (node.exclude is defined and route starts with node.exclude) %}1{% endif %}{% for child in node.children|default([]) %}{{ _self.active(child, route, exact) }}{% endfor %}{% endmacro %}
+{% macro tree(items, entite, route, exact = false, depth = 0) %}
+<ul class="pf-nav-list pf-nav-depth-{{ depth }}">
+{% for item in items %}
+ {% set active = _self.active(item, route, exact)|trim is not empty %}
+ <li>
+ {% if item.children is defined %}
+  <details class="pf-nav-group{{ active ? ' is-current' : '' }}" {{ active or (depth == 0 and item.label == 'Consommations') ? 'open' : '' }}>
+   <summary><i class="bi bi-{{ item.icon }}" aria-hidden="true"></i><span>{{ item.label }}</span><i class="bi bi-chevron-down pf-chevron" aria-hidden="true"></i></summary>
+   {{ _self.tree(item.children, entite, route, exact, depth + 1) }}
+  </details>
+ {% else %}
+  <a class="pf-nav-link{{ active ? ' is-current' : '' }}" href="{{ path(item.route, {entite: entite.id}) }}" {% if route == item.route %}aria-current="page"{% endif %}><i class="bi bi-{{ item.icon }}" aria-hidden="true"></i><span>{{ item.label }}</span>{% if active %}<span class="pf-active-dot" aria-hidden="true"></span>{% endif %}</a>
+ {% endif %}
+ </li>
+{% endfor %}
+</ul>
+{% endmacro %}

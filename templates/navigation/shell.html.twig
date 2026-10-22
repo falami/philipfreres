@@ -1,0 +1,295 @@
+{% set canAdmin = is_granted('ENTITE_ADMIN', entite) %}
+{% set canChef = is_granted('ENTITE_CHEF', entite) %}
+{% set navItems = [] %}
+{% if canAdmin %}{% set navItems = navItems|merge([{
+  "label": "Consommations",
+  "icon": "speedometer2",
+  "children": [
+    {
+      "label": "Dashboard",
+      "route": "app_administrateur_fuel_dashboard",
+      "icon": "grid-1x2",
+      "prefix": "app_administrateur_fuel_dashboard"
+    },
+    {
+      "label": "Calendrier",
+      "route": "app_administrateur_fuel_calendar_global",
+      "icon": "calendar3",
+      "prefix": "app_administrateur_fuel_calendar_"
+    },
+    {
+      "label": "Ressource",
+      "route": "app_administrateur_calendrier_index",
+      "icon": "diagram-3",
+      "prefix": "app_administrateur_calendrier_"
+    },
+    {
+      "label": "Carte",
+      "route": "app_administrateur_fuel_map",
+      "icon": "geo-alt",
+      "prefix": "app_administrateur_fuel_map"
+    },
+    {
+      "label": "Kilométrage",
+      "icon": "speedometer",
+      "children": [
+        {
+          "label": "Analyse",
+          "route": "app_administrateur_engin_usage_index",
+          "icon": "arrow-right",
+          "prefix": "app_administrateur_engin_usage_index"
+        },
+        {
+          "label": "Ajouter un relevé",
+          "route": "app_administrateur_engin_usage_ajouter",
+          "icon": "plus-lg",
+          "prefix": "app_administrateur_engin_usage_ajouter"
+        }
+      ]
+    }
+  ]
+}]) %}{% endif %}
+{% if canAdmin or canChef %}{% set reporting = {
+  "label": "Reporting chantier",
+  "icon": "cone-striped",
+  "children": [
+    {
+      "label": "Chantiers",
+      "route": "app_administrateur_chantier_index",
+      "icon": "arrow-right",
+      "prefix": "app_administrateur_chantier_"
+    }
+  ]
+} %}
+{% if canAdmin %}{% set reporting = reporting|merge({children: reporting.children|merge([{
+  "label": "Ajouter un chantier",
+  "route": "app_administrateur_chantier_ajouter",
+  "icon": "plus-lg",
+  "prefix": "app_administrateur_chantier_ajouter"
+}])}) %}{% endif %}
+{% set navItems = navItems|merge([reporting]) %}{% endif %}
+{% if canAdmin %}{% set navItems = navItems|merge([{
+  "label": "Appels d’offres",
+  "route": "app_administrateur_marches_index",
+  "icon": "buildings",
+  "prefix": "app_administrateur_marches_"
+}]) %}{% endif %}
+{% set administration = [] %}{% if canAdmin %}{% set administration = [{
+  "label": "Bases consommations",
+  "icon": "fuel-pump",
+  "children": [
+    {
+      "label": "Note",
+      "icon": "receipt",
+      "children": [
+        {
+          "label": "Liste des notes",
+          "route": "app_administrateur_note_index",
+          "icon": "arrow-right",
+          "prefix": "app_administrateur_note_"
+        },
+        {
+          "label": "Ajouter une note",
+          "route": "app_administrateur_note_new",
+          "icon": "plus-lg",
+          "prefix": "app_administrateur_note_new"
+        }
+      ]
+    },
+    {
+      "label": "Total",
+      "icon": "credit-card",
+      "children": [
+        {
+          "label": "Transactions",
+          "route": "app_administrateur_tct_index",
+          "icon": "arrow-right",
+          "prefix": "app_administrateur_tct_"
+        },
+        {
+          "label": "Importer",
+          "route": "app_administrateur_tct_import",
+          "icon": "cloud-arrow-up",
+          "prefix": "app_administrateur_tct_import"
+        }
+      ]
+    },
+    {
+      "label": "ALX",
+      "icon": "credit-card",
+      "children": [
+        {
+          "label": "Transactions",
+          "route": "app_administrateur_tca_index",
+          "icon": "arrow-right",
+          "prefix": "app_administrateur_tca_"
+        },
+        {
+          "label": "Importer",
+          "route": "app_administrateur_tca_import",
+          "icon": "cloud-arrow-up",
+          "prefix": "app_administrateur_tca_import"
+        }
+      ]
+    },
+    {
+      "label": "Edenred",
+      "icon": "credit-card",
+      "children": [
+        {
+          "label": "Transactions",
+          "route": "app_administrateur_tce_index",
+          "icon": "arrow-right",
+          "prefix": "app_administrateur_tce_"
+        },
+        {
+          "label": "Importer",
+          "route": "app_administrateur_tce_import",
+          "icon": "cloud-arrow-up",
+          "prefix": "app_administrateur_tce_import"
+        }
+      ]
+    }
+  ]
+}, {
+  "label": "Employés",
+  "icon": "people",
+  "children": [
+    {
+      "label": "Liste des employés",
+      "route": "app_administrateur_utilisateur_index",
+      "icon": "arrow-right",
+      "prefix": "app_administrateur_utilisateur_"
+    },
+    {
+      "label": "Ajouter",
+      "route": "app_administrateur_utilisateur_ajouter",
+      "icon": "plus-lg",
+      "prefix": "app_administrateur_utilisateur_ajouter"
+    },
+    {
+      "label": "Identifiants externes",
+      "route": "app_administrateur_utilisateur_external_id_all_index",
+      "icon": "link-45deg",
+      "prefix": "app_administrateur_utilisateur_external_id_all_index"
+    },
+    {
+      "label": "Cartes",
+      "route": "app_administrateur_utilisateur_external_id_cards_index",
+      "icon": "credit-card",
+      "prefix": "app_administrateur_utilisateur_external_id_cards_index"
+    }
+  ]
+}, {
+  "label": "Produits",
+  "icon": "box-seam",
+  "children": [
+    {
+      "label": "Liste des produits",
+      "route": "app_administrateur_produit_index",
+      "icon": "arrow-right",
+      "prefix": "app_administrateur_produit_"
+    },
+    {
+      "label": "Ajouter",
+      "route": "app_administrateur_produit_ajouter",
+      "icon": "plus-lg",
+      "prefix": "app_administrateur_produit_ajouter"
+    }
+  ]
+}, {
+  "label": "Engins",
+  "icon": "truck",
+  "children": [
+    {
+      "label": "Liste des engins",
+      "route": "app_administrateur_engin_index",
+      "icon": "arrow-right",
+      "prefix": "app_administrateur_engin_",
+      "exclude": "app_administrateur_engin_usage_"
+    },
+    {
+      "label": "Ajouter",
+      "route": "app_administrateur_engin_ajouter",
+      "icon": "plus-lg",
+      "prefix": "app_administrateur_engin_ajouter"
+    },
+    {
+      "label": "Identifiants externes",
+      "route": "app_administrateur_engin_external_id_all_index",
+      "icon": "link-45deg",
+      "prefix": "app_administrateur_engin_external_id_all_index"
+    }
+  ]
+}, {
+  "label": "Matériel",
+  "icon": "tools",
+  "children": [
+    {
+      "label": "Liste du matériel",
+      "route": "app_administrateur_materiel_index",
+      "icon": "arrow-right",
+      "prefix": "app_administrateur_materiel_"
+    },
+    {
+      "label": "Ajouter",
+      "route": "app_administrateur_materiel_ajouter",
+      "icon": "plus-lg",
+      "prefix": "app_administrateur_materiel_ajouter"
+    }
+  ]
+}, {
+  "label": "Déchets",
+  "icon": "recycle",
+  "children": [
+    {
+      "label": "Liste des déchets",
+      "route": "app_administrateur_dechet_index",
+      "icon": "arrow-right",
+      "prefix": "app_administrateur_dechet_"
+    },
+    {
+      "label": "Ajouter",
+      "route": "app_administrateur_dechet_ajouter",
+      "icon": "plus-lg",
+      "prefix": "app_administrateur_dechet_ajouter"
+    }
+  ]
+}] %}{% endif %}
+{% if canAdmin or canChef %}{% set administration = administration|merge([{
+  "label": "Contacts",
+  "icon": "person-lines-fill",
+  "children": [
+    {
+      "label": "Liste des contacts",
+      "route": "app_administrateur_mandataire_index",
+      "icon": "arrow-right",
+      "prefix": "app_administrateur_mandataire_"
+    },
+    {
+      "label": "Ajouter",
+      "route": "app_administrateur_mandataire_ajouter",
+      "icon": "plus-lg",
+      "prefix": "app_administrateur_mandataire_ajouter"
+    }
+  ]
+}]) %}{% endif %}
+{% if administration is not empty %}{% set navItems = navItems|merge([{label: 'Administration', icon: 'sliders2', children: administration}]) %}{% endif %}
+{% set navRoute = app.request.attributes.get('_route')|default('') %}
+{% set navSection = 'Votre espace' %}
+{% set navTitle = 'Accueil' %}
+{% set navHasExact = false %}
+{% for section in navItems %}
+ {% for item in section.children|default([section]) %}
+  {% for child in item.children|default([item]) %}
+   {% for link in child.children|default([child]) %}
+    {% if link.route is defined and navRoute == link.route %}{% set navHasExact = true %}{% endif %}
+    {% if link.route is defined and (navRoute == link.route or navRoute starts with link.prefix) and not (link.exclude is defined and navRoute starts with link.exclude) %}
+     {% set navSection = section.label %}{% set navTitle = item.label %}
+    {% endif %}
+   {% endfor %}
+  {% endfor %}
+ {% endfor %}
+{% endfor %}
+{% include 'header_administrateur.html.twig' %}
+{% include 'sidebar_administrateur.html.twig' %}
