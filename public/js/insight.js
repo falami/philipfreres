@@ -78,7 +78,7 @@ const initializeInsight = () => {
             }}
         ]});
     }
-    if (fields && !DataTable.isDataTable(fields)) new DataTable(fields, {language: {...language, searchPlaceholder: 'Champ ou valeur'}, pageLength: 50, order: [[0, 'asc']]});
+    if (fields && !DataTable.isDataTable(fields)) new DataTable(fields, {language: {...language, searchPlaceholder: 'Champ ou valeur'}, pageLength: 50, lengthMenu: [10, 25, 50, 100, 250, 500], order: [[0, 'asc']]});
 };
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initializeInsight, {once: true});
