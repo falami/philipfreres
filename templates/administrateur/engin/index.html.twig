@@ -244,6 +244,8 @@
 
   {# DataTables + Buttons (comme tes autres pages) #}
   <link rel="stylesheet" href="https://cdn.datatables.net/v/bs5/dt-2.2.2/b-3.0.2/b-html5-3.0.2/b-print-3.0.2/datatables.min.css"/>
+<link rel="stylesheet" href="{{ asset('css/admin-filters.css') }}">
+<script src="{{ asset('js/admin-filters.js') }}" defer></script>
 {% endblock %}
 
 {% block javascripts %}
@@ -307,12 +309,12 @@
   {% include 'flagMessage.html.twig' %}
 
   {# TOOLBAR (nouvelle version) - comme Sessions (Export dropdown) #}
-  <div class="filterbar mb-3">
+  <div class="filterbar mb-3 pf-filters">
     <div class="filterbar__top">
       <div class="d-flex align-items-center gap-2 flex-wrap">
         <div class="filter-icon"><i class="bi bi-sliders"></i></div>
         <div>
-          <div class="filterbar__title">Outils</div>
+          <div class="filterbar__title">Filtres</div>
           <div class="filterbar__hint">Recherche + export (CSV/Excel/PDF…)</div>
         </div>
       </div>
@@ -326,6 +328,12 @@
         </div>
       </div>
     </div>
+    <div class="filterbar__body"><div class="filtergrid">
+      <div class="filter-control"><label class="form-label" for="typeFilter">Type</label><span class="filter-icon"><i class="bi bi-truck"></i></span><select id="typeFilter"><option value="all">Tous</option>{% for type in filterTypes %}<option value="{{ type.value }}">{{ type.label }}</option>{% endfor %}</select></div>
+      <div class="filter-control"><label class="form-label" for="providerFilter">Fournisseur</label><span class="filter-icon"><i class="bi bi-link-45deg"></i></span><select id="providerFilter"><option value="all">Tous</option><option value="alx">ALX</option><option value="total">TOTAL</option><option value="edenred">EDENRED</option></select></div>
+      <div class="filter-control"><label class="form-label" for="enginSearch">Recherche</label><span class="filter-icon"><i class="bi bi-search"></i></span><input class="form-control" id="enginSearch" type="search" placeholder="Nom ou immatriculation"></div>
+      <div class="filter-control fcol-actions"><button class="resetbox" id="btnReset" type="button">Réinitialiser</button></div>
+    </div></div>
   </div>
 
   {# TABLE #}
@@ -402,6 +410,7 @@ $(function(){
     ajax:{
       url:"{{ path('app_administrateur_engin_ajax', { entite: entite.id }) }}",
       type:"POST",
+      data: d => { d.typeFilter = $('#typeFilter').val(); d.providerFilter = $('#providerFilter').val(); },
     },
 
     dom:
@@ -512,6 +521,19 @@ $(function(){
       api.columns.adjust();
     }
   });
+  $('#typeFilter, #providerFilter').on('change', () => table.ajax.reload());
+  let filterSearchTimer;
+  $('#enginSearch').on('input', function(){
+    clearTimeout(filterSearchTimer);
+    filterSearchTimer = setTimeout(() => table.search(this.value).draw(), 250);
+  });
+  $('#btnReset').on('click', function(){
+    clearTimeout(filterSearchTimer);
+    $('#typeFilter, #providerFilter').val('all');
+    $('#enginSearch').val('');
+    table.search('').draw();
+  });
+
 
   table.on('draw.dt', function(){
     $('#hero-last-refresh').text('Maj : ' + nowLabel());

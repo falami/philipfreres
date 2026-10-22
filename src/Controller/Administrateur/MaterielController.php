@@ -28,6 +28,7 @@ final class MaterielController extends AbstractController
   {
     return $this->render('administrateur/materiel/index.html.twig', [
       'entite' => $entite,
+      'filterCategories' => \App\Enum\MaterielCategorie::cases(),
     ]);
   }
 
@@ -83,10 +84,7 @@ final class MaterielController extends AbstractController
           ->setParameter('fb_q', '%' . $searchName . '%');
       }
 
-      if ($categorieFilter !== '') {
-        $qb->andWhere("$alias.categorie = :categorieFilter")
-          ->setParameter('categorieFilter', $categorieFilter);
-      }
+      \App\Util\FilterSelection::apply($qb, "$alias.categorie", $categorieFilter, 'categorieFilter');
     };
 
     $qb = $this->em->createQueryBuilder()

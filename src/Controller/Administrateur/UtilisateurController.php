@@ -100,10 +100,7 @@ final class UtilisateurController extends AbstractController
           ->setParameter('fb_q', '%' . $searchName . '%');
       }
 
-      if ($verifiedFilter === '1' || $verifiedFilter === '0') {
-        $qb->andWhere("$uAlias.isVerified = :fb_verified")
-          ->setParameter('fb_verified', $verifiedFilter === '1');
-      }
+      \App\Util\FilterSelection::apply($qb, "$uAlias.isVerified", $verifiedFilter, 'fb_verified');
 
       // Locked: verified OU inscriptions > 0
       if ($lockedFilter === '1') {
@@ -112,11 +109,19 @@ final class UtilisateurController extends AbstractController
         $qb->andWhere("($uAlias.isVerified = false AND SIZE($uAlias.inscriptions) = 0)");
       }
 
-      if ($rolesFilter !== '' && $rolesFilter !== 'all') {
-        // rolesFilter doit valoir ex: "TENANT_FORMATEUR"
-        $qb->andWhere("JSON_CONTAINS($ueAlias.roles, :roleJson) = 1")
-          ->setParameter('roleJson', json_encode($rolesFilter));
+      $roles = \App\Util\FilterSelection::values($rolesFilter);
+      if ($roles === []) {
+        $qb->andWhere('1 = 0');
+      } elseif ($roles !== null) {
+        $conditions = [];
+        foreach ($roles as $index => $role) {
+          $parameter = 'selected_role_'.$index;
+          $conditions[] = "JSON_CONTAINS($ueAlias.roles, :$parameter) = 1";
+          $qb->setParameter($parameter, json_encode($role));
+        }
+        $qb->andWhere('('.implode(' OR ', $conditions).')');
       }
+
     };
 
     // 1) Query principale (data)

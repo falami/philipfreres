@@ -36,6 +36,9 @@ class MandataireController extends AbstractController
     $length = $request->request->getInt('length', 25);
 
     $search = trim((string) ($request->request->all('search')['value'] ?? ''));
+    if ($search === '') $search = trim((string) $request->request->get('searchMandataire', ''));
+    $baseQb = $repo->createListQb($entite, $search);
+    \App\Util\FilterSelection::apply($baseQb, 'm.actif', $request->request->get('actifFilter'), 'activeStatuses');
 
     $order = (array) $request->request->all('order');
     $col = (int) ($order[0]['column'] ?? 0);
@@ -51,7 +54,7 @@ class MandataireController extends AbstractController
       6 => 'm.actif',
     ];
 
-    $qb = $repo->createListQb($entite, $search)
+    $qb = (clone $baseQb)
       ->orderBy($orderMap[$col] ?? 'm.nom', $dir)
       ->setFirstResult($start)
       ->setMaxResults($length);
@@ -65,7 +68,7 @@ class MandataireController extends AbstractController
       ->getQuery()
       ->getSingleScalarResult();
 
-    $recordsFiltered = (int) $repo->createListQb($entite, $search)
+    $recordsFiltered = (int) (clone $baseQb)
       ->select('COUNT(m.id)')
       ->getQuery()
       ->getSingleScalarResult();

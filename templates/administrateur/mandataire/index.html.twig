@@ -323,6 +323,8 @@
       }
     }
   </style>
+<link rel="stylesheet" href="{{ asset('css/admin-filters.css') }}">
+  <script src="{{ asset('js/admin-filters.js') }}" defer></script>
 {% endblock %}
 
 {% block body %}
@@ -365,7 +367,7 @@
 
   {% include 'flagMessage.html.twig' %}
 
-  <div class="filterbar mb-3">
+  <div class="filterbar mb-3 pf-filters">
     <div class="filterbar__top">
       <div class="d-flex align-items-center gap-2 flex-wrap">
         <div class="filter-icon"><i class="bi bi-funnel"></i></div>

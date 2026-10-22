@@ -375,6 +375,8 @@
     body .type-floating-dropdown{ z-index: 20000 !important; }
 
   </style>
+<link rel="stylesheet" href="{{ asset('css/admin-filters.css') }}">
+  <script src="{{ asset('js/admin-filters.js') }}" defer></script>
 {% endblock %}
 
 {% block javascripts %}
@@ -429,7 +431,7 @@
   {% include 'flagMessage.html.twig' %}
 
   {# FILTERBAR #}
-  <div class="filterbar mb-3">
+  <div class="filterbar mb-3 pf-filters">
     <div class="filterbar__top">
       <div class="d-flex align-items-center gap-2 flex-wrap">
         <div class="filter-icon"><i class="bi bi-funnel"></i></div>
@@ -467,7 +469,7 @@
                   <option value="all">Toutes</option>
                   {# Optionnel: si tu passes categories depuis le controller #}
                   {% for c in categories|default([]) %}
-                    <option value="{{ c }}">{{ c }}</option>
+                    <option value="{{ c.value }}">{{ c.label }}</option>
                   {% endfor %}
                 </select>
               </div>
@@ -483,7 +485,7 @@
                   <option value="all">Toutes</option>
                   {# Optionnel: si tu passes sousCategories depuis le controller #}
                   {% for sc in sousCategories|default([]) %}
-                    <option value="{{ sc }}">{{ sc }}</option>
+                    <option value="{{ sc.value }}">{{ sc.label }}</option>
                   {% endfor %}
                 </select>
               </div>

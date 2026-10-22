@@ -724,6 +724,8 @@ table.planner{
 }
   </style>
   <link rel="stylesheet" href="{{ asset('css/resource-planner.css') }}">
+<link rel="stylesheet" href="{{ asset('css/admin-filters.css') }}">
+  <script src="{{ asset('js/admin-filters.js') }}" defer></script>
 {% endblock %}
 
 {% block body %}
@@ -734,7 +736,7 @@ table.planner{
     <p>Explorez les dépenses de vos collaborateurs et de leurs engins, jour après jour.</p>
   </header>
 
-  <div class="toolbar mb-4">
+  <div class="toolbar mb-4 pf-filters pf-filters--resources">
     <div class="toolbar-grid">
       <div class="f-item">
         <label class="form-label" for="fRange">Plage de dates</label>
@@ -960,6 +962,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (start) params.set('dateStart', start);
     if (end) params.set('dateEnd', end);
+
+    if (selectedValues($providers).includes('__none__')) params.set('providersNone', '1');
+    if (selectedValues($employes).includes('__none__')) params.set('employeNone', '1');
+    if (selectedValues($engins).includes('__none__')) params.set('enginNone', '1');
 
     selectedValues($providers).forEach(v => params.append('providers[]', v));
     selectedValues($employes).forEach(v => params.append('employeIds[]', v));

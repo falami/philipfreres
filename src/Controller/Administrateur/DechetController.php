@@ -70,10 +70,7 @@ final class DechetController extends AbstractController
           ->setParameter('fb_q', '%' . $searchName . '%');
       }
 
-      if ($uniteFilter !== '') {
-        $qb->andWhere("$alias.unite = :uniteFilter")
-          ->setParameter('uniteFilter', $uniteFilter);
-      }
+      \App\Util\FilterSelection::apply($qb, "$alias.unite", $uniteFilter, 'uniteFilter');
     };
 
     $qb = $this->em->createQueryBuilder()

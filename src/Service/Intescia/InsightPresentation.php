@@ -24,7 +24,8 @@ final class InsightPresentation
             $links[$value] = ['url' => $value, 'host' => parse_url($value, PHP_URL_HOST), 'source' => $path];
         }
         $description = $contract['completeObject'] ?? InsightNormalizer::translation($contract['translations'] ?? $op['translations'] ?? [], 'completeObject');
-        return ['locations' => array_values($locations), 'links' => array_values($links), 'description' => is_string($description) ? strip_tags($description) : '', 'reference' => is_scalar($contract['reference'] ?? null) ? (string) $contract['reference'] : ''];
+        if (!$description) $description = InsightNormalizer::translation($contract['translations'] ?? [], 'description');
+        return ['locations' => array_values($locations), 'links' => array_values($links), 'description' => is_string($description) ? strip_tags($description) : '', 'analysis' => InsightAnalysis::build($payload), 'reference' => is_scalar($contract['reference'] ?? null) ? (string) $contract['reference'] : ''];
     }
 
     public static function safeUrl(mixed $value): bool

@@ -106,10 +106,7 @@ final class ChantierController extends AbstractController
     // ✅ FILTRES DYNAMIQUES
     // =========================
 
-    if ($statutFilter !== 'all') {
-      $qb->andWhere('c.statut = :statut')
-        ->setParameter('statut', $statutFilter);
-    }
+    \App\Util\FilterSelection::apply($qb, 'c.statut', $statutFilter, 'statut');
 
     if ($semaineFilter !== '') {
       $year = (int) date('Y');
@@ -135,8 +132,8 @@ final class ChantierController extends AbstractController
     if ($mandataireFilter !== 'all' && $mandataireFilter !== '') {
       $qb
         ->innerJoin('c.mandataires', 'mf')
-        ->andWhere('mf.id = :mandataireFilter')
-        ->setParameter('mandataireFilter', (int) $mandataireFilter);
+        ->andWhere('mf.id IN (:mandataireFilter)')
+        ->setParameter('mandataireFilter', \App\Util\FilterSelection::values($mandataireFilter) ?: ['-1']);
     }
 
     // =========================
@@ -159,10 +156,7 @@ final class ChantierController extends AbstractController
     $qbCount = $repo->createVisibleListQb($entite, $user, $isTenantAdmin, $search)
       ->select('COUNT(DISTINCT c.id)');
 
-    if ($statutFilter !== 'all') {
-      $qbCount->andWhere('c.statut = :statut')
-        ->setParameter('statut', $statutFilter);
-    }
+    \App\Util\FilterSelection::apply($qbCount, 'c.statut', $statutFilter, 'statut');
 
     if ($semaineFilter !== '') {
       $year = (int) date('Y');
@@ -187,8 +181,8 @@ final class ChantierController extends AbstractController
     if ($mandataireFilter !== 'all' && $mandataireFilter !== '') {
       $qbCount
         ->innerJoin('c.mandataires', 'mf_count')
-        ->andWhere('mf_count.id = :mandataireFilter')
-        ->setParameter('mandataireFilter', (int) $mandataireFilter);
+        ->andWhere('mf_count.id IN (:mandataireFilter)')
+        ->setParameter('mandataireFilter', \App\Util\FilterSelection::values($mandataireFilter) ?: ['-1']);
     }
 
     $recordsFiltered = (int) $qbCount->getQuery()->getSingleScalarResult();

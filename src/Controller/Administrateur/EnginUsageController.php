@@ -200,7 +200,7 @@ final class EnginUsageController extends AbstractController
     return [
       'dateStart' => $request->query->get('dateStart') ?: date('Y-01-01'),
       'dateEnd' => $request->query->get('dateEnd') ?: date('Y-12-31'),
-      'enginId' => $this->safeInt($request->query->get('enginId')),
+      'enginId' => $request->query->get('enginId'),
     ];
   }
 

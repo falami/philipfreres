@@ -294,10 +294,7 @@ final class EnginUsageReleveRepository extends ServiceEntityRepository
             ->setParameter('start', new \DateTimeImmutable($f['dateStart']))
             ->setParameter('end', new \DateTimeImmutable($f['dateEnd']));
 
-        if (!empty($f['enginId'])) {
-            $qb->andWhere('e.id = :enginId')
-                ->setParameter('enginId', (int) $f['enginId']);
-        }
+        \App\Util\FilterSelection::apply($qb, 'e.id', isset($f['enginId']) ? (string) $f['enginId'] : null, 'enginId');
 
         return $qb;
     }
@@ -324,10 +321,7 @@ final class EnginUsageReleveRepository extends ServiceEntityRepository
             ->addOrderBy('r.dateReleve', 'ASC')
             ->addOrderBy('r.id', 'ASC');
 
-        if (!empty($f['enginId'])) {
-            $qb->andWhere('e.id = :enginId')
-                ->setParameter('enginId', (int) $f['enginId']);
-        }
+        \App\Util\FilterSelection::apply($qb, 'e.id', isset($f['enginId']) ? (string) $f['enginId'] : null, 'enginId');
 
         return $qb->getQuery()->getArrayResult();
     }

@@ -40,6 +40,7 @@ final class EnginController extends AbstractController
             'administrateur/engin/index.html.twig',
             [
                 'entite' => $entite,
+                'filterTypes' => \App\Enum\EnginType::cases(),
 
             ]
         );
@@ -87,6 +88,15 @@ final class EnginController extends AbstractController
         if ($searchV !== '') {
             $qb->andWhere('(b.nom LIKE :q OR b.immatriculation LIKE :q)')
                 ->setParameter('q', '%' . $searchV . '%');
+        }
+
+        \App\Util\FilterSelection::apply($qb, 'b.type', $request->request->get('typeFilter'), 'selectedTypes');
+        $providers = \App\Util\FilterSelection::values($request->request->get('providerFilter'));
+        if ($providers === []) {
+            $qb->andWhere('1 = 0');
+        } elseif ($providers !== null) {
+            $qb->andWhere('EXISTS (SELECT matching.id FROM App\Entity\EnginExternalId matching WHERE matching.engin = b AND matching.active = true AND matching.provider IN (:selectedProviders))')
+                ->setParameter('selectedProviders', $providers);
         }
 
         // recordsTotal (sans search)

@@ -23,6 +23,8 @@ final class ProduitController extends AbstractController
 
     return $this->render('administrateur/produit/index.html.twig', [
       'entite' => $entite,
+      'categories' => \App\Enum\CategorieProduit::cases(),
+      'sousCategories' => \App\Enum\SousCategorieProduit::cases(),
     ]);
   }
 
@@ -77,6 +79,12 @@ final class ProduitController extends AbstractController
     if ($searchV !== '') {
       $qb->andWhere('(t.categorieProduit LIKE :q OR t.sousCategorieProduit LIKE :q)')
         ->setParameter('q', '%' . $searchV . '%');
+    }
+
+    \App\Util\FilterSelection::apply($qb, 't.categorieProduit', $request->request->get('categorieFilter'), 'categories');
+    \App\Util\FilterSelection::apply($qb, 't.sousCategorieProduit', $request->request->get('sousCategorieFilter'), 'sousCategories');
+    if ($label = trim((string) $request->request->get('searchLibelle', ''))) {
+      $qb->andWhere('(t.categorieProduit LIKE :label OR t.sousCategorieProduit LIKE :label)')->setParameter('label', '%'.$label.'%');
     }
 
     // recordsTotal (sans search)

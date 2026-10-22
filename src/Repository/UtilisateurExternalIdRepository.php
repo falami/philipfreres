@@ -45,17 +45,8 @@ final class UtilisateurExternalIdRepository extends ServiceEntityRepository
       ->andWhere('u.entite = :entite')
       ->setParameter('entite', $entite);
 
-    // Provider
-    if ($providerFilter !== 'all' && $providerFilter !== '') {
-      $qb->andWhere('x.provider = :prov')
-        ->setParameter('prov', ExternalProvider::from($providerFilter));
-    }
-
-    // Active
-    if ($activeFilter === '1' || $activeFilter === '0') {
-      $qb->andWhere('x.active = :act')
-        ->setParameter('act', $activeFilter === '1');
-    }
+    \App\Util\FilterSelection::apply($qb, 'x.provider', $providerFilter, 'providers');
+    \App\Util\FilterSelection::apply($qb, 'x.active', $activeFilter, 'activeStates');
 
     // Search global (fusion custom + datatables)
     if ($searchAny !== '') {

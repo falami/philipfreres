@@ -1,6 +1,6 @@
 {# templates/administrateur/utilisateur/index.html.twig #}
 {% extends 'base_admin.html.twig' %}
-{% block title %}Clients{% endblock %}
+{% block title %}Employés{% endblock %}
 
 {% block stylesheets %}
   {{ parent() }}
@@ -446,6 +446,8 @@
     }
 
   </style>
+<link rel="stylesheet" href="{{ asset('css/admin-filters.css') }}">
+<script src="{{ asset('js/admin-filters.js') }}" defer></script>
 {% endblock %}
 
 {% block javascripts %}
@@ -468,7 +470,7 @@
         <div>
           <h2 class="m-0 fw-bold">
             <i class="bi bi-people me-2" style="color:var(--theme-color-secondaire)"></i>
-            Clients
+            Employés
           </h2>
 
           <div class="opacity-75 mt-1">
@@ -504,7 +506,7 @@
   {% include 'flagMessage.html.twig' %}
 
   {# FILTERBAR #}
-  <div class="filterbar mb-3">
+  <div class="filterbar mb-3 pf-filters">
     <div class="filterbar__top">
       <div class="d-flex align-items-center gap-2 flex-wrap">
         <div class="filter-icon"><i class="bi bi-funnel"></i></div>

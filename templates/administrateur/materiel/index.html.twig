@@ -247,6 +247,8 @@
       z-index: 1060 !important;
     }
   </style>
+<link rel="stylesheet" href="{{ asset('css/admin-filters.css') }}">
+  <script src="{{ asset('js/admin-filters.js') }}" defer></script>
 {% endblock %}
 
 {% block javascripts %}
@@ -299,7 +301,7 @@
 
   {% include 'flagMessage.html.twig' %}
 
-  <div class="filterbar mb-3">
+  <div class="filterbar mb-3 pf-filters">
     <div class="filterbar__top">
       <div class="d-flex align-items-center gap-2">
         <div class="filter-icon"><i class="bi bi-funnel"></i></div>
@@ -335,7 +337,8 @@
                 <div class="filter-icon"><i class="bi bi-tag"></i></div>
                 <select id="categorieFilter" class="form-select form-select-sm">
                   <option value="">Tous</option>
-                </select>
+                {% for category in filterCategories|default([]) %}{% if category %}<option value="{{ category.value }}">{{ category.label }}</option>{% endif %}{% endfor %}
+</select>
               </div>
             </div>
           </div>
@@ -471,35 +474,7 @@
       }
     });
 
-    function loadCategories(){
-      $.post("{{ path('app_administrateur_materiel_ajax', { entite: entite.id }) }}", {
-        draw: 1,
-        start: 0,
-        length: 500
-      }).done(function(response){
-        const values = new Set();
-
-        (response.data || []).forEach(row => {
-          const div = document.createElement('div');
-          div.innerHTML = row.categorie || '';
-          const txt = (div.textContent || div.innerText || '').trim();
-          if (txt && txt !== '—') values.add(txt);
-        });
-
-        const currentValue = $categorieFilter.val() || '';
-        $categorieFilter.find('option:not(:first)').remove();
-
-        Array.from(values).sort((a,b) => a.localeCompare(b, 'fr')).forEach(categorie => {
-          $categorieFilter.append(new Option(categorie, categorie.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '_').replace(/[^\w]/g, '')));
-        });
-
-        if (currentValue) {
-          $categorieFilter.val(currentValue);
-        }
-
-        initTomSelect();
-      });
-    }
+    function loadCategories(){ initTomSelect(); }
 
     function refreshAll(resetPaging = false){
       table.ajax.reload(null, resetPaging);

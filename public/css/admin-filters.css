@@ -1,0 +1,64 @@
+/* Dashboard filter language, scoped to the seven opted-in pages. */
+.pf-filters.pf-filters{position:relative;z-index:20;background:#fff;border:1px solid #e0e6da;border-radius:14px;box-shadow:none;overflow:visible;backdrop-filter:none}
+.pf-filters .filterbar__top,.pf-filters .cardx-h{padding:12px 16px;border-bottom:1px solid #f0f2ed;background:transparent;box-shadow:none}
+.pf-filters .filterbar__top>.d-flex>.filter-icon,.pf-filters .filterbar__hint,.pf-filters .cardx-h .chip-soft{display:none}
+.pf-filters .filterbar__title,.pf-filters .cardx-title{font-size:13px;font-weight:600;color:#244c3d;margin:0}
+.pf-filters .filterbar__body{padding:16px}
+.pf-filters .filtergrid,.pf-filters .toolbar-grid,.pf-filters--usage .row.g-3{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0;grid-template-columns:none}
+.pf-filters .pf-filter-chip{display:flex;align-items:center;gap:7px;flex:0 1 auto;grid-column:auto;width:auto;min-width:0;max-width:100%;padding:7px 10px;margin:0;border:1px solid #e7ece2;border-radius:9px;background:#f8faf5;box-shadow:none;min-height:42px}
+.pf-filters .pf-filter-chip .filterbox,.pf-filters .pf-filter-chip .filterrow{display:contents}
+.pf-filters .pf-filter-chip .form-label{order:1;flex-shrink:0;margin:0;color:#73816b;font-size:12px;line-height:1.3;font-weight:500;letter-spacing:0;text-transform:none}
+.pf-filters .pf-filter-chip .filter-icon{order:0;width:auto;height:auto;min-width:0;flex:0 0 auto;border:0;border-radius:0;background:none;box-shadow:none;color:#819377;font-size:14px;padding:0}
+.pf-filters .pf-filter-chip .form-control,.pf-filters .pf-filter-chip .form-select{order:2;width:180px;min-width:0;min-height:28px;height:28px;border:0;border-radius:6px;padding:3px 7px;background:#fff;color:#254b3b;font-size:12px;box-shadow:none;font-weight:500}
+.pf-filters .pf-filter-chip input[id=semaineFilter]{width:70px}
+.pf-filters .pf-filter-chip input[id=villeFilter]{width:120px}
+.pf-filters .pf-filter-chip input.flatpickr-input+input{width:240px}
+.pf-filters .pf-filter-chip:focus-within{border-color:#c4ad71;box-shadow:0 0 0 2px #c4ad7120}
+.pf-filters .pf-filter-source,.pf-filters .pf-filter-source~.ts-wrapper{display:none!important}
+.pf-filter-trigger{order:2;max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:0;background:#fff;color:#2b4e38;border-radius:7px;padding:5px 26px 5px 9px;font-size:12px;font-weight:600;position:relative;min-height:28px;cursor:pointer}
+.pf-filter-trigger:after{content:'';position:absolute;right:10px;top:11px;border:4px solid transparent;border-top-color:#587b64}
+.pf-filter-trigger:focus-visible{outline:2px solid #c3a665;outline-offset:2px}
+.pf-filters .fcol-actions{flex:0 0 auto;grid-column:auto;align-self:center}
+.pf-filters .fcol-actions .form-label{display:none}
+.pf-filters .resetbox,.pf-filters #btnReset,.pf-filters #btnResetFilters,.pf-filters #btnToday{height:auto;min-height:36px;display:inline-flex;align-items:center;gap:5px;background:transparent;border:1px solid transparent;border-radius:7px;box-shadow:none;padding:7px 9px;color:#74836c;font-size:12px;font-weight:500!important}
+.pf-filters button:disabled{opacity:.45}
+.pf-filters .active-filters{border-top:1px solid #f0f2ed;background:none;padding:9px 16px;font-size:11px;min-height:0}
+.pf-filters .active-filters .label{font-size:11px;color:#7a8873}
+.pf-filters .btn{font-size:12px;border-radius:7px}
+.pf-filters--resources{padding:16px!important}
+.pf-filters--resources .f-item-lg{flex:0 1 auto;min-width:0}
+.pf-filters--resources .f-item-lg>.form-label{display:none}
+.pf-filters--resources .toolbar-actions{display:flex;gap:5px}
+.pf-filters--usage>.p-3{padding:16px!important}
+.pf-filters--usage .mt-4{margin-top:12px!important;justify-content:flex-start!important}
+.pf-filter-menu{position:fixed;z-index:1080;display:flex;flex-direction:column;gap:10px;padding:14px;border:1px solid #e0e6da;border-radius:14px;background:#fffefb;box-shadow:0 18px 45px #183f3526;color:#244c3d;font:13px/1.5 system-ui,sans-serif;overflow:hidden}
+.pf-filter-search{width:100%;flex-shrink:0;border:1px solid #dfe5d9;border-radius:8px;background:white;padding:10px 12px;color:#244c3d;min-height:40px}
+.pf-filter-search:focus{outline:2px solid #c4ad7166;outline-offset:1px}
+.pf-filter-actions{display:flex;gap:7px;flex-shrink:0}
+.pf-filter-actions button{border:1px solid #e0dfd7;border-radius:7px;padding:6px 10px;background:#f7f6f0;color:#657464;font-size:12px}
+.pf-filter-options{overflow-y:auto;overscroll-behavior:contain;background:white;border:1px solid #edf0e9;border-radius:10px;min-height:0;padding:5px}
+.pf-filter-option{display:flex;align-items:center;gap:10px;padding:11px 9px;border-radius:6px;cursor:pointer;margin:0;min-height:42px}
+.pf-filter-option:hover,.pf-filter-option:focus-within{background:#f1f5ed}
+.pf-filter-option input{flex:0 0 auto;width:17px;height:17px;accent-color:#285541}
+.pf-filter-option span{overflow-wrap:anywhere}
+@media(max-width:767px){
+ .pf-filters .filtergrid,.pf-filters .toolbar-grid,.pf-filters--usage .row.g-3{gap:8px}
+ .pf-filters .pf-filter-chip{flex:1 1 100%;width:100%;justify-content:space-between}
+ .pf-filters .pf-filter-chip .filter-icon{margin-right:0}
+ .pf-filters .pf-filter-chip .form-label{margin-right:auto}
+ .pf-filters .pf-filter-chip .form-control,.pf-filters .pf-filter-chip input.flatpickr-input+input{width:55%;min-height:34px}
+ .pf-filter-trigger{max-width:62%;min-height:34px}
+ .pf-filter-trigger:after{top:14px}
+ .pf-filters .filterbar__body{padding:12px}
+ .pf-filters .filterbar__top{padding:10px 12px}
+}
+.pf-filters .filterbar__top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.pf-filters .filterbar__top .fw-bold{font-size:13px;color:#244c3d}
+.pf-filters .filterbar__top .text-muted{display:none}
+.pf-filters .filterbar__top .btn-warning{background:#f7f8f3;border-color:#e0e6da;color:#365540}
+.pf-filter-option input[type=checkbox]{appearance:none;border:1px solid #b6cbc0;border-radius:5px;background:#fff;position:relative;cursor:pointer}
+.pf-filter-option input[type=checkbox]:checked{background:#b9d9cc;border-color:#abcfc0}
+.pf-filter-option input[type=checkbox]:checked:after{content:'';position:absolute;left:5px;top:2px;width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.pf-filter-option input:focus-visible{outline:2px solid #bc9b57;outline-offset:3px}
+.pf-filter-actions button:hover{background:#eaf0e4;border-color:#cbd5c2}
+.pf-filter-menu{background:linear-gradient(180deg,#fffdf7,#fff 50%);border-radius:16px;padding:16px}

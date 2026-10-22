@@ -290,6 +290,8 @@
         white-space: nowrap;
     }
   </style>
+<link rel="stylesheet" href="{{ asset('css/admin-filters.css') }}">
+  <script src="{{ asset('js/admin-filters.js') }}" defer></script>
 {% endblock %}
 
 {% block javascripts %}
@@ -376,7 +378,7 @@
 
 <div class="row g-4 mb-4">
   <div class="col-lg-12">
-    <div class="cardx h-100">
+    <div class="cardx h-100 pf-filters pf-filters--usage">
       <div class="cardx-h">
         <h5 class="cardx-title"><i class="bi bi-sliders text-warning"></i> Filtres</h5>
         <span class="chip-soft">Analyse</span>
@@ -636,8 +638,8 @@ $(function(){
   });
 
   $('#btnResetFilters').on('click', function(){
-    $('#fStart').val('{{ start }}');
-    $('#fEnd').val('{{ end }}');
+    document.getElementById('fStart')._flatpickr.setDate('{{ start }}', false);
+    document.getElementById('fEnd')._flatpickr.setDate('{{ end }}', false);
 
     if ($('#fEngin')[0]?.tomselect) {
       $('#fEngin')[0].tomselect.clear();
