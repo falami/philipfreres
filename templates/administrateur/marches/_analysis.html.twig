@@ -1,42 +1,87 @@
+{% macro sources(source, label = 'Voir la source') %}
+  {% if source %}
+    <span class="analysis-source-links">
+      {% for path in source|split(' · ') %}
+        {% if path starts with '/' %}<a href="#market-data" class="analysis-source" data-insight-source="{{ path }}" title="{{ path }}">{{ label }}{{ source|split(' · ')|length > 1 ? ' ' ~ loop.index : '' }} <span aria-hidden="true">↗</span></a>{% else %}<small>{{ path }}</small>{% endif %}
+      {% endfor %}
+    </span>
+  {% endif %}
+{% endmacro %}
+{% import _self as analysis_ui %}
 {% set analysis = presentation.analysis %}
-<section class="market-panel market-analysis" id="market-analysis">
-  <div class="market-panel-heading"><div><p class="market-eyebrow">STRATÉGIE DE RÉPONSE</p><h2>Comprendre le marché. Préparer une offre solide.</h2><p>Analyse des données importées · Les pièces de consultation restent à lire et à confirmer.</p></div><button type="button" class="market-button secondary" onclick="window.print()">Imprimer la préparation</button></div>
+{% set lots = analysis.lots|default([]) %}
+{% set phases = analysis.phases|default([]) %}
+{% set evidence = analysis.evidence|default([]) %}
+<section class="market-panel market-analysis" id="market-analysis" aria-labelledby="market-analysis-title">
+  <div class="market-panel-heading analysis-heading">
+    <div><p class="market-eyebrow">STRATÉGIE DE RÉPONSE</p><h2 id="market-analysis-title">Votre dossier, en perspective.</h2><p>Comprendre le périmètre, identifier les points à clarifier et préparer une offre solide.</p></div>
+    <button type="button" class="market-button secondary" onclick="window.print()"><i class="bi bi-printer" aria-hidden="true"></i> Imprimer la préparation</button>
+  </div>
   <div class="market-detail-body">
+    <p class="analysis-print-title">{{ market.title|default('Préparation de la réponse') }}</p>
+    <div class="analysis-reading-guide"><span><i class="bi bi-database-check" aria-hidden="true"></i> Données importées</span><span><i class="bi bi-file-earmark-text" aria-hidden="true"></i> Extraits du descriptif</span><span><i class="bi bi-lightbulb" aria-hidden="true"></i> Recommandations à adapter</span></div>
     <div class="analysis-summary">
-      <article><span>Notation</span><strong>{{ analysis.criteria|length ? analysis.criteria|length ~ ' critères identifiés' : 'Critères non renseignés' }}</strong><p>Prioriser la réponse selon les pondérations et les sous-critères du règlement.</p></article>
-      <article><span>Plafond extrait de la description</span><strong>{{ analysis.ceiling ?: 'Non renseigné' }}</strong><p>{{ analysis.noMinimum ? 'Aucun minimum annoncé : ne pas assimiler ce plafond à un chiffre d’affaires garanti.' : 'Vérifier le minimum, le maximum et leur périmètre dans les pièces du marché.' }}</p><small>Source : translations.description · montant à confirmer</small></article>
-      <article><span>Documents et précisions</span><strong>{{ analysis.docs ? 'Documents signalés' : 'Documents non confirmés' }}</strong><p>{{ analysis.qa ? 'Des questions-réponses sont également signalées. Les consulter avant de finaliser l’offre.' : 'Vérifier les questions-réponses et les éventuels rectificatifs sur la plateforme.' }}</p>{% if analysis.responseUrl %}<a href="{{ analysis.responseUrl }}" target="_blank" rel="noopener noreferrer">Accéder à la consultation ↗</a>{% endif %}</article>
+      <article><span>La notation</span><strong>{{ analysis.criteria|length ? analysis.criteria|length ~ ' critères identifiés' : 'À compléter' }}</strong><p>{{ analysis.percent ? 'Pondérations totalisant 100 %. Confirmer les sous-critères et la formule dans le règlement.' : 'Lire les critères et leur pondération dans le règlement avant de structurer le mémoire.' }}</p><a href="#analysis-criteria">Préparer les arguments <span aria-hidden="true">→</span></a></article>
+      <article><span>Le périmètre</span><strong>{{ lots|length ? lots|length ~ ' lot' ~ (lots|length > 1 ? 's détaillés' : ' détaillé') : 'Lots à vérifier' }}</strong><p>{{ lots|length ? 'Étudier les moyens, les échéances et le chiffrage de chaque lot séparément.' : 'Les données disponibles ne permettent pas de confirmer le découpage en lots.' }}</p><a href="#analysis-scope">Examiner les prestations <span aria-hidden="true">→</span></a></article>
+      <article><span>Les pièces de consultation</span><strong>{{ analysis.docs ? 'Documents signalés' : 'À récupérer' }}</strong><p>{{ analysis.qa ? 'Des questions-réponses sont signalées. Leur contenu reste à consulter.' : 'Vérifier les pièces, questions-réponses et rectificatifs sur la plateforme.' }}</p>{% if analysis.responseUrl %}<a href="{{ analysis.responseUrl }}" target="_blank" rel="noopener noreferrer">Ouvrir la consultation <span aria-hidden="true">↗</span></a>{% else %}<a href="#market-links">Consulter les liens disponibles <span aria-hidden="true">→</span></a>{% endif %}</article>
     </div>
-    <p class="market-muted">Cette préparation utilise les champs reçus, sans analyser automatiquement le contenu des pièces jointes. Les recommandations ci-dessous sont des pistes à adapter, pas des exigences supplémentaires de l’acheteur.</p>
-    {% for warning in analysis.warnings %}<aside class="analysis-warning"><strong>{{ warning.title }}</strong><p>{{ warning.text }}</p><small>Source : {{ warning.source }}</small></aside>{% endfor %}
-    <h3>01 · Les points à défendre dans votre offre</h3>
-    {% for criterion in analysis.criteria %}
-      <article class="analysis-criterion"><div class="analysis-criterion-heading"><h4>{{ criterion.title }}</h4><strong>{{ criterion.weight is not null ? criterion.weight ~ (analysis.percent ? ' %' : ' · poids annoncé') : 'Poids non renseigné' }}</strong></div>{% if analysis.percent %}<div class="analysis-meter" aria-hidden="true"><span style="width:{{ criterion.weight >= 0 and criterion.weight <= 100 ? criterion.weight : 0 }}%"></span></div>{% endif %}<div class="analysis-two"><div><span class="market-eyebrow">RÉPONSE À PRÉPARER</span><p>{{ criterion.action }}</p></div><div><span class="market-eyebrow">PREUVES À RASSEMBLER</span><p>{{ criterion.proof }}</p></div></div><small>Source : awardCriteria · recommandations à adapter aux sous-critères</small></article>
-    {% else %}<p>Les critères ne sont pas renseignés. Récupérer leur pondération et les sous-critères dans le règlement de consultation avant de définir les priorités du mémoire.</p>{% endfor %}
-    <div class="analysis-two">
-      <section><h3>02 · Durée et capacité à mobiliser</h3><dl class="analysis-facts"><div><dt>Début annoncé</dt><dd>{{ analysis.start ?: 'Non renseigné' }}</dd></div><div><dt>Durée initiale</dt><dd>{{ analysis.initial.duration|default('Non renseignée') }} {{ analysis.initial.durationType|default('') == 'MONTH' ? 'mois' : analysis.initial.durationType|default('') }}</dd></div><div><dt>Accord-cadre</dt><dd>{{ analysis.framework is null ? 'Non renseigné' : (analysis.framework ? 'Oui' : 'Non') }}</dd></div></dl>{% for extension in analysis.extensions %}<p>Reconduction annoncée : {{ extension.startDate|default('Date non renseignée') }} · {{ extension.duration.duration|default('?') }} {{ extension.duration.durationType|default('') == 'MONTH' ? 'mois' : extension.duration.durationType|default('') }}</p>{% endfor %}<small>Sources : timeFrame.start · initialDuration · extensions · withFrameworkAgreement</small><p>Vérifier la disponibilité des équipes et du matériel, les temps de déplacement et les solutions de remplacement sur toute la période.</p></section>
-      <section><h3>03 · Conditions à confirmer</h3><dl class="analysis-facts">{% for requirement in analysis.requirements %}<div><dt>{{ requirement.label }}<small>{{ requirement.source }}</small></dt><dd>{{ requirement.value }}</dd></div>{% endfor %}</dl><p>Une valeur non renseignée ne signifie pas que l’exigence est absente. Contrôler le règlement, le CCTP et le CCAP.</p></section>
-    </div>
-    <article class="analysis-note"><h3>Préparation terrain adaptée à l’objet du marché</h3><p class="market-muted">Pistes déduites de l’intitulé, à valider avec le CCTP et les sites réels.</p><ul>{% for item in analysis.specific %}<li>{{ item }}</li>{% endfor %}</ul></article>
-    <h3>04 · Construire un prix défendable</h3>
-    <div class="analysis-two"><article class="analysis-note"><h4>Votre coût de revient</h4><p>Main-d’œuvre chargée + matériel + déplacements et mobilisation + fournitures + évacuation et traitement + frais de structure + aléas chiffrés.</p><p>Établir les rendements par prestation et les justifier. Tester plusieurs volumes de commande et les interventions dispersées avant d’ajouter la marge.</p></article><article class="analysis-note"><h4>Les contrôles avant remise</h4><ul><li>Unités, quantités et cohérence des pièces de prix.</li><li>Temps de préparation, accès, sécurisation et nettoyage.</li><li>Conditions de paiement, révision des prix, pénalités et reconductions à lire dans les pièces.</li><li>Formule de notation à récupérer avant toute simulation de note.</li></ul></article></div>
-    <h3>05 · Concurrence : ce que les données permettent</h3>
-    <p>{{ analysis.hasAward ? 'Un champ d’attribution est renseigné : examiner son contenu dans les données détaillées avant toute comparaison.' : 'Aucune attribution exploitable n’est fournie ici : le titulaire précédent et ses prix ne sont pas établis.' }} {{ analysis.responses is not null ? 'Nombre de réponses indiqué : ' ~ analysis.responses ~ '.' : 'Le nombre de candidats n’est pas renseigné.' }}</p><p>Rechercher des marchés antérieurs comparables par acheteur, prestations, durée et périmètre. Une ancienne attribution ne permet pas de connaître les futures offres concurrentes. Les utilisateurs « viewers » décrivent le suivi interne, pas la concurrence.</p>
-    <h3>06 · Votre plan de préparation</h3>
-    <p class="market-muted">Checklist de travail imprimable. Les cases et notes servent à préparer cette lecture ; elles ne sont pas enregistrées.</p>
-    <div class="analysis-checklist">
-    {% for task in [
-      'Récupérer le règlement, le CCTP, le CCAP et les pièces de prix disponibles ; vérifier leur version.',
-      'Lire les questions-réponses et rectificatifs ; noter les changements de délai, périmètre ou prix.',
-      'Confirmer la visite, les qualifications, les pièces de candidature et les modalités de dépôt.',
-      'Clarifier le calendrier, les reconductions, le plafond et les volumes attendus.',
-      'Lister les sites, accès, contraintes et quantités ; vérifier les rendements avec les équipes terrain.',
-      'Chiffrer les prestations, tester les petits volumes et valider la marge avec un responsable.',
-      'Organiser le mémoire selon chaque critère et sous-critère ; joindre une preuve pour chaque engagement.',
-      'Faire relire les pièces techniques et financières, contrôler les signatures et préparer le dépôt avant l’échéance.'
-    ] %}<label><input type="checkbox"><span><b>{{ loop.index < 10 ? '0' : '' }}{{ loop.index }}</b> {{ task }}</span></label>{% endfor %}
-    </div>
-    <label class="analysis-notes-label" for="market-preparation-notes">Notes de préparation · responsables, dates internes et questions à poser</label><textarea id="market-preparation-notes" rows="5" placeholder="Point à clarifier · personne responsable · échéance interne · preuve attendue"></textarea>
-    <p class="analysis-conclusion">Décision de répondre : à valider après lecture des pièces, contrôle des capacités et chiffrage. Aucun prix cible ni taux de réussite n’est déduit de données manquantes.</p>
+    <p class="analysis-method">Cette synthèse exploite les données reçues. Elle ne confirme pas la lecture des pièces de consultation. Les liens de source permettent de retrouver les champs utilisés ; les recommandations doivent être adaptées au dossier.</p>
+
+    {% if analysis.warnings|length %}
+      <section class="analysis-clarifications" aria-labelledby="analysis-clarifications-title">
+        <div class="analysis-section-heading"><div><span class="analysis-kicker">AVANT DE VOUS ENGAGER</span><h3 id="analysis-clarifications-title">Les points à confirmer en priorité</h3></div><span class="analysis-count">{{ analysis.warnings|length }} point{{ analysis.warnings|length > 1 ? 's' : '' }}</span></div>
+        <div class="analysis-warning-grid">{% for warning in analysis.warnings %}<aside class="analysis-warning"><strong><i class="bi bi-exclamation-circle" aria-hidden="true"></i> {{ warning.title }}</strong><p>{{ warning.text }}</p>{{ analysis_ui.sources(warning.source) }}</aside>{% endfor %}</div>
+      </section>
+    {% endif %}
+
+    {% if evidence|length %}
+      <section aria-labelledby="analysis-evidence-title"><div class="analysis-section-heading"><div><span class="analysis-kicker">01 / INFORMATIONS CLÉS</span><h3 id="analysis-evidence-title">Les faits qui orientent la réponse</h3></div></div>
+        <div class="analysis-evidence-grid">{% for fact in evidence %}<article class="analysis-evidence"><span class="analysis-evidence-kind {{ fact.kind == 'text' ? 'is-text' : '' }}">{{ fact.kind == 'text' ? 'Extrait du descriptif' : 'Champ importé' }}</span><h4>{{ fact.label }}</h4><p>{{ fact.value }}</p>{{ analysis_ui.sources(fact.source) }}</article>{% endfor %}</div>
+        <p class="market-muted">Un plafond ou une estimation ne constitue pas un chiffre d’affaires garanti. Confirmer la période, le périmètre et les conditions des montants annoncés avant de chiffrer.</p>
+      </section>
+    {% elseif analysis.ceiling %}
+      <article class="analysis-note"><h3>Plafond extrait du descriptif</h3><strong>{{ analysis.ceiling }}</strong><p>{{ analysis.noMinimum ? 'Sans minimum annoncé. Confirmer le périmètre du plafond et sa période d’application.' : 'Confirmer le minimum, le maximum et leur périmètre dans les pièces du marché.' }}</p><p>Ce montant ne constitue pas un chiffre d’affaires garanti.</p></article>
+    {% endif %}
+
+    <section id="analysis-scope" aria-labelledby="analysis-scope-title">
+      <div class="analysis-section-heading"><div><span class="analysis-kicker">02 / PÉRIMÈTRE À CHIFFRER</span><h3 id="analysis-scope-title">Une lecture par lot et par intervention</h3></div></div>
+      {% if lots|length %}
+        <div class="analysis-lot-grid">{% for lot in lots %}
+          <article class="analysis-lot"><div class="analysis-lot-heading"><span class="analysis-lot-number">{{ lot.number ? 'Lot ' ~ lot.number : 'Lot · numéro non renseigné' }}</span>{{ analysis_ui.sources(lot.source) }}</div><h4>{{ lot.title }}</h4>
+            <dl class="analysis-lot-facts"><div><dt>Plafond extrait du descriptif</dt><dd>{{ lot.ceiling ?: 'Non renseigné' }}</dd></div><div><dt>Date limite · Paris</dt><dd>{{ lot.deadline ? date(lot.deadline, 'UTC')|date('d/m/Y à H:i', 'Europe/Paris') : 'Non renseignée' }}</dd></div><div><dt>Début annoncé</dt><dd>{{ lot.start ? lot.start|date('d/m/Y') : 'Non renseigné' }}</dd></div><div><dt>Durée annoncée</dt><dd>{{ lot.duration ?: 'Non renseignée' }}</dd></div></dl>
+            {% if lot.description %}<details class="analysis-description"><summary>Lire le périmètre du lot</summary><p>{{ lot.description }}</p></details>{% endif %}
+            <p class="analysis-lot-action"><i class="bi bi-arrow-return-right" aria-hidden="true"></i> Préparer les quantités, rendements et moyens de ce lot ; confirmer ses modalités d’attribution et les éventuelles mutualisations.</p>
+          </article>
+        {% endfor %}</div>
+      {% else %}<div class="analysis-empty"><i class="bi bi-layers" aria-hidden="true"></i><p>Aucun détail de lot disponible dans les données analysées. Cela ne permet pas de conclure que le marché comporte un lot unique. Vérifier le règlement et le détail de la consultation.</p></div>{% endif %}
+      {% if phases|length %}
+        <div class="analysis-subheading"><h4>Tranches, phases ou secteurs décrits</h4><p>Ces éléments proviennent du descriptif. Ils ne constituent pas une liste de lots attribués séparément.</p></div>
+        <div class="analysis-phase-list">{% for phase in phases %}<article class="analysis-phase"><span class="analysis-phase-index" aria-hidden="true">{{ '%02d'|format(loop.index) }}</span><div><h4>{{ phase.title }}</h4><p>{{ phase.description }}</p>{{ analysis_ui.sources(phase.source) }}</div></article>{% endfor %}</div>
+        <p class="market-muted">Distinguer les prestations fermes des prestations conditionnelles ou optionnelles dans le planning et le chiffrage. Les quantités décrites ne remplacent pas les plans et les pièces de prix.</p>
+      {% endif %}
+    </section>
+
+    <section id="analysis-criteria" aria-labelledby="analysis-criteria-title"><div class="analysis-section-heading"><div><span class="analysis-kicker">03 / ARGUMENTAIRE ET PREUVES</span><h3 id="analysis-criteria-title">Les points à défendre dans votre offre</h3></div><span class="analysis-tag">Recommandations</span></div>
+      {% for criterion in analysis.criteria %}<article class="analysis-criterion"><div class="analysis-criterion-heading"><h4>{{ criterion.title }}</h4><strong>{{ criterion.weight is not null ? criterion.weight ~ (analysis.percent ? ' %' : ' · poids annoncé') : 'Poids non renseigné' }}</strong></div>{% if analysis.percent %}<div class="analysis-meter" aria-hidden="true"><span style="width:{{ criterion.weight >= 0 and criterion.weight <= 100 ? criterion.weight : 0 }}%"></span></div>{% endif %}<div class="analysis-two"><div><span class="analysis-kicker">RÉPONSE À PRÉPARER</span><p>{{ criterion.action }}</p></div><div><span class="analysis-kicker">PREUVES À RASSEMBLER</span><p>{{ criterion.proof }}</p></div></div>{{ analysis_ui.sources(criterion.source|default('/enrichment/detail/contract/awardCriteria')) }}<small>Adapter la réponse aux sous-critères et aux pièces demandées dans le règlement.</small></article>
+      {% else %}<div class="analysis-empty"><i class="bi bi-list-check" aria-hidden="true"></i><p>Les critères ne sont pas renseignés. Récupérer leur pondération et les sous-critères dans le règlement de consultation avant de définir les priorités du mémoire.</p></div>{% endfor %}
+    </section>
+
+    <section aria-labelledby="analysis-calendar-title"><div class="analysis-section-heading"><div><span class="analysis-kicker">04 / CALENDRIER ET EXIGENCES</span><h3 id="analysis-calendar-title">Vérifier les conditions de réalisation</h3></div></div>
+      <div class="analysis-two"><article class="analysis-note"><h4>Durée et capacité à mobiliser</h4><dl class="analysis-facts"><div><dt>Début annoncé</dt><dd>{{ analysis.start ? analysis.start|date('d/m/Y') : 'Non renseigné' }}</dd></div><div><dt>Durée initiale</dt><dd>{{ analysis.durationLabel|default(null) ?: 'Non renseignée' }}</dd></div><div><dt>Accord-cadre</dt><dd>{{ analysis.framework is null ? 'Non renseigné' : (analysis.framework ? 'Oui' : 'Non') }}</dd></div></dl>{{ analysis_ui.sources('/enrichment/detail/contract/timeFrame/start · /enrichment/detail/contract/initialDuration · /enrichment/detail/contract/withFrameworkAgreement') }}
+        {% if analysis.extensionLabels|default([])|length %}<h5 class="analysis-minor-title">Reconductions annoncées</h5><ol class="analysis-extension-list">{% for extension in analysis.extensionLabels %}<li><div><strong>{{ extension.start ? extension.start|date('d/m/Y') : 'Date non renseignée' }}</strong><span>{{ extension.duration ?: 'Durée non renseignée' }}</span></div>{{ analysis_ui.sources(extension.source) }}</li>{% endfor %}</ol>{% endif %}
+        <p class="market-muted">Vérifier la disponibilité des équipes et du matériel, les temps de déplacement et les solutions de remplacement sur toute la période.</p></article>
+        <article class="analysis-note"><h4>Conditions à confirmer dans les pièces</h4><dl class="analysis-facts">{% for requirement in analysis.requirements %}<div><dt>{{ requirement.label }}{{ analysis_ui.sources(requirement.source) }}</dt><dd>{{ requirement.value }}</dd></div>{% endfor %}</dl><p class="market-muted">Une valeur non renseignée ne signifie pas que l’exigence est absente. Contrôler le règlement, le CCTP et le CCAP.</p></article>
+      </div>
+    </section>
+
+    <section aria-labelledby="analysis-field-title"><div class="analysis-section-heading"><div><span class="analysis-kicker">05 / MÉTHODE ET CHIFFRAGE</span><h3 id="analysis-field-title">Préparer les moyens et le prix</h3></div><span class="analysis-tag">Recommandations</span></div>
+      <article class="analysis-field-note"><div><span class="analysis-field-icon"><i class="bi bi-cone-striped" aria-hidden="true"></i></span><h4>Préparation terrain adaptée à l’objet</h4><p>Pistes déduites du descriptif et de l’intitulé, à valider avec le CCTP et les sites réels.</p></div><ul>{% for item in analysis.specific %}<li>{{ item }}</li>{% endfor %}</ul></article>
+      <div class="analysis-two analysis-pricing"><article class="analysis-note"><h4>Construire le coût de revient</h4><p>Main-d’œuvre chargée, matériel, mobilisation et déplacements, fournitures, évacuation et traitement, frais de structure, puis aléas chiffrés.</p><p>Établir les rendements par prestation. Tester les volumes faibles et les interventions dispersées avant de définir le prix et la marge.</p></article><article class="analysis-note"><h4>Contrôler avant la remise</h4><ul><li>Unités, quantités et cohérence des pièces de prix.</li><li>Accès, sécurisation, installation et nettoyage.</li><li>Paiement, révision des prix, pénalités et reconductions à lire dans les pièces.</li><li>Formule de notation à récupérer avant toute simulation de note.</li></ul></article></div>
+    </section>
+
+    <section aria-labelledby="analysis-competition-title"><div class="analysis-section-heading"><div><span class="analysis-kicker">06 / CONTEXTE CONCURRENTIEL</span><h3 id="analysis-competition-title">Ce qui est établi, ce qui reste à rechercher</h3></div></div>
+      <div class="analysis-competition"><article><h4>Attribution et participation</h4><p>{{ analysis.hasAward ? 'Un champ d’attribution est renseigné : examiner son contenu avant toute comparaison.' : 'Aucune attribution exploitable n’est fournie ici : le titulaire précédent et ses prix ne sont pas établis.' }}</p><p>{{ analysis.responses is not null ? 'Nombre de réponses indiqué : ' ~ analysis.responses ~ '.' : 'Le nombre de candidats n’est pas renseigné.' }}</p>{{ analysis_ui.sources('/enrichment/detail/contract/award · /enrichment/detail/contract/totalResponsesReceived') }}</article><article><h4>Recherche à mener</h4><p>Comparer les marchés antérieurs du même acheteur avec des prestations, durées et périmètres similaires. Une ancienne attribution ne révèle pas les futures offres concurrentes.</p><small>Les utilisateurs « viewers » décrivent le suivi interne, pas la concurrence.</small></article></div>
+    </section>
+    <div class="analysis-conclusion"><i class="bi bi-check2-square" aria-hidden="true"></i><div><strong>Passer de l’analyse à la préparation</strong><p>Enregistrer la décision, les tâches et les hypothèses dans l’espace de travail ci-dessous. Valider la réponse après lecture des pièces, contrôle des capacités et chiffrage.</p></div><a href="#market-preparation" class="market-button">Préparer l’offre <span aria-hidden="true">↓</span></a></div>
   </div>
 </section>

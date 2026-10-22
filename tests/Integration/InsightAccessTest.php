@@ -155,4 +155,60 @@ final class InsightAccessTest extends KernelTestCase
         $this->client->request('GET', '/fr/administrateur/'.$this->other.'/marches/fiche/'.$id.'?format=json');
         self::assertSame(403, $this->client->getResponse()->getStatusCode());
     }
+    public function testPreparationPersistsIsTenantScopedAndRejectsStaleRevision(): void
+    {
+        $store = self::getContainer()->get(InsightStore::class);
+        $remote = '11111111-1111-4111-8111-111111111112';
+        $id = InsightStore::id($this->tenant, $remote);
+        $row = ['remote_id' => $remote, 'title' => 'Entretien des arbres', 'buyer' => 'Acheteur', 'deadline' => '2030-11-02 11:00:00'];
+        $store->saveMarket($this->tenant, $row, ['contract_id' => $remote], 'test');
+        $base = '/fr/administrateur/'.$this->tenant.'/marches/fiche/'.$id;
+        $page = $this->client->request('GET', $base);
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+        $csrf = $page->filter('#tender-preparation input[name="_token"]')->attr('value');
+        $this->client->request('POST', $base.'/preparation', ['decision' => 'go']);
+        self::assertSame(403, $this->client->getResponse()->getStatusCode());
+        $input = ['_token' => $csrf, 'source_version' => $page->filter('#tender-preparation input[name="source_version"]')->attr('value'), 'revision' => '0', 'decision' => 'partial', 'owner' => (string) $this->user->getId(), 'notes' => '<script>alert(1)</script>', 'scope' => 'Lot 01', 'tasks' => ['pricing' => ['done' => '1', 'due' => '2030-10-30']], 'costs' => [['label' => 'Équipe', 'quantity' => '2.5', 'cost' => '100', 'price' => '150']], 'documents' => [['title' => 'CCTP', 'url' => 'https://example.test/dce', 'status' => 'received']]];
+        $this->client->request('POST', $base.'/preparation', $input);
+        self::assertSame(200, $this->client->getResponse()->getStatusCode(), $this->client->getResponse()->getContent());
+        $saved = json_decode($this->client->getResponse()->getContent(), true);
+        self::assertSame(1, $saved['revision']);
+        self::assertEquals(125, $saved['totals']['margin']);
+        $this->client->request('POST', $base.'/preparation', $input);
+        self::assertSame(422, $this->client->getResponse()->getStatusCode());
+        $this->client->request('POST', '/fr/administrateur/'.$this->other.'/marches/fiche/'.$id.'/preparation', $input);
+        self::assertSame(403, $this->client->getResponse()->getStatusCode());
+        // A subsequent provider import must never overwrite internal preparation.
+        $store->saveMarket($this->tenant, $row, ['contract_id' => $remote, 'extra' => 'new'], 'new-import');
+        $this->client->request('GET', $base);
+        $html = $this->client->getResponse()->getContent();
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+        self::assertStringContainsString('Lot 01', $html);
+        self::assertStringContainsString('&lt;script&gt;alert(1)&lt;/script&gt;', $html);
+        self::assertStringNotContainsString('<script>alert(1)</script>', $html);
+        $store->db->update('insight_market', ['deadline' => '2030-11-04 11:00:00'], ['id' => $id]);
+        $input['revision'] = '1';
+        $this->client->request('POST', $base.'/preparation', $input);
+        self::assertSame(422, $this->client->getResponse()->getStatusCode());
+        self::assertStringContainsString('changé pendant', json_decode($this->client->getResponse()->getContent(), true)['message']);
+        $store->db->update('insight_market', ['deadline' => $row['deadline']], ['id' => $id]);
+        $input['revision'] = '1'; $input['owner'] = '999999';
+        $this->client->request('POST', $base.'/preparation', $input);
+        self::assertSame(422, $this->client->getResponse()->getStatusCode());
+        $input['owner'] = ''; $input['documents'][0]['url'] = 'javascript:alert(1)';
+        $this->client->request('POST', $base.'/preparation', $input);
+        self::assertSame(422, $this->client->getResponse()->getStatusCode());
+    }
+
+    public function testMissingPreparationMigrationDoesNotBreakMarketDetails(): void
+    {
+        $store = self::getContainer()->get(InsightStore::class);
+        $remote = '11111111-1111-4111-8111-111111111113';
+        $store->saveMarket($this->tenant, ['remote_id' => $remote, 'title' => 'Marché', 'buyer' => 'Acheteur', 'deadline' => null], ['contract_id' => $remote], 'test');
+        $store->db->executeStatement('DROP TABLE insight_preparation');
+        $this->client->request('GET', '/fr/administrateur/'.$this->tenant.'/marches/fiche/'.InsightStore::id($this->tenant, $remote));
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+        self::assertStringContainsString('après la mise à jour de la base', $this->client->getResponse()->getContent());
+    }
+
 }

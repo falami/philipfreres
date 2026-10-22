@@ -1,0 +1,260 @@
+{
+  "cirad": {
+    "enrichment": {
+      "detail": {
+        "contract": {
+          "reference": "2026DTAAO0400",
+          "translations": [
+            {
+              "language": "FR",
+              "description": "Le présent contrat est un accord-cadre « composite ». Le lot 1 correspond pour partie à un marché ordinaire et pour partie à un accord-cadre à bons de commande. Le lot 2 comprend uniquement un accord cadre à bon de commande. Chaque lot fera l'objet d'une attribution séparée. Le présent marché à pour objet des prestations d'entretien de débroussaillages et d'élagages des espaces verts du Cirad dans l'agglomération de Montpellier Méditerranée Métropole",
+              "object": "MARCHE D'ENTRETIEN, DE DEBROUSSAILLAGE ET D'ELAGAGES DES ESPACES VERTS DU CIRAD"
+            }
+          ],
+          "initialDuration": {
+            "duration": "12",
+            "durationType": "MONTH"
+          },
+          "timeFrame": {
+            "start": null
+          },
+          "extensions": [
+            {
+              "startDate": "2027-09-29",
+              "duration": {
+                "duration": "1",
+                "durationType": "YEAR"
+              }
+            },
+            {
+              "startDate": "2028-09-29",
+              "duration": {
+                "duration": "1",
+                "durationType": "YEAR"
+              }
+            },
+            {
+              "startDate": "2029-09-29",
+              "duration": {
+                "duration": "1",
+                "durationType": "YEAR"
+              }
+            }
+          ],
+          "awardCriteria": [],
+          "withFrameworkAgreement": null,
+          "estimatedAmount": {
+            "singleValue": null
+          },
+          "response": "2026-10-29T11:00:00Z",
+          "renewalOrigin": "DATA_SCIENCE",
+          "renewal": "2030-09-29"
+        },
+        "hasDocuments": true,
+        "lotsCount": 2
+      },
+      "lots": [
+        {
+          "id": "fixture-lot-0",
+          "number": "01",
+          "response": "2026-10-29T11:00:00Z",
+          "timeFrame": {
+            "start": "2026-12-01",
+            "duration": "12",
+            "durationType": "MONTH"
+          },
+          "translations": [
+            {
+              "language": "FR",
+              "object": "Débroussaillages (OLD) - Élagages et Abattages",
+              "description": "Débroussaillages (OLD) - Élagages et Abattages &amp;lt;br/&amp;gt; Montant HT maximum du lot pour la durée totale du contrat : 200 000,00 Euro(s) H.T"
+            }
+          ]
+        },
+        {
+          "id": "fixture-lot-1",
+          "number": "02",
+          "response": "2026-10-29T11:00:00Z",
+          "timeFrame": {
+            "start": "2026-12-01",
+            "duration": "12",
+            "durationType": "MONTH"
+          },
+          "translations": [
+            {
+              "language": "FR",
+              "object": "Entretiens des espaces verts",
+              "description": "Entretiens des espaces verts &amp;lt;br/&amp;gt; Montant HT maximum du lot pour la durée totale du contrat : 120 000,00 Euro(s) H.T"
+            }
+          ]
+        }
+      ]
+    },
+    "followed": {
+      "metadata": {
+        "hasQuestionsAnswers": true
+      }
+    }
+  },
+  "acm": {
+    "enrichment": {
+      "detail": {
+        "contract": {
+          "reference": "2026-0046",
+          "translations": [
+            {
+              "language": "FR",
+              "description": "La consultation est passée selon la procédure de l'Appel d'offres ouvert (Articles L.2124-2, R.2124-2 1°, R.2161-2 à R.2161-5 du Code de la commande publique). Il s'agit de d'un accord-cadre mono-attributaire à bons de commande en application des articles R.2162-2, R.2162-4 2° et R.2162-13 à R.2162-14 du Code de la commande publique. Volume de la commande sur la durée ferme du marché: Sans Minimum/Maxi: 1.600.000,00 euro(s) HT sur la durée totale du marché",
+              "object": "PETITS TRAVAUX D'ENTRETIEN ET D'ELAGAGE D'ARBRES SUR LE PATRIMOINE D'ACM HABITAT"
+            }
+          ],
+          "initialDuration": {
+            "duration": "12",
+            "durationType": "MONTH"
+          },
+          "timeFrame": {
+            "start": "2027-03-01"
+          },
+          "extensions": [
+            {
+              "startDate": "2028-09-30",
+              "duration": {
+                "duration": "12",
+                "durationType": "MONTH"
+              }
+            },
+            {
+              "startDate": "2029-09-30",
+              "duration": {
+                "duration": "12",
+                "durationType": "MONTH"
+              }
+            },
+            {
+              "startDate": "2027-09-30",
+              "duration": {
+                "duration": "12",
+                "durationType": "MONTH"
+              }
+            }
+          ],
+          "awardCriteria": [
+            {
+              "text": "Performances en matière de protection de l'environnement",
+              "type": "QUALITY",
+              "weight": "10",
+              "order": "2"
+            },
+            {
+              "text": "Valeur technique",
+              "type": "QUALITY",
+              "weight": "40",
+              "order": "1"
+            },
+            {
+              "text": "Prix",
+              "type": "PRICE",
+              "weight": "50",
+              "order": "0"
+            }
+          ],
+          "withFrameworkAgreement": true,
+          "estimatedAmount": {
+            "singleValue": null
+          },
+          "response": "2026-11-02T11:00:00Z",
+          "renewalOrigin": "DATA_SCIENCE",
+          "renewal": "2030-09-30"
+        },
+        "hasDocuments": true,
+        "lotsCount": 0
+      },
+      "lots": []
+    },
+    "followed": {
+      "metadata": {
+        "hasQuestionsAnswers": true
+      }
+    }
+  },
+  "jasse": {
+    "enrichment": {
+      "detail": {
+        "contract": {
+          "reference": "M2026-051 PREV",
+          "translations": [
+            {
+              "language": "FR",
+              "description": "L'agglomération du Pays de l'Or porte un programme de travaux de protection contre les inondations de la Jasse entre l'autoroute A9 et le canal BRL, en amont de la RD189 à Mauguio (34). Les aménagements comprennent :\n - Au nord, l'élargissement et le confortement d'une ravine de déviation des eaux par la mise en place d'enrochements (secteur Lac de la Mourre),\n - Au sud, la création d'un lit moyen en rive droite de la Jasse et le décapage des terrains en rive gauche (secteur RD189). Les protections proposées sont dimensionnées pour la crue de projet, correspondant à la crue centennale théorique de la Jasse. Le marché porte sur des travaux de protection contre les inondations de la Jasse en amont de la RD189 à Mauguio, soit :\n - Consolidation des berges par pose d'enrochements liaisonnés depuis le lit majeur du cours d'eau sur un linéaire de 40 ml sur le secteur du Lac de la Mourre,\n - Modification du profil en travers du cours d'eau sur un linéaire de 35 ml sur le secteur RD189.",
+              "object": "TRAVAUX DE PROTECTION CONTRE LES INONDATIONS DE LA JASSE EN AMONT DE LA RD189 A MAUGUIO"
+            }
+          ],
+          "initialDuration": {
+            "duration": "4",
+            "durationType": "MONTH"
+          },
+          "timeFrame": {
+            "start": null
+          },
+          "extensions": [],
+          "awardCriteria": [],
+          "withFrameworkAgreement": null,
+          "estimatedAmount": {
+            "singleValue": null
+          },
+          "response": "2026-11-13T11:00:00Z",
+          "renewalOrigin": "DATA_SCIENCE",
+          "renewal": null
+        },
+        "hasDocuments": true,
+        "lotsCount": 0
+      },
+      "lots": []
+    },
+    "followed": {
+      "metadata": {
+        "hasQuestionsAnswers": true
+      }
+    }
+  },
+  "cen": {
+    "enrichment": {
+      "detail": {
+        "contract": {
+          "reference": "26-MAR-27",
+          "translations": [
+            {
+              "language": "FR",
+              "description": "Le présent marché consiste en : Tranche ferme :\n - Phase n°1 - site de l'ancienne carrière de la Lauze : L'enlèvement et l'évacuation de déchets de différentes natures vers une filière de traitement adaptée, dans le but de procéder à une renaturation des parcelles.\n - Phase n°2 - parcelle située aux abords de la ZAC Marcel Dassault (secteurs Sud, C et B1) : L'enlèvement et l'évacuation sur une, de déchets de différentes natures vers une filière de traitement adaptée, dans le but de procéder à une renaturation de la parcelle.\n - Phase n°3 - parcelle située aux abords de la ZAC Marcel Dassault (secteurs Sud, C et B1): L'arrachage, le transport et le traitement d'Espèces exotiques végétales envahissantes (EEVE) Tranche conditionnelle :\n - L'enlèvement et l'évacuation de déchets sur une parcelle située aux abords de la ZAC Marcel Dassault (secteur B2), de déchets de différentes natures vers une filière de traitement adaptée, dans le but de procéder à une renaturation de la parcelle.",
+              "object": "Retrait et évacuation, sur deux sites de l'agglomération de Montpellier, de déchets de différentes natures vers une filière de traitement adaptée."
+            }
+          ],
+          "initialDuration": {
+            "duration": null,
+            "durationType": null
+          },
+          "timeFrame": {
+            "start": null
+          },
+          "extensions": [],
+          "awardCriteria": [],
+          "withFrameworkAgreement": null,
+          "estimatedAmount": {
+            "singleValue": null
+          },
+          "response": "2026-11-16T11:00:00Z",
+          "renewalOrigin": "DATA_SCIENCE",
+          "renewal": null
+        },
+        "hasDocuments": true,
+        "lotsCount": 0
+      },
+      "lots": []
+    },
+    "followed": {
+      "metadata": {
+        "hasQuestionsAnswers": false
+      }
+    }
+  }
+}

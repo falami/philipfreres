@@ -16,7 +16,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ENTITE_ADMIN', subject: 'entite')]
 final class InsightController extends AbstractController
 {
-    public function __construct(private readonly InsightStore $store, private readonly InsightVault $vault, private readonly InsightClient $client, private readonly InsightRecipients $recipients, #[Autowire('%env(default::APP_URL)%')] private readonly ?string $appUrl) {}
+    public function __construct(private readonly InsightStore $store, private readonly InsightVault $vault, private readonly InsightClient $client, private readonly InsightRecipients $recipients, private readonly \App\Service\Intescia\InsightPreparation $preparation, #[Autowire('%env(default::APP_URL)%')] private readonly ?string $appUrl) {}
 
     private function callbackUrl(Entite $entite): string
     {
@@ -258,6 +258,31 @@ final class InsightController extends AbstractController
         return $this->json(['draw' => $request->query->getInt('draw'), 'recordsTotal' => (int) $this->store->db->fetchOne('SELECT COUNT(*) FROM insight_market WHERE tenant_id = ?', [$tenant]), 'recordsFiltered' => (int) $this->store->db->fetchOne('SELECT COUNT(*) FROM insight_market WHERE '.$where, $params), 'data' => $rows]);
     }
 
+    #[Route('/fiche/{id}/preparation', name: 'preparation', methods: ['POST'], requirements: ['id' => '[a-f0-9]{64}'])]
+    public function savePreparation(string $id, Request $request, #[MapEntity(id: 'entite')] Entite $entite): Response
+    {
+        $this->csrf($request, $entite);
+        $market = $this->store->market($entite->getId(), $id);
+        if (!$market) throw $this->createNotFoundException();
+        $payload = $market['payload'] + ['enrichment' => $this->store->cache($entite->getId(), $market['payload']['contract_id'])];
+        try {
+            $input = $request->request->all();
+            $revision = filter_var($input['revision'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+            if ($revision === false || $revision === null) throw new InsightException('Version de formulaire invalide.');
+            $snapshot = \App\Service\Intescia\InsightPreparation::snapshot($payload, $market);
+            if (!is_string($input['source_version'] ?? null) || !hash_equals(\App\Service\Intescia\InsightPreparation::fingerprint($snapshot), $input['source_version'])) throw new InsightException('Les données du marché ont changé pendant votre préparation. Copiez votre saisie, rechargez la fiche et vérifiez les changements avant de réessayer.');
+            $prior = $this->preparation->load($entite->getId(), $id);
+            if (\App\Service\Intescia\InsightPreparation::changes($prior['data']['snapshot'], $snapshot) && ($input['reviewed_changes'] ?? '') !== '1') throw new InsightException('Confirmez la lecture des changements du marché.');
+            $data = \App\Service\Intescia\InsightPreparation::validate($input, $this->recipients->available($entite->getId()));
+            $user = $this->getUser();
+            $author = $user instanceof \App\Entity\Utilisateur ? trim($user->getPrenom().' '.$user->getNom()) : 'Administrateur';
+            $this->preparation->save($entite->getId(), $id, $revision, $data, $author, \App\Service\Intescia\InsightPreparation::snapshot($payload, $market));
+            return $this->json(['ok' => true, 'revision' => $revision + 1, 'message' => 'Préparation enregistrée.', 'totals' => \App\Service\Intescia\InsightPreparation::totals($data['costs'])]);
+        } catch (InsightException $e) {
+            return $this->json(['ok' => false, 'message' => $e->getMessage()], 422);
+        }
+    }
+
     #[Route('/fiche/{id}', name: 'detail', methods: ['GET'], requirements: ['id' => '[a-f0-9]{64}'])]
     public function detail(string $id, Request $request, #[MapEntity(id: 'entite')] Entite $entite): Response
     {
@@ -267,6 +292,7 @@ final class InsightController extends AbstractController
         if ($request->query->get('format') === 'json') {
             return new Response(json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR), 200, ['Content-Type' => 'application/json', 'Content-Disposition' => 'attachment; filename="marche-'.$market['remote_id'].'.json"', 'X-Content-Type-Options' => 'nosniff']);
         }
-        return $this->render('administrateur/marches/detail.html.twig', ['entite' => $entite, 'market' => $market, 'fields' => array_map(static fn ($field) => [$field[0], $field[1], \App\Service\Intescia\InsightPresentation::safeUrl($field[1])], InsightNormalizer::flatten($payload)), 'presentation' => \App\Service\Intescia\InsightPresentation::build($payload), 'payload' => $payload]);
+        $preparation = $this->preparation->load($entite->getId(), $id);
+        return $this->render('administrateur/marches/detail.html.twig', ['entite' => $entite, 'market' => $market, 'fields' => array_map(static fn ($field) => [$field[0], $field[1], \App\Service\Intescia\InsightPresentation::safeUrl($field[1])], InsightNormalizer::flatten($payload)), 'presentation' => \App\Service\Intescia\InsightPresentation::build($payload), 'payload' => $payload, 'preparation' => $preparation, 'preparation_source_version' => \App\Service\Intescia\InsightPreparation::fingerprint(\App\Service\Intescia\InsightPreparation::snapshot($payload, $market)), 'preparation_users' => $this->recipients->available($entite->getId()), 'preparation_decisions' => \App\Service\Intescia\InsightPreparation::DECISIONS, 'preparation_tasks' => \App\Service\Intescia\InsightPreparation::TASKS, 'preparation_changes' => \App\Service\Intescia\InsightPreparation::changes($preparation['data']['snapshot'], \App\Service\Intescia\InsightPreparation::snapshot($payload, $market)), 'preparation_totals' => \App\Service\Intescia\InsightPreparation::totals($preparation['data']['costs'])]);
     }
 }

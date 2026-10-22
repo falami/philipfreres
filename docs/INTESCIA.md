@@ -127,3 +127,23 @@ Le même cron `app:intescia:run` exécute les récapitulatifs, sans nouvelle tâ
 Seuls les marchés actifs de l’entité avec une date future sont inclus, par échéance croissante. Pas d’e-mail vide. Un import complet de moins de 24 heures et une connexion autorisée sont requis ; activer la synchronisation horaire pour une utilisation autonome. Les jours restants sont arrondis au supérieur sur les heures restantes ; moins de 24 h est signalé. Les couleurs et le logo proviennent de l’entité ; le logo local est embarqué dans le message. Chaque destinataire reçoit un message individuel HTML et texte. L’historique distingue les envois acceptés par SMTP et ceux à vérifier ; pas de relance automatique après un envoi incertain.
 
 `--dry-run` compte également les récapitulatifs éligibles sans les envoyer ni écrire le registre. Les tests n’appellent ni Intescia ni un serveur SMTP réel.
+
+## Analyse et préparation de la réponse
+
+La fiche marché comporte une analyse des données déjà importées et un espace **Préparer ma réponse**. L’analyse distingue les champs structurés, les extraits du descriptif et les recommandations. Les sources ouvrent les champs correspondants. Les lots, phases, tranches, plafonds et calendriers sont affichés lorsque les données le permettent ; les incohérences et informations manquantes sont signalées. Les pondérations ne sont présentées comme une répartition en pourcentage que si chaque poids est compris entre 0 et 100 et leur somme vaut 100. Une date de renouvellement estimée par Intescia reste distincte d’une échéance contractuelle.
+
+La préparation conserve la décision, le responsable, l’objectif interne, les actions et leurs preuves, les références documentaires, les hypothèses et jusqu’à 40 postes de chiffrage. Les montants sont HT, arrondis au centime par ligne ; la marge affichée est le prix de vente moins les seuls coûts saisis. Les lots et tranches figurant dans le même chiffrage sont additionnés, sans présumer qu’ils seront tous commandés.
+
+Le registre documentaire conserve jusqu’à 30 références (titre, lien HTTP(S), état, version/page/note). Il ne télécharge pas les fichiers, ne lit pas le DCE et ne fait pas d’OCR. L’analyse n’invente ni prix concurrents, ni chance de succès, ni obligations absentes des données. Les plans, pièces et réponses de l’acheteur doivent être consultés pour compléter la préparation.
+
+### Installation
+
+Déployer la migration additive `DoctrineMigrations\Version20261023010000` avec la procédure de migration habituelle. Elle crée uniquement `insight_preparation`. Exemple d’exécution ciblée, une fois par base, depuis la racine du projet :
+
+```bash
+APP_ENV=prod APP_DEBUG=0 /usr/local/bin/php bin/console doctrine:migrations:execute 'DoctrineMigrations\Version20261023010000' --up --no-interaction
+```
+
+La consultation reste disponible si cette migration n’a pas encore été exécutée ; seul l’espace de sauvegarde affiche une demande de mise à jour. Aucune modification du cron n’est nécessaire. La simple consultation et la sauvegarde n’appellent pas l’API Intescia.
+
+Les administrateurs de l’entité partagent la préparation. Une sauvegarde concurrente est refusée sans écraser les données précédentes. Les imports conservent les notes et le chiffrage. Les modifications détectées sur l’objet, les critères, les dates ou les lots demandent une relecture ; un changement survenu après l’ouverture du formulaire exige de recharger la fiche. Les 30 dernières sauvegardes conservent un historique de date, auteur, décision et catégories modifiées, sans restauration automatique d’une version antérieure.
