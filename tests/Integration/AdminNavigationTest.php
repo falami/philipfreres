@@ -55,6 +55,8 @@ final class AdminNavigationTest extends KernelTestCase
             self::assertStringContainsString($label, $sidebar->text());
         }
         self::assertCount(1, $sidebar->filter('a[aria-current="page"]'));
+        // Appels d’offres is a direct link: no unrelated section should open on arrival.
+        self::assertCount(0, $sidebar->filter('details[open]'));
         self::assertCount(1, $page->filter('.pf-account form[method="post"] input[name="_csrf_token"]'));
         self::assertStringContainsString('/engin', $sidebar->filter('a')->reduce(fn ($node) => trim($node->text()) === 'Liste des engins')->attr('href'));
         self::assertStringContainsString('/materiel', $sidebar->filter('a')->reduce(fn ($node) => trim($node->text()) === 'Liste du matériel')->attr('href'));
@@ -95,5 +97,7 @@ final class AdminNavigationTest extends KernelTestCase
             self::assertStringNotContainsString($label, $sidebar);
         }
         self::assertCount(0, $page->filter('.pf-settings'));
+        self::assertCount(1, $page->filter('#pf-sidebar details[open]'));
+        self::assertStringContainsString('Reporting chantier', $page->filter('#pf-sidebar details[open] > summary')->text());
     }
 }
