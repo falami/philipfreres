@@ -56,8 +56,8 @@ Le répertoire `var/intescia-locks` doit être inscriptible par PHP web et CLI ;
 - Un clic **Importer la sélection** met la demande en attente du prochain passage.
 - L’option **Synchroniser toutes les heures** effectue un import au plus une fois par heure.
 - Les rappels partent au premier passage dans la fenêtre choisie (précision de cinq minutes, plus la durée d’un import). Ils ne partent jamais après l’échéance.
-- Une importation incomplète suspend les alertes et désactive la synchronisation automatique. Corriger le problème, relancer l’import, puis réactiver l’option si souhaité.
-- Un import complet de moins de 24 heures est nécessaire à l’envoi : cela évite des rappels fondés sur une sélection devenue ancienne.
+- Une importation incomplète suspend les rappels d’échéance et désactive la synchronisation automatique ; elle ne bloque pas le récapitulatif périodique. Corriger le problème, relancer l’import, puis réactiver l’option si souhaité.
+- Un import complet de moins de 24 heures est nécessaire aux rappels d’échéance. Le récapitulatif périodique utilise aussi les données enregistrées en cas d’échec, avec une mention de fraîcheur.
 - Suspendre ce cron avec les autres writers pendant les déploiements et restaurations.
 - Faire tourner et protéger `var/log/intescia-cron.log`, surveiller le code de sortie et le dernier import complet. Le module ne crée pas le cron à votre place.
 
@@ -124,7 +124,7 @@ Déployer aussi la migration additive `DoctrineMigrations\Version20261021170000`
 
 Le même cron `app:intescia:run` exécute les récapitulatifs, sans nouvelle tâche ni appel API propre au récapitulatif. Précision : prochain passage après l’heure (environ 5 minutes plus traitement). Les changements d’heure sont pris en compte. Une exécution manquée peut être rattrapée le jour prévu, jamais en rafale pour les jours antérieurs. Changer l’heure ne renvoie pas un second message le même jour au même destinataire.
 
-Seuls les marchés actifs de l’entité avec une date future sont inclus, par échéance croissante. Pas d’e-mail vide. Un import complet de moins de 24 heures et une connexion autorisée sont requis ; activer la synchronisation horaire pour une utilisation autonome. Les jours restants sont arrondis au supérieur sur les heures restantes ; moins de 24 h est signalé. Les couleurs et le logo proviennent de l’entité ; le logo local est embarqué dans le message. Chaque destinataire reçoit un message individuel HTML et texte. L’historique distingue les envois acceptés par SMTP et ceux à vérifier ; pas de relance automatique après un envoi incertain.
+Seuls les marchés actifs de l’entité avec une date future sont inclus, par échéance croissante. Pas d’e-mail vide. Une connexion autorisée reste requise (une déconnexion explicite suspend les envois). Le récapitulatif continue avec les marchés enregistrés même si le dernier import a échoué ou date de plus de 24 heures. Le mail HTML et texte indique la dernière synchronisation complète et avertit lorsque l’actualisation n’est pas confirmée, y compris en l’absence de premier import complet. Les données peuvent provenir d’un import partiel ; elles ne sont pas présentées comme un instantané du dernier import réussi. Activer la synchronisation horaire pour maintenir les données à jour. Les jours restants sont arrondis au supérieur sur les heures restantes ; moins de 24 h est signalé. Les couleurs et le logo proviennent de l’entité ; le logo local est embarqué dans le message. Chaque destinataire reçoit un message individuel HTML et texte. L’historique distingue les envois acceptés par SMTP et ceux à vérifier ; pas de relance automatique après un envoi incertain.
 
 `--dry-run` compte également les récapitulatifs éligibles sans les envoyer ni écrire le registre. Les tests n’appellent ni Intescia ni un serveur SMTP réel.
 

@@ -3,6 +3,11 @@ Synthèse du {{ date|date('d/m/Y', 'Europe/Paris') }}
 
 {{ markets|length }} marchés à venir, classés par échéance.
 
+Dernière synchronisation complète : {{ last_sync ? last_sync|date('d/m/Y à H:i', 'Europe/Paris') ~ ' (heure de Paris)' : 'aucune enregistrée' }}.
+{% if cached_data %}Données enregistrées · actualisation non confirmée.
+Ce récapitulatif utilise les marchés disponibles dans l’application. La sélection et les dates limites peuvent avoir changé chez l’acheteur ; vérifiez-les avant de déposer votre offre.
+{% endif %}
+
 {% for market in markets %}{{ market.title }}
 Date limite : {{ market.deadline|date('d/m/Y à H:i', 'Europe/Paris') }} (heure de Paris)
 Temps restant : {{ market.days == 1 ? 'moins de 24 h' : market.days ~ ' jours (arrondis au jour supérieur)' }}

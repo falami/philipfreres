@@ -87,3 +87,17 @@ Le script ne fournit pas une transaction atomique couvrant Git, MySQL et le syst
 Les simulations ne constituent pas un déploiement sur o2switch ni un essai de restauration de la base distante. Le SMTP réel et la configuration Apache/OPcache du serveur restent à vérifier lors de l'installation.
 
 Références : [déploiement Symfony 7.4](https://symfony.com/doc/7.4/deployment.html), [héberger Symfony chez o2switch](https://faq.o2switch.fr/guides/php/heberger-application-symfony/).
+
+## Reprise du refus de la migration de préparation des marchés
+
+La migration `DoctrineMigrations\Version20261023010000` crée uniquement la table `insight_preparation`. Elle figure désormais dans `deploy/migrations.allowlist`. Publier ce fichier avec la livraison évite le refus lors des prochains déploiements.
+
+Pour un déploiement **déjà interrompu sur cette migration**, conserver les cron/workers arrêtés. Le lanceur normal refuse une maintenance antérieure. Copier `scripts/resume-tender-deployment.sh` hors du dépôt, par exemple dans `$HOME/bin/deploy-philipfreres/resume-tender-deployment.sh`, puis donner explicitement le dossier de sauvegarde du déploiement en échec :
+
+```bash
+DEPLOY_WRITERS_PAUSED=1 bash "$HOME/bin/deploy-philipfreres/resume-tender-deployment.sh" "$HOME/backups/philipfreres/IDENTIFIANT-DU-DEPLOIEMENT-EN-ECHEC"
+```
+
+Cette reprise est limitée au message exact de refus de cette migration. Elle vérifie les empreintes des sauvegardes, le commit installé, l’absence de changements locaux hors gardes, l’empreinte de la migration examinée, la maintenance HTTPS et la configuration de production. Toute autre migration en attente est refusée. Elle simule puis exécute la migration manquante, compile les ressources et effectue les mêmes contrôles de schéma et HTTPS que le déploiement normal avant de rouvrir. Les fichiers de garde proviennent du commit installé. Aucun code distant n’est récupéré, aucun historique Doctrine n’est falsifié, aucune sauvegarde n’est restaurée ou supprimée.
+
+En cas d’échec, la maintenance Apache reste active et le diagnostic est dans `resume-tender.log` à côté de `deployment.log`. Après le message final de réussite, les cron/workers peuvent être réactivés. Le script ne remplace pas une procédure générale de reprise : un autre type d’échec exige une analyse distincte.

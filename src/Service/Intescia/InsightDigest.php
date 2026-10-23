@@ -45,7 +45,7 @@ final class InsightDigest
         $config = $this->store->config($tenant);
         $result = ['eligible' => 0, 'sent' => 0, 'uncertain' => 0];
         $slot = self::due($config, $now);
-        if (!$slot || empty($config['authorized']) || empty($config['sync_ok']) || !$config['last_success'] || strtotime($config['last_success'].' UTC') < $now->getTimestamp() - 86400) { return $result; }
+        if (!$slot || empty($config['authorized'])) { return $result; }
         $markets = $this->store->db->fetchAllAssociative('SELECT title, deadline FROM insight_market WHERE tenant_id = ? AND active = 1 AND deadline > ? ORDER BY deadline ASC, title ASC', [$tenant, $now->format('Y-m-d H:i:s')]);
         if (!$markets) { return $result; }
         foreach ($markets as &$market) {
@@ -81,6 +81,10 @@ final class InsightDigest
         if (!$company || !filter_var($this->appUrl, FILTER_VALIDATE_URL)) { throw new InsightException('Société ou APP_URL indisponible pour le récapitulatif.'); }
         $color = static fn (?string $value, string $fallback): string => preg_match('/^#[0-9a-f]{6}$/iD', $value ?? '') ? $value : $fallback;
         $context = ['company' => $company->getNom(), 'primary' => $color($company->getCouleurPrincipal(), '#183f33'), 'accent' => $color($company->getCouleurSecondaire(), '#d2c08a'), 'markets' => $markets, 'date' => $now, 'url' => rtrim($this->appUrl, '/').'/fr/administrateur/'.$tenant.'/marches', 'logo' => null];
+        $config = $this->store->config($tenant);
+        $lastSuccess = !empty($config['last_success']) ? strtotime($config['last_success'].' UTC') : false;
+        $context['last_sync'] = $lastSuccess !== false ? (new \DateTimeImmutable('@'.$lastSuccess)) : null;
+        $context['cached_data'] = empty($config['sync_ok']) || $lastSuccess === false || $lastSuccess < $now->getTimestamp() - 86400;
         $logoRoot = realpath($this->projectDir.'/public/uploads/photos/entite/logo');
         $logo = $company->getLogo() && $logoRoot ? realpath($logoRoot.'/'.$company->getLogo()) : false;
         if (!$logo || !str_starts_with($logo, $logoRoot.DIRECTORY_SEPARATOR) || !is_file($logo)) { $logo = null; }
