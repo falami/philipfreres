@@ -42,6 +42,69 @@ final class InsightIntegrationTest extends TestCase
     }
     private function response(array $data, int $status = 200): MockResponse { return new MockResponse(json_encode($data), ['http_code' => $status]); }
 
+    public function testCronRetainsHourlyScheduleAfterOutageAndRespectsCooldown(): void
+    {
+        $recipients = new InsightRecipients($this->createMock(\App\Repository\UtilisateurEntiteRepository::class));
+        $transport = $this->createMock(TransportInterface::class);
+        $transport->expects(self::never())->method('send');
+        $twig = new Environment(new FilesystemLoader());
+        $alerts = new InsightAlerts($this->store, $recipients, $transport, $twig, $this->createMock(UrlGeneratorInterface::class), 'test@example.com', 'https://example.com');
+        $digest = new \App\Service\Intescia\InsightDigest($this->store, $recipients, $transport, $twig, $this->createMock(\Doctrine\ORM\EntityManagerInterface::class), 'test@example.com', 'https://example.com', dirname(__DIR__, 3));
+        $tester = new \Symfony\Component\Console\Tester\CommandTester(new \App\Command\InsightRunCommand($this->store, new InsightImporter($this->store, $this->client), $alerts, $digest));
+        foreach ([503 => true, 403 => false] as $status => $expectedAutoSync) {
+            $config = $this->store->config(1);
+            $config['authorized'] = true;
+            $config['auto_sync'] = true;
+            $config['queued'] = true;
+            $config['alerts'] = false;
+            $config['digest_enabled'] = false;
+            $this->store->saveConfig(1, $config);
+            $calls = 0;
+            $this->client->setHttpClient(new MockHttpClient(function () use (&$calls, $status) {
+                ++$calls;
+                return $this->response([], $status);
+            }));
+            self::assertSame(1, $tester->execute(['--tenant' => '1']));
+            self::assertSame($expectedAutoSync, $this->store->config(1)['auto_sync']);
+            self::assertFalse($this->store->config(1)['sync_ok']);
+            $tester->execute(['--tenant' => '1']);
+            self::assertSame(1, $calls, 'No immediate automatic retry');
+        }
+    }
+
+    public function testRefreshWithoutRotationKeepsExistingToken(): void
+    {
+        $this->client->setHttpClient(new MockHttpClient([
+            $this->response([], 401),
+            $this->response(['access_token' => 'renewed', 'expires_in' => 300]),
+            $this->response(['id' => 1]),
+        ]));
+        self::assertSame(['id' => 1], $this->client->request(1, 'GET', '/me'));
+        $credentials = $this->vault->open($this->store->credentials(1));
+        self::assertSame('refresh', $credentials['refresh_token']);
+        self::assertSame('renewed', $credentials['access_token']);
+    }
+
+    public function testOAuthOutagesAreRetryableButRefusalsAreNot(): void
+    {
+        foreach ([503 => true, 429 => true, 400 => false, 401 => false, 403 => false] as $status => $retryable) {
+            $before = $this->store->credentials(1);
+            $this->client->setHttpClient(new MockHttpClient([
+                $this->response([], 401),
+                $this->response(['error_description' => 'SECRET MUST NOT LEAK'], $status),
+            ]));
+            try {
+                $this->client->request(1, 'GET', '/me');
+                self::fail('Expected OAuth failure');
+            } catch (InsightException $e) {
+                self::assertSame($retryable, $e->retryable);
+                self::assertStringContainsString((string) $status, $e->getMessage());
+                self::assertStringNotContainsString('SECRET', $e->getMessage());
+                self::assertSame($before, $this->store->credentials(1));
+            }
+        }
+    }
+
     public function testVaultAuthenticatesAndDoesNotExposePlaintext(): void
     {
         $sealed = $this->vault->seal(['secret' => 'confidential']);

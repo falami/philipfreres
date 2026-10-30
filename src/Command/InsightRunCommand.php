@@ -40,8 +40,14 @@ final class InsightRunCommand extends Command
                             $config['sync_ok'] = true;
                             $config['message'] = $result['rows'].' marchés / lots importés · '.$result['calls'].' appels API (ce nombre ne mesure pas les crédits).';
                         } catch (\Throwable $e) {
-                            $config['auto_sync'] = false;
+                            // An outage must not permanently disable the user's hourly schedule.
+                            if (!$e instanceof InsightException || !$e->retryable) {
+                                $config['auto_sync'] = false;
+                            }
                             $config['message'] = $e instanceof InsightException ? $e->getMessage() : 'Import interrompu. Vérifiez le service et la base ; les données déjà enregistrées sont conservées.';
+                            if ($config['auto_sync']) {
+                                $config['message'] .= ' Nouvelle tentative automatique dans environ une heure.';
+                            }
                             $failed = true;
                         }
                         $this->store->saveConfig($id, $config);

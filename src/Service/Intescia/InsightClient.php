@@ -39,13 +39,25 @@ final class InsightClient
         $body = $grant + ['client_id' => $credentials['client_id'], 'client_secret' => $credentials['client_secret']];
         try {
             $response = $this->http->request('POST', self::TOKEN, ['body' => $body, 'max_redirects' => 0]);
-            if ($response->getStatusCode() !== 200) { throw new \RuntimeException(); }
+            $status = $response->getStatusCode();
+            if ($status !== 200) {
+                if ($status === 429 || $status >= 500) {
+                    throw new InsightException('Service OAuth Intescia temporairement indisponible (HTTP '.$status.').', true);
+                }
+                throw new InsightException('Autorisation OAuth Intescia refusée (HTTP '.$status.'). Reconnectez DoubleTrade ; si le refus persiste, vérifiez les identifiants et les droits API.');
+            }
             $tokens = $response->toArray(false);
+            // A refresh response may keep the existing refresh token instead of rotating it.
+            if (!array_key_exists('refresh_token', $tokens) && $grant['grant_type'] === 'refresh_token') {
+                $tokens['refresh_token'] = $grant['refresh_token'];
+            }
             if (empty($tokens['access_token']) || !is_string($tokens['access_token']) || empty($tokens['refresh_token']) || !is_string($tokens['refresh_token'])) {
                 throw new \RuntimeException();
             }
+        } catch (InsightException $e) {
+            throw $e;
         } catch (\Throwable) {
-            throw new InsightException('Connexion OAuth refusée ou indisponible. Reconnectez DoubleTrade et vérifiez les droits API.');
+            throw new InsightException('Service OAuth Intescia inaccessible ou réponse invalide. Les identifiants enregistrés sont conservés.', true);
         }
         $credentials['access_token'] = $tokens['access_token'];
         $credentials['refresh_token'] = $tokens['refresh_token'];
@@ -98,12 +110,12 @@ final class InsightClient
                         403 => 'Votre abonnement ou vos droits Intescia ne permettent pas cet accès.',
                         429 => 'Limite de requêtes Intescia atteinte. Relancez l’import plus tard.',
                         default => 'API Intescia indisponible ou réponse refusée (HTTP '.$status.').',
-                    });
+                    }, $status === 429 || $status >= 500);
                 }
                 $data = $response->toArray(false);
                 return $data;
             } catch (InsightException $e) { throw $e; }
-            catch (\Throwable) { throw new InsightException('Réponse Intescia illisible ou délai de connexion dépassé.'); }
+            catch (\Throwable) { throw new InsightException('Réponse Intescia illisible ou délai de connexion dépassé.', true); }
         }
     }
 }
