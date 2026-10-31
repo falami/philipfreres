@@ -18,12 +18,12 @@ final class InsightDigestTest extends TestCase
     {
         $c = ['digest_enabled'=>true, 'digest_start'=>'2026-10-24', 'digest_time'=>'08:00', 'digest_interval'=>2];
         self::assertNull(InsightDigest::due($c, new \DateTimeImmutable('2026-10-24T05:59:00Z')));
-        self::assertNotNull(InsightDigest::due($c, new \DateTimeImmutable('2026-10-24T06:00:00Z')));
+        self::assertNull(InsightDigest::due($c, new \DateTimeImmutable('2026-10-24T06:00:00Z')));
         self::assertNull(InsightDigest::due($c, new \DateTimeImmutable('2026-10-25T12:00:00Z')));
         self::assertNull(InsightDigest::due($c, new \DateTimeImmutable('2026-10-26T06:59:00Z')));
         self::assertNotNull(InsightDigest::due($c, new \DateTimeImmutable('2026-10-26T07:00:00Z')));
         $c['digest_interval']=7;
-        self::assertNotNull(InsightDigest::due($c, new \DateTimeImmutable('2026-10-31T07:00:00Z')));
+        self::assertNull(InsightDigest::due($c, new \DateTimeImmutable('2026-10-31T07:00:00Z')));
         self::assertNull(InsightDigest::due($c, new \DateTimeImmutable('2026-11-01T07:00:00Z')));
     }
 

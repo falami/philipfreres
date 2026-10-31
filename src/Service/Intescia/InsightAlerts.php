@@ -20,18 +20,44 @@ final class InsightAlerts
         #[Autowire('%env(default::APP_URL)%')] private readonly ?string $appUrl,
     ) {}
 
+    /** Subtract elapsed weekday hours in Paris; nights count, weekends do not. */
+    public static function reminderAt(\DateTimeImmutable $deadline, int $hours): \DateTimeImmutable
+    {
+        $cursor = $deadline->setTimezone(new \DateTimeZone('Europe/Paris'));
+        $remaining = max(0, $hours) * 3600;
+        while ($remaining > 0) {
+            $midnight = $cursor->setTime(0, 0);
+            if ($cursor == $midnight) {
+                $day = $cursor->modify('-1 day')->setTime(0, 0);
+            } else {
+                $day = $midnight;
+            }
+            if ((int) $day->format('N') >= 6) {
+                $cursor = $day;
+                continue;
+            }
+            $available = $cursor->getTimestamp() - $day->getTimestamp();
+            $take = min($remaining, $available);
+            $cursor = $cursor->setTimestamp($cursor->getTimestamp() - $take);
+            $remaining -= $take;
+        }
+        return $cursor;
+    }
+
     /** Called under the tenant lock; a sending/uncertain delivery is never automatically retried. */
     public function run(int $tenant, bool $dryRun = false, ?\DateTimeImmutable $now = null): array
     {
         $config = $this->store->config($tenant);
         $now = ($now ?? new \DateTimeImmutable())->setTimezone(new \DateTimeZone('UTC'));
         $result = ['eligible' => 0, 'sent' => 0, 'uncertain' => 0];
+        if ((int) $now->setTimezone(new \DateTimeZone('Europe/Paris'))->format('N') >= 6) { return $result; }
         if (!$config['alerts'] || empty($config['sync_ok']) || !$config['last_success'] || strtotime($config['last_success'].' UTC') < $now->getTimestamp() - 86400) { return $result; }
         if (!filter_var($this->appUrl, FILTER_VALIDATE_URL)) { throw new InsightException('APP_URL doit être configuré avant les envois.'); }
         $users = $this->recipients->available($tenant);
-        $limit = $now->modify('+'.(int) $config['lead_hours'].' hours');
-        $markets = $this->store->db->fetchAllAssociative('SELECT id, deadline FROM insight_market WHERE tenant_id = ? AND active = 1 AND deadline > ? AND deadline <= ? ORDER BY deadline ASC', [$tenant, $now->format('Y-m-d H:i:s'), $limit->format('Y-m-d H:i:s')]);
+        $markets = $this->store->db->fetchAllAssociative('SELECT id, deadline FROM insight_market WHERE tenant_id = ? AND active = 1 AND deadline > ? ORDER BY deadline ASC', [$tenant, $now->format('Y-m-d H:i:s')]);
         foreach ($markets as $marketRef) {
+            $deadline = new \DateTimeImmutable($marketRef['deadline'], new \DateTimeZone('UTC'));
+            if (self::reminderAt($deadline, (int) $config['lead_hours']) > $now) { continue; }
             $market = $this->store->market($tenant, $marketRef['id']);
             foreach (array_unique(array_map('intval', $config['recipients'])) as $userId) {
                 if (!isset($users[$userId])) { continue; }

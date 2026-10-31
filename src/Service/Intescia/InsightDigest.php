@@ -27,6 +27,7 @@ final class InsightDigest
         if (empty($config['digest_enabled']) || empty($config['digest_start'])) { return null; }
         $zone = new \DateTimeZone('Europe/Paris');
         $local = $now->setTimezone($zone);
+        if ((int) $local->format('N') >= 6) { return null; }
         $start = new \DateTimeImmutable($config['digest_start'].' '.$config['digest_time'], $zone);
         if ($local < $start) { return null; }
         $days = (int) $start->setTime(0, 0)->diff($local->setTime(0, 0))->format('%a');

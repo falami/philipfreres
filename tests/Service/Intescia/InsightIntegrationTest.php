@@ -176,11 +176,25 @@ final class InsightIntegrationTest extends TestCase
         self::assertSame('2030-06-02 10:00:00', InsightNormalizer::deadline('2030-06-02T12:00:00'));
     }
 
+    public function testReminderCountsWeekdayHoursAcrossWeekendsAndDst(): void
+    {
+        foreach ([
+            ['2026-11-02 12:00', 48, '2026-10-29 12:00'],
+            ['2026-11-03 12:00', 48, '2026-10-30 12:00'],
+            ['2026-10-26 12:00', 48, '2026-10-22 12:00'],
+            ['2026-03-30 12:00', 48, '2026-03-26 12:00'],
+            ['2026-11-04 12:00', 48, '2026-11-02 12:00'],
+            ['2026-11-02 00:30', 1, '2026-10-30 23:30'],
+        ] as [$deadline, $hours, $expected]) {
+            self::assertSame($expected, InsightAlerts::reminderAt(new \DateTimeImmutable($deadline, new \DateTimeZone('Europe/Paris')), $hours)->format('Y-m-d H:i'));
+        }
+    }
+
     public function testAlertWindowTenantRecipientsDryRunAndIdempotency(): void
     {
-        $now = new \DateTimeImmutable('2030-06-01T12:00:00Z');
+        $now = new \DateTimeImmutable('2030-05-31T12:00:00Z');
         $config = $this->store->config(1);
-        $config = array_replace($config, ['alerts' => true, 'sync_ok' => true, 'last_success' => '2030-06-01 11:00:00', 'recipients' => [10, 11], 'lead_hours' => 48]);
+        $config = array_replace($config, ['alerts' => true, 'sync_ok' => true, 'last_success' => '2030-05-31 11:00:00', 'recipients' => [10, 11], 'lead_hours' => 48]);
         $this->store->saveConfig(1, $config);
         $this->store->saveMarket(1, InsightNormalizer::row($this->hit(), []), ['contract_id' => self::UUID], 'gen');
         $recipients = $this->createMock(InsightRecipients::class);
@@ -194,6 +208,7 @@ final class InsightIntegrationTest extends TestCase
         });
         $router = $this->createStub(UrlGeneratorInterface::class); $router->method('generate')->willReturn('/fr/administrateur/1/marches/fiche/test');
         $alerts = new InsightAlerts($this->store, $recipients, $transport, new Environment(new FilesystemLoader(dirname(__DIR__, 3).'/templates')), $router, 'no-reply@example.test', 'https://app.example.test');
+        self::assertSame(['eligible' => 0, 'sent' => 0, 'uncertain' => 0], $alerts->run(1, false, new \DateTimeImmutable('2030-05-31T22:00:00Z')));
         self::assertSame(['eligible' => 1, 'sent' => 0, 'uncertain' => 0], $alerts->run(1, true, $now));
         self::assertSame(0, (int) $this->store->db->fetchOne('SELECT COUNT(*) FROM insight_delivery'));
         self::assertSame(1, $alerts->run(1, false, $now)['sent']);
@@ -204,8 +219,8 @@ final class InsightIntegrationTest extends TestCase
 
     public function testUncertainSmtpIsRecordedWithoutAutomaticResend(): void
     {
-        $now = new \DateTimeImmutable('2030-06-01T12:00:00Z');
-        $this->store->saveConfig(1, array_replace($this->store->config(1), ['alerts' => true, 'sync_ok' => true, 'last_success' => '2030-06-01 11:00:00', 'recipients' => [10]]));
+        $now = new \DateTimeImmutable('2030-05-31T12:00:00Z');
+        $this->store->saveConfig(1, array_replace($this->store->config(1), ['alerts' => true, 'sync_ok' => true, 'last_success' => '2030-05-31 11:00:00', 'recipients' => [10]]));
         $this->store->saveMarket(1, InsightNormalizer::row($this->hit(), []), ['contract_id' => self::UUID], 'gen');
         $recipients = $this->createStub(InsightRecipients::class);
         $recipients->method('available')->willReturn([10 => ['id' => 10, 'name' => 'Test', 'email' => 'test@example.test']]);
